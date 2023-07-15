@@ -1,0 +1,609 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		895A2B112A62E43B0082E688 /* OpenMe_ClientApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 895A2B102A62E43B0082E688 /* OpenMe_ClientApp.swift */; };
+		895A2B132A62E43B0082E688 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 895A2B122A62E43B0082E688 /* ContentView.swift */; };
+		895A2B152A62E43C0082E688 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 895A2B142A62E43C0082E688 /* Assets.xcassets */; };
+		895A2B192A62E43C0082E688 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 895A2B182A62E43C0082E688 /* Preview Assets.xcassets */; };
+		895A2B232A62E43C0082E688 /* OpenMe_ClientTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 895A2B222A62E43C0082E688 /* OpenMe_ClientTests.swift */; };
+		895A2B2D2A62E43C0082E688 /* OpenMe_ClientUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 895A2B2C2A62E43C0082E688 /* OpenMe_ClientUITests.swift */; };
+		895A2B2F2A62E43C0082E688 /* OpenMe_ClientUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 895A2B2E2A62E43C0082E688 /* OpenMe_ClientUITestsLaunchTests.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		895A2B1F2A62E43C0082E688 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 895A2B052A62E43B0082E688 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 895A2B0C2A62E43B0082E688;
+			remoteInfo = "OpenMe Client";
+		};
+		895A2B292A62E43C0082E688 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 895A2B052A62E43B0082E688 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 895A2B0C2A62E43B0082E688;
+			remoteInfo = "OpenMe Client";
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		895A2B0D2A62E43B0082E688 /* OpenMe Client.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "OpenMe Client.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		895A2B102A62E43B0082E688 /* OpenMe_ClientApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenMe_ClientApp.swift; sourceTree = "<group>"; };
+		895A2B122A62E43B0082E688 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		895A2B142A62E43C0082E688 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		895A2B162A62E43C0082E688 /* OpenMe_Client.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = OpenMe_Client.entitlements; sourceTree = "<group>"; };
+		895A2B182A62E43C0082E688 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
+		895A2B1E2A62E43C0082E688 /* OpenMe ClientTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "OpenMe ClientTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		895A2B222A62E43C0082E688 /* OpenMe_ClientTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenMe_ClientTests.swift; sourceTree = "<group>"; };
+		895A2B282A62E43C0082E688 /* OpenMe ClientUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "OpenMe ClientUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		895A2B2C2A62E43C0082E688 /* OpenMe_ClientUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenMe_ClientUITests.swift; sourceTree = "<group>"; };
+		895A2B2E2A62E43C0082E688 /* OpenMe_ClientUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenMe_ClientUITestsLaunchTests.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		895A2B0A2A62E43B0082E688 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		895A2B1B2A62E43C0082E688 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		895A2B252A62E43C0082E688 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		895A2B042A62E43A0082E688 = {
+			isa = PBXGroup;
+			children = (
+				895A2B0F2A62E43B0082E688 /* OpenMe Client */,
+				895A2B212A62E43C0082E688 /* OpenMe ClientTests */,
+				895A2B2B2A62E43C0082E688 /* OpenMe ClientUITests */,
+				895A2B0E2A62E43B0082E688 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		895A2B0E2A62E43B0082E688 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				895A2B0D2A62E43B0082E688 /* OpenMe Client.app */,
+				895A2B1E2A62E43C0082E688 /* OpenMe ClientTests.xctest */,
+				895A2B282A62E43C0082E688 /* OpenMe ClientUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		895A2B0F2A62E43B0082E688 /* OpenMe Client */ = {
+			isa = PBXGroup;
+			children = (
+				895A2B102A62E43B0082E688 /* OpenMe_ClientApp.swift */,
+				895A2B122A62E43B0082E688 /* ContentView.swift */,
+				895A2B142A62E43C0082E688 /* Assets.xcassets */,
+				895A2B162A62E43C0082E688 /* OpenMe_Client.entitlements */,
+				895A2B172A62E43C0082E688 /* Preview Content */,
+			);
+			path = "OpenMe Client";
+			sourceTree = "<group>";
+		};
+		895A2B172A62E43C0082E688 /* Preview Content */ = {
+			isa = PBXGroup;
+			children = (
+				895A2B182A62E43C0082E688 /* Preview Assets.xcassets */,
+			);
+			path = "Preview Content";
+			sourceTree = "<group>";
+		};
+		895A2B212A62E43C0082E688 /* OpenMe ClientTests */ = {
+			isa = PBXGroup;
+			children = (
+				895A2B222A62E43C0082E688 /* OpenMe_ClientTests.swift */,
+			);
+			path = "OpenMe ClientTests";
+			sourceTree = "<group>";
+		};
+		895A2B2B2A62E43C0082E688 /* OpenMe ClientUITests */ = {
+			isa = PBXGroup;
+			children = (
+				895A2B2C2A62E43C0082E688 /* OpenMe_ClientUITests.swift */,
+				895A2B2E2A62E43C0082E688 /* OpenMe_ClientUITestsLaunchTests.swift */,
+			);
+			path = "OpenMe ClientUITests";
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		895A2B0C2A62E43B0082E688 /* OpenMe Client */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 895A2B322A62E43C0082E688 /* Build configuration list for PBXNativeTarget "OpenMe Client" */;
+			buildPhases = (
+				895A2B092A62E43B0082E688 /* Sources */,
+				895A2B0A2A62E43B0082E688 /* Frameworks */,
+				895A2B0B2A62E43B0082E688 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "OpenMe Client";
+			productName = "OpenMe Client";
+			productReference = 895A2B0D2A62E43B0082E688 /* OpenMe Client.app */;
+			productType = "com.apple.product-type.application";
+		};
+		895A2B1D2A62E43C0082E688 /* OpenMe ClientTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 895A2B352A62E43C0082E688 /* Build configuration list for PBXNativeTarget "OpenMe ClientTests" */;
+			buildPhases = (
+				895A2B1A2A62E43C0082E688 /* Sources */,
+				895A2B1B2A62E43C0082E688 /* Frameworks */,
+				895A2B1C2A62E43C0082E688 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				895A2B202A62E43C0082E688 /* PBXTargetDependency */,
+			);
+			name = "OpenMe ClientTests";
+			productName = "OpenMe ClientTests";
+			productReference = 895A2B1E2A62E43C0082E688 /* OpenMe ClientTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		895A2B272A62E43C0082E688 /* OpenMe ClientUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 895A2B382A62E43C0082E688 /* Build configuration list for PBXNativeTarget "OpenMe ClientUITests" */;
+			buildPhases = (
+				895A2B242A62E43C0082E688 /* Sources */,
+				895A2B252A62E43C0082E688 /* Frameworks */,
+				895A2B262A62E43C0082E688 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				895A2B2A2A62E43C0082E688 /* PBXTargetDependency */,
+			);
+			name = "OpenMe ClientUITests";
+			productName = "OpenMe ClientUITests";
+			productReference = 895A2B282A62E43C0082E688 /* OpenMe ClientUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		895A2B052A62E43B0082E688 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1410;
+				LastUpgradeCheck = 1410;
+				TargetAttributes = {
+					895A2B0C2A62E43B0082E688 = {
+						CreatedOnToolsVersion = 14.1;
+					};
+					895A2B1D2A62E43C0082E688 = {
+						CreatedOnToolsVersion = 14.1;
+						TestTargetID = 895A2B0C2A62E43B0082E688;
+					};
+					895A2B272A62E43C0082E688 = {
+						CreatedOnToolsVersion = 14.1;
+						TestTargetID = 895A2B0C2A62E43B0082E688;
+					};
+				};
+			};
+			buildConfigurationList = 895A2B082A62E43B0082E688 /* Build configuration list for PBXProject "OpenMe Client" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 895A2B042A62E43A0082E688;
+			productRefGroup = 895A2B0E2A62E43B0082E688 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				895A2B0C2A62E43B0082E688 /* OpenMe Client */,
+				895A2B1D2A62E43C0082E688 /* OpenMe ClientTests */,
+				895A2B272A62E43C0082E688 /* OpenMe ClientUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		895A2B0B2A62E43B0082E688 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				895A2B192A62E43C0082E688 /* Preview Assets.xcassets in Resources */,
+				895A2B152A62E43C0082E688 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		895A2B1C2A62E43C0082E688 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		895A2B262A62E43C0082E688 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		895A2B092A62E43B0082E688 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				895A2B132A62E43B0082E688 /* ContentView.swift in Sources */,
+				895A2B112A62E43B0082E688 /* OpenMe_ClientApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		895A2B1A2A62E43C0082E688 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				895A2B232A62E43C0082E688 /* OpenMe_ClientTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		895A2B242A62E43C0082E688 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				895A2B2D2A62E43C0082E688 /* OpenMe_ClientUITests.swift in Sources */,
+				895A2B2F2A62E43C0082E688 /* OpenMe_ClientUITestsLaunchTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		895A2B202A62E43C0082E688 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 895A2B0C2A62E43B0082E688 /* OpenMe Client */;
+			targetProxy = 895A2B1F2A62E43C0082E688 /* PBXContainerItemProxy */;
+		};
+		895A2B2A2A62E43C0082E688 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 895A2B0C2A62E43B0082E688 /* OpenMe Client */;
+			targetProxy = 895A2B292A62E43C0082E688 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		895A2B302A62E43C0082E688 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		895A2B312A62E43C0082E688 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+			};
+			name = Release;
+		};
+		895A2B332A62E43C0082E688 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "OpenMe Client/OpenMe_Client.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"OpenMe Client/Preview Content\"";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.1;
+				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "org.merlos.OpenMe-Client";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		895A2B342A62E43C0082E688 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "OpenMe Client/OpenMe_Client.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"OpenMe Client/Preview Content\"";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.1;
+				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "org.merlos.OpenMe-Client";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		895A2B362A62E43C0082E688 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.1;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "org.merlos.OpenMe-ClientTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/OpenMe Client.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/OpenMe Client";
+			};
+			name = Debug;
+		};
+		895A2B372A62E43C0082E688 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.1;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "org.merlos.OpenMe-ClientTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/OpenMe Client.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/OpenMe Client";
+			};
+			name = Release;
+		};
+		895A2B392A62E43C0082E688 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.1;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "org.merlos.OpenMe-ClientUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = "OpenMe Client";
+			};
+			name = Debug;
+		};
+		895A2B3A2A62E43C0082E688 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.1;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "org.merlos.OpenMe-ClientUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = "OpenMe Client";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		895A2B082A62E43B0082E688 /* Build configuration list for PBXProject "OpenMe Client" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				895A2B302A62E43C0082E688 /* Debug */,
+				895A2B312A62E43C0082E688 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		895A2B322A62E43C0082E688 /* Build configuration list for PBXNativeTarget "OpenMe Client" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				895A2B332A62E43C0082E688 /* Debug */,
+				895A2B342A62E43C0082E688 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		895A2B352A62E43C0082E688 /* Build configuration list for PBXNativeTarget "OpenMe ClientTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				895A2B362A62E43C0082E688 /* Debug */,
+				895A2B372A62E43C0082E688 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		895A2B382A62E43C0082E688 /* Build configuration list for PBXNativeTarget "OpenMe ClientUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				895A2B392A62E43C0082E688 /* Debug */,
+				895A2B3A2A62E43C0082E688 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 895A2B052A62E43B0082E688 /* Project object */;
+}
