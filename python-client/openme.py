@@ -12,7 +12,8 @@ parser.add_argument("-i", "--ip-address", help="Open ports to this IP address (d
 args = parser.parse_args()
 
 # Connect to the server using SSL
-context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
+#context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
+context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
 context.load_cert_chain(certfile=config.CLIENT_CERT, keyfile=config.CLIENT_KEY)
 context.load_verify_locations(cafile=config.CA_CERT)
 

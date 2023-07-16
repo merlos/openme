@@ -12,6 +12,8 @@ import config
 
 def handle_client_connection(conn, addr):
     # Receive data from the client
+    if config.DEBUG:
+        print(f"Connection from {addr[0]}")
     data = conn.recv(1024).decode().strip()
 
     if data == "OPEN ME":
@@ -38,17 +40,19 @@ def handle_client_connection(conn, addr):
     # Add a rule to iptables to allow incoming connections from the specified IP address
     for port in config.OPEN_PORTS:
         # we open both
-        open_tcp_port = ['iptables', '-A', 'INPUT', '-p', 'tcp', '-s', ip_address, '--dport', port, '-j', 'ACCEPT']
-        open_udp_port = ['iptables', '-A', 'INPUT', '-p', 'udp', '-s', ip_address, '--dport', port, '-j', 'ACCEPT']
-        if not config.DEBUG:
+        open_tcp_port = ['iptables', '-A', 'INPUT', '-p', 'tcp', '-s', ip_address, '--dport', str(port), '-j', 'ACCEPT']
+        open_udp_port = ['iptables', '-A', 'INPUT', '-p', 'udp', '-s', ip_address, '--dport', str(port), '-j', 'ACCEPT']
+        if config.DEBUG:
+            open_tcp_port_s = ' '.join(open_tcp_port)
+            open_udp_port_s = ' '.join(open_udp_port)
+            logger.info(open_tcp_port_s)
+            logger.info(open_udp_port_s)
+        else:
             subprocess.run(open_tcp_port)
             subprocess.run(open_udp_port)
-        else:
-            logger.info(open_tcp_port)
-            logger.info(open_udp_port)
 
     # Log a confirmation message
-    logger.info(f"openme: Port opened for {ip_address}")
+    logger.info(f"openmed: Port opened for {ip_address}")
 
     # Close the connection
     conn.close()
@@ -68,7 +72,7 @@ def main():
     server_socket.bind(('0.0.0.0', config.LISTENING_PORT))
 
     # Enable SSL/TLS with the certificate and key files
-    ssl_context = ssl.create_default_context(ssl.Purpose.config.CLIENT_AUTH)
+    ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
     ssl_context.load_cert_chain(certfile=config.CERT_FILE, keyfile=config.KEY_FILE)
 
     # Set the CA certificate file for client certificate verification
