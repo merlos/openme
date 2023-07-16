@@ -1,8 +1,8 @@
 
 
-LISTENING_PORT = 5414   # SALA de espera / waiting room
+LISTENING_PORT = 54154 # SALSA 
 """
-Port the server will be listening
+Port the server will be listening. Defaults 54154 (SALSA)
 """
 
 OPEN_PORTS = [80,443]
@@ -10,11 +10,8 @@ OPEN_PORTS = [80,443]
 Array of ports that will be opened
 """
 
-
-
-
 #CERT_FILE = "/etc/openme/certificate.crt"
-CERT_FILE = "./openme.crt"
+CERT_FILE = "../certs/openme.crt"
 """
 Certificate of the server 
 """

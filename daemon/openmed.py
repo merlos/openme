@@ -44,7 +44,8 @@ def handle_client_connection(conn, addr):
             subprocess.run(open_tcp_port)
             subprocess.run(open_udp_port)
         else:
-            logger.info()
+            logger.info(open_tcp_port)
+            logger.info(open_udp_port)
 
     # Log a confirmation message
     logger.info(f"openme: Port opened for {ip_address}")
@@ -58,6 +59,8 @@ def validate_ip_address(ip_address):
     return bool(re.match(ip_regex, ip_address))
 
 def main():
+    print("main")
+ 
     # Create a socket object
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
@@ -86,23 +89,25 @@ def main():
         handle_client_connection(conn, addr)
 
 # Create a logger instance
-logger = logging.getLogger('open_port_logger')
+logger = logging.getLogger('openme_logger')
 logger.setLevel(logging.INFO)
 
 # Create a syslog handler and set its level
-syslog_handler = logging.handlers.SysLogHandler(address='/dev/log')
-syslog_handler.setLevel(logging.INFO)
+#syslog_handler = logging.handlers.SysLogHandler(address='/dev/log')
+#syslog_handler.setLevel(logging.INFO)
 
 # Create a formatter and set it for the handler
-formatter = logging.Formatter('%(name)s: %(message)s')
-syslog_handler.setFormatter(formatter)
+#formatter = logging.Formatter('%(name)s: %(message)s')
+#syslog_handler.setFormatter(formatter)
 
 # Add the handler to the logger
-logger.addHandler(syslog_handler)
+#logger.addHandler(syslog_handler)
 
 def run_as_daemon():
-    with daemon.DaemonContext():
+    #print("daemon")
+    #with daemon.DaemonContext():
+    #    print("pre-maon")
         main()
 
 if __name__ == "__main__":
-    run_as_daemon()
+     run_as_daemon()
