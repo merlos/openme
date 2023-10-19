@@ -17,7 +17,7 @@ cd easyrsa
 # Version of easyrsa to download
 version="3.1.5"
 
-echo Getting easy-rsa $version into the ./easy-rsa folder
+echo Getting easy-rsa $version into the ./easyrsa folder
 easy_rsa_url="https://github.com/OpenVPN/easy-rsa/releases/download/v$version/EasyRSA-$version.tgz"
 echo "Downloading $easy_rsa_url"
 curl -O -L $easy_rsa_url
