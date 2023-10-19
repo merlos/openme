@@ -1,6 +1,8 @@
 #!/bin/bash
 
 # first argument is the name of the client
+
+# Days to expire the cert
 export EASYRSA_CERT_EXPIRE=9999
 
 # Validate the number of arguments
