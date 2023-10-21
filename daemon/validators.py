@@ -180,21 +180,25 @@ def validate_config(config):
     """
 
     #BIND_ADDRESS  is a valid ip4 address
-    if not is_valid_ip4_address(config.BIND_ADDRESS):
+    if config.BIND_ADDRESS and not is_valid_ip4_address(config.BIND_ADDRESS):
         raise RuntimeError("config: BIND_ADDRESS is not a valid IP address. Use something like 0.0.0.0 or 192.168.1.1")
     
     #LISTENING_PORT  is between 1 and 65535 
-    if not is_valid_port_number(config.LISTENING_PORT):
+    if config.LISTENING_POET and not is_valid_port_number(config.LISTENING_PORT):
         raise RuntimeError("Config: LISTENING_PORT is invalid. Port number must be between 1 and 65535")
+    
     #PORTS are between 1 and 65535 and protocol is tcp or udp f.i [(80,'tcp'),(443,'tcp')]
-    validate_ports(config.PORTS)
+    if config.PORTS:
+        validate_ports(config.PORTS)
     
     # CERT_FILE exists and has the correct format
-    validate_cert_file(config.CERT_FILE)
+    if config.CERT_FILE:
+        validate_cert_file(config.CERT_FILE)
 
     # KEY_FILE  exists and has a valid format 
-    validate_key_file(config.KEY_FILE)
+    if config.KEY_FILE:
+        validate_key_file(config.KEY_FILE)
 
     # CA_CERT_FILE exists and has a valid format
-    validate_cert_file(config.CA_CERT_FILE)
-    
+    if config.CA_CERT_FILE:
+        validate_cert_file(config.CA_CERT_FILE)
