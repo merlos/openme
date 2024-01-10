@@ -5,6 +5,9 @@ import requests
 
 import config
 
+
+import validators
+
 def get_public_ip_details():
     """
     Get the public IP address and its details using the ipinfo.io API.
@@ -16,6 +19,10 @@ def get_public_ip_details():
     response1 = requests.get("https://ipinfo.io/ip")
     public_ip_address = response1.text.strip()
 
+    # Ensure the ip address returned is an actual IP
+    if not validators.is_valid_ip4_address(public_ip_address):
+        raise AttributeError("Incorrect IP address format returned by ipinfo.io")
+    
     # Sending a GET request to ipinfo.io/<public_ip_address> to get the details of the specified IP address
     response2 = requests.get(f"https://ipinfo.io/{public_ip_address}")
     ip_details = response2.json()
@@ -36,15 +43,15 @@ def display_ip_details():
 
 epilog='''Examples:
 
-    Open ports for my ip address in the default server 
+    Open ports for my ip address of the default server set in config.py
         python openme.py --openme 
         python openme.py -o
 
-    Close ports for my ip address in the default server
+    Close ports for my ip address of the default server set in config.py
         python openme.py --meopen
         python openme.py -m
 
-    Close ports for 192.168.1.1 in the default server
+    Close ports for the ip 192.168.1.1 of the default server set in config.py
         python openme.py --miopen --ip-address 192.168.1.1
         python openme.py -m -i 192.168.1.1
 
@@ -53,7 +60,7 @@ epilog='''Examples:
         python openme.py -s 10.8.0.1 -p 1980
 
     Display my public ip info
-        python openme.py -me
+        python openme.py --me
         python openme.py -e
 '''
 
