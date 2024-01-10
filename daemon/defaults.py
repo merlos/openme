@@ -1,5 +1,3 @@
-
-
 """
 Default Configuration values
 These are the default values if not set.

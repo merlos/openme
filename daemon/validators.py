@@ -9,6 +9,11 @@ and a text message indicating what is the issue.
 import os
 import re
 import OpenSSL.crypto
+import logging
+
+# Setup logging
+logger = logging.getLogger(__name__)
+
 
 
 class InvalidPortNumber(Exception):
@@ -34,6 +39,7 @@ class InvalidProtocol(Exception):
         self.message = message
         super().__init__(self.message)
 
+
 class InvalidCertificateError(Exception):
     """
     Custom exception class for invalid certificate files.
@@ -44,6 +50,7 @@ class InvalidCertificateError(Exception):
     def __init__(self, message="Invalid certificate file"):
         self.message = message
         super().__init__(self.message)
+
 
 def is_valid_ip4_address(ip_address):
     """Validate an IPv4 address
@@ -70,6 +77,7 @@ def is_valid_port_number(port_number):
         bool: True if the port number is valid, False otherwise.
     """
     return 0 < port_number <= 65535
+
 
 def is_valid_protocol(protocol):
     """
@@ -136,7 +144,6 @@ def validate_cert_file(cert_file):
         raise InvalidCertificateError("Invalid certificate file: {}".format(str(e)))
 
 
-
 class InvalidKeyError(Exception):
     """
     Custom exception class for invalid key files.
@@ -147,6 +154,7 @@ class InvalidKeyError(Exception):
     def __init__(self, message="Invalid key file"):
         self.message = message
         super().__init__(self.message)
+
 
 def validate_key_file(key_file):
     """
@@ -176,29 +184,29 @@ def validate_key_file(key_file):
 
 def validate_config(config):
     """
-    Ensures that config parameters are correct.
+    Ensures that config parameters that appear are correct.
     """
-
+    logger.debug(f'validate_config: {config}')
     #BIND_ADDRESS  is a valid ip4 address
-    if config.BIND_ADDRESS and not is_valid_ip4_address(config.BIND_ADDRESS):
+    if hasattr(config, 'BIND_ADDRESS') and not is_valid_ip4_address(config.BIND_ADDRESS):
         raise RuntimeError("config: BIND_ADDRESS is not a valid IP address. Use something like 0.0.0.0 or 192.168.1.1")
     
     #LISTENING_PORT  is between 1 and 65535 
-    if config.LISTENING_POET and not is_valid_port_number(config.LISTENING_PORT):
+    if hasattr(config, 'LISTENING_PORT') and not is_valid_port_number(config.LISTENING_PORT):
         raise RuntimeError("Config: LISTENING_PORT is invalid. Port number must be between 1 and 65535")
     
     #PORTS are between 1 and 65535 and protocol is tcp or udp f.i [(80,'tcp'),(443,'tcp')]
-    if config.PORTS:
+    if hasattr(config,'PORTS'):
         validate_ports(config.PORTS)
     
     # CERT_FILE exists and has the correct format
-    if config.CERT_FILE:
+    if hasattr(config,'CERT_FILE'):
         validate_cert_file(config.CERT_FILE)
 
     # KEY_FILE  exists and has a valid format 
-    if config.KEY_FILE:
+    if hasattr(config,'KEY_FILE'):
         validate_key_file(config.KEY_FILE)
 
     # CA_CERT_FILE exists and has a valid format
-    if config.CA_CERT_FILE:
+    if hasattr(config,'CA_CERT_FILE'):
         validate_cert_file(config.CA_CERT_FILE)

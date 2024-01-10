@@ -1,1 +1,4 @@
+coverage=7.3.2
 python_daemon==3.0.1
+pyOpenSSL==23.2.0
+pyyaml==6.0.1
