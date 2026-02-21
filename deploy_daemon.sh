@@ -13,6 +13,13 @@
 #   -t, --test              Run the daemon in test/debug mode after deployment
 #   -h, --help              Show this help message
 #
+# Security notes:
+#   - The sudo password is prompted interactively and stored in a temporary
+#     file (chmod 600) for the duration of the deployment, then deleted.
+#   - Never pass the password as a CLI argument; it would be visible in ps.
+#   - If SUDO_PASS is set in deploy.env, ensure that file is chmod 600.
+#   - For fully unattended runs, prefer NOPASSWD in /etc/sudoers instead.
+#
 # Deploy environment file (deploy.env):
 #   A deploy environment file is loaded automatically before command-line
 #   arguments are parsed. By default deploy.env in the same directory as
@@ -26,6 +33,7 @@
 #     SSH_IDENTITY  - Path to SSH private key
 #     REMOTE_DEST   - Remote destination folder
 #     CONFIG_FILE   - Config file to deploy
+#     SUDO_PASS     - Sudo password (insecure; prefer interactive prompt or NOPASSWD)
 #     TEST_MODE     - true/false
 #
 #   A template is provided in deploy.env alongside this script.
@@ -118,6 +126,31 @@ done
 [[ -z "$CONFIG_FILE" ]] && CONFIG_FILE="$DAEMON_DIR/config.yaml"
 [[ -f "$CONFIG_FILE" ]] || err "Config file not found: $CONFIG_FILE"
 
+# ── Secure sudo password handling ─────────────────────────────────────────────
+SUDO_PASS_FILE="$(mktemp)"
+chmod 600 "$SUDO_PASS_FILE"
+
+# Always delete the temp file on exit, regardless of how the script ends
+cleanup() { rm -f "$SUDO_PASS_FILE"; }
+trap cleanup EXIT INT TERM
+
+# If SUDO_PASS was loaded from deploy.env, warn if the file is not chmod 600
+if [[ -n "${SUDO_PASS:-}" ]]; then
+    env_perms="$(stat -c '%a' "$DEPLOY_ENV_FILE" 2>/dev/null || stat -f '%A' "$DEPLOY_ENV_FILE" 2>/dev/null)"
+    if [[ "$env_perms" != "600" ]]; then
+        echo -e "\033[1;33m[WARN]\033[0m  $DEPLOY_ENV_FILE contains SUDO_PASS but is not chmod 600 (current: $env_perms)" >&2
+        echo -e "\033[1;33m[WARN]\033[0m  Run: chmod 600 $DEPLOY_ENV_FILE" >&2
+    fi
+    printf '%s\n' "$SUDO_PASS" > "$SUDO_PASS_FILE"
+    unset SUDO_PASS
+else
+    # Prompt interactively; password is never stored in any variable after this block
+    IFS= read -r -s -p "[sudo] password for remote user on $REMOTE_HOST: " _pass
+    echo
+    printf '%s\n' "$_pass" > "$SUDO_PASS_FILE"
+    unset _pass
+fi
+
 # ── Build SSH/SCP options ─────────────────────────────────────────────────────
 SSH_OPTS=(-p "$SSH_PORT" -o StrictHostKeyChecking=accept-new)
 SCP_OPTS=(-P "$SSH_PORT" -o StrictHostKeyChecking=accept-new)
@@ -126,12 +159,16 @@ if [[ -n "$SSH_IDENTITY" ]]; then
     SCP_OPTS+=(-i "$SSH_IDENTITY")
 fi
 
-ssh_run()  { ssh "${SSH_OPTS[@]}" "$REMOTE_HOST" "$@"; }
-ssh_sudo() { ssh "${SSH_OPTS[@]}" "$REMOTE_HOST" sudo "$@"; }
+# sudo -S reads the password from stdin.
+# Use sudo -- to terminate option parsing before the target command.
+# This avoids edge cases where command args are misinterpreted by sudo/bash.
+ssh_run()      { ssh "${SSH_OPTS[@]}" "$REMOTE_HOST" "$@"; }
+ssh_sudo()     { ssh "${SSH_OPTS[@]}" "$REMOTE_HOST" sudo -S -- "$@" < "$SUDO_PASS_FILE"; }
+ssh_sudo_pipe(){ (cat "$SUDO_PASS_FILE"; cat) | ssh "${SSH_OPTS[@]}" "$REMOTE_HOST" sudo -S -- bash -s -- "$@"; }
 
 # ── 1. Install system dependencies on the remote machine ─────────────────────
 info "Installing system dependencies (python3, venv, iptables) on $REMOTE_HOST..."
-ssh_sudo bash -s <<'REMOTE_DEPS'
+ssh_sudo_pipe <<'REMOTE_DEPS'
 set -euo pipefail
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq
@@ -141,31 +178,45 @@ ok "System dependencies installed"
 
 # ── 2. Create remote directory structure ─────────────────────────────────────
 info "Creating remote directory: $REMOTE_DEST ..."
-ssh_sudo bash -s -- "$REMOTE_DEST" "$REMOTE_HOST" <<'REMOTE_MKDIRS'
+ssh_sudo_pipe "$REMOTE_DEST" <<'REMOTE_MKDIRS'
 set -euo pipefail
 DEST="$1"
-DEPLOY_USER="${2%%@*}"   # strip @host if user@host was passed; fallback below
-# Prefer the actual SSH login user (available via $SUDO_USER or $USER on remote)
 mkdir -p "$DEST/daemon" "$DEST/certs"
 REMOTE_MKDIRS
 ok "Remote directories created"
 
 # ── 3. Copy daemon source files ───────────────────────────────────────────────
 info "Copying daemon files to $REMOTE_HOST:$REMOTE_DEST/daemon/ ..."
-scp "${SCP_OPTS[@]}" \
-    "$DAEMON_DIR/openmed.py" \
-    "$DAEMON_DIR/defaults.py" \
-    "$DAEMON_DIR/validators.py" \
-    "$DAEMON_DIR/requirements.txt" \
-    "$CONFIG_FILE" \
-    "$REMOTE_HOST:$REMOTE_DEST/daemon/"
+# Copy the entire daemon/ directory recursively so new files are included
+# automatically. The config file (which may be outside daemon/) is added
+# separately. scp uploads to a user-writable staging dir; sudo mv moves
+# everything into the root-owned destination.
+STAGING=$(ssh "${SSH_OPTS[@]}" "$REMOTE_HOST" 'D=$(mktemp -d); mkdir -p "$D/daemon"; echo "$D"')
+scp "${SCP_OPTS[@]}" -r "$DAEMON_DIR"/. "$REMOTE_HOST:$STAGING/daemon/"
+# If a custom config was specified outside daemon/, copy it in too
+if [[ "$(realpath "$CONFIG_FILE")" != "$DAEMON_DIR"/* ]]; then
+    scp "${SCP_OPTS[@]}" "$CONFIG_FILE" "$REMOTE_HOST:$STAGING/daemon/"
+fi
+ssh_sudo_pipe "$STAGING/daemon" "$REMOTE_DEST/daemon" <<'REMOTE_MV_DAEMON'
+set -euo pipefail
+STAGING="$1"; DEST="$2"
+cp -r "$STAGING"/. "$DEST/"
+rm -rf "$STAGING"
+REMOTE_MV_DAEMON
 ok "Daemon files copied"
 
 # ── 4. Copy certificates ──────────────────────────────────────────────────────
 if [[ -d "$CERTS_DIR" && -n "$(ls -A "$CERTS_DIR" 2>/dev/null)" ]]; then
     info "Copying certificates to $REMOTE_HOST:$REMOTE_DEST/certs/ ..."
+    STAGING_CERTS=$(ssh "${SSH_OPTS[@]}" "$REMOTE_HOST" 'mktemp -d')
     scp "${SCP_OPTS[@]}" "$CERTS_DIR"/*.crt "$CERTS_DIR"/*.key \
-        "$REMOTE_HOST:$REMOTE_DEST/certs/" 2>/dev/null || true
+        "$REMOTE_HOST:$STAGING_CERTS/" 2>/dev/null || true
+    ssh_sudo_pipe "$STAGING_CERTS" "$REMOTE_DEST/certs" <<'REMOTE_MV_CERTS'
+set -euo pipefail
+STAGING="$1"; DEST="$2"
+mv "$STAGING"/* "$DEST/"
+rmdir "$STAGING"
+REMOTE_MV_CERTS
     ok "Certificates copied"
 else
     info "No certificates found locally in $CERTS_DIR — skipping."
@@ -173,7 +224,7 @@ fi
 
 # ── 5. Create Python virtual environment and install dependencies ─────────────
 info "Creating virtual environment and installing Python dependencies..."
-ssh_sudo bash -s -- "$REMOTE_DEST" <<'REMOTE_VENV'
+ssh_sudo_pipe "$REMOTE_DEST" <<'REMOTE_VENV'
 set -euo pipefail
 DEST="$1"
 VENV="$DEST/venv"
@@ -187,7 +238,7 @@ ok "Virtual environment created at $REMOTE_DEST/venv"
 # ── 6. Install systemd service unit ──────────────────────────────────────────
 info "Installing systemd service unit openmed.service ..."
 CONFIG_BASENAME="$(basename "$CONFIG_FILE")"
-ssh_sudo bash -s -- "$REMOTE_DEST" "$CONFIG_BASENAME" <<'REMOTE_SERVICE'
+ssh_sudo_pipe "$REMOTE_DEST" "$CONFIG_BASENAME" <<'REMOTE_SERVICE'
 set -euo pipefail
 DEST="$1"
 CONFIG_BASENAME="$2"
@@ -214,16 +265,30 @@ ok "systemd service installed and enabled"
 
 # ── 7. Run in test mode or start the service ──────────────────────────────────
 if [[ "$TEST_MODE" == true ]]; then
-    info "Test mode: running daemon in foreground (DEBUG=true). Press Ctrl+C to stop."
-    ssh_run bash -s -- "$REMOTE_DEST" "$(basename "$CONFIG_FILE")" <<'REMOTE_TEST'
-set -euo pipefail
-DEST="$1"
-CONFIG_BASENAME="$2"
-VENV="$DEST/venv"
-# Override DEBUG flag via env so the daemon logs to stdout instead of iptables
-cd "$DEST/daemon"
-LOGLEVEL=DEBUG "$VENV/bin/python3" openmed.py --config-file "$CONFIG_BASENAME"
-REMOTE_TEST
+    CONFIG_BASENAME="$(basename "$CONFIG_FILE")"
+
+    # Stop the systemd service so it doesn't hold the port
+    info "Stopping openmed service (if running)..."
+    ssh_sudo systemctl stop openmed.service || true
+
+    info "Starting daemon in foreground (DEBUG mode). Press Ctrl+C to stop."
+    info "Command: $REMOTE_DEST/venv/bin/python3 -u openmed.py --config-file $CONFIG_BASENAME"
+    echo ""
+    # -tt   : allocate a pseudo-TTY so Ctrl+C reaches the remote process
+    # -u    : unbuffered Python output so logs appear in real time
+    # 2>&1  : merge remote stderr into stdout so tracebacks are always visible
+    # set +e: don't let set -e kill the script when the daemon stops or is Ctrl+C'd
+    set +e
+    ssh -tt "${SSH_OPTS[@]}" "$REMOTE_HOST" \
+        "cd '$REMOTE_DEST/daemon' && LOGLEVEL=DEBUG '$REMOTE_DEST/venv/bin/python3' -u openmed.py --config-file '$CONFIG_BASENAME' 2>&1"
+    _exit=$?
+    set -e
+    echo ""
+    if [[ $_exit -eq 130 || $_exit -eq 0 ]]; then
+        info "Daemon stopped."
+    else
+        err "Daemon exited with code $_exit"
+    fi
 else
     info "Starting openmed service..."
     ssh_sudo systemctl restart openmed.service
