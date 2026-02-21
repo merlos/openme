@@ -130,7 +130,7 @@ there is a deployment script that uses ssh for deployment it uses SSH ids for id
 
 ```sh
 ssh-keygen -t ed25519 -C "openme@host" -f ~/.ssh/openme
-ssh-copy-id user@openme-host
+ssh-copy-id -i ~/.ssh/openme user@openme-host
 ```
 
 Then deploy the daemon

@@ -1,6 +1,7 @@
 
 # Define the default values for server and port
 DEFAULT_SERVER = "localhost"
+DEFAULT_SERVER_HOSTNAME = "server"
 DEFAULT_PORT = 54154 # SALSA
 
 CLIENT_CERT='../certs/client.crt'

@@ -189,15 +189,33 @@ def start_listening(config):
     # Listen for incoming SSL/TLS connections
     ssl_server_socket = ssl_context.wrap_socket(server_socket, server_side=True)
 
+    # Disable strict hostname checking since the server cert may not have a hostname (or we may connect via IP)
+    ssl_context.verify_flags &= ~ssl.VERIFY_X509_STRICT
+
     # Listen for incoming connections
     ssl_server_socket.listen(1)
 
     while True:
-        # Accept a connection
-        conn, addr = ssl_server_socket.accept()
+        try:
+            # Accept a connection (TLS handshake happens here)
+            conn, addr = ssl_server_socket.accept()
+        except ssl.SSLError as e:
+            logger.warning(f"TLS handshake failed: {e}")
+            continue
+        except Exception as e:
+            logger.error(f"Unexpected accept() error: {e}")
+            continue
 
-        # Handle the client connection in a separate function
-        handle_client_connection(conn, addr)
+        # Handle the client connection without killing the server loop
+        try:
+            handle_client_connection(conn, addr)
+        except Exception as e:
+            logger.error(f"Error handling client {addr}: {e}")
+            debug(traceback.print_exc())
+            try:
+                conn.close()
+            except Exception:
+                pass
 
 
 def run_as_daemon(config):

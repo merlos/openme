@@ -52,7 +52,7 @@ epilog='''Examples:
         python openme.py -m
 
     Close ports for the ip 192.168.1.1 of the default server set in config.py
-        python openme.py --miopen --ip-address 192.168.1.1
+        python openme.py --meopen --ip-address 192.168.1.1
         python openme.py -m -i 192.168.1.1
 
     Open ports for me at the server 10.8.0.1:1980 
@@ -70,38 +70,66 @@ parser = argparse.ArgumentParser(description="Client for openme",
                                  formatter_class=argparse.RawDescriptionHelpFormatter
                                  )
 parser.add_argument("-s", "--server", default=config.DEFAULT_SERVER, help="Server address")
+parser.add_argument("--server-hostname", default=config.DEFAULT_SERVER_HOSTNAME,
+                    help="TLS server hostname for certificate verification (default: server)")
 parser.add_argument("-p", "--port", type=int, default=config.DEFAULT_PORT, help="Server port (default:54154)")
-parser.add_argument("-i", "--ip-address", help="Open/Close ports to this IP address (default: MY current public IP)")
+parser.add_argument("-i", "--ip-address", help="Open/Close ports to this IP address (default: My current public IP)")
 parser.add_argument("-o", "--openme", action="store_true", default=False, help="Open ports (aka openme)")
-parser.add_argument("-m", "--miopen", action="store_true", default=False, help="Close ports (aka miopen)")
+parser.add_argument("-m", "--meopen", action="store_true", default=False, help="Close ports (aka meopen)")
 parser.add_argument("-e", "--me", action="store_true", default=False, help="Displays your current public IP info (uses ipinfo.io API)")
 
 args = parser.parse_args()
 
+
+def validate_args(parsed_args):
+    errors = []
+
+    # Require one action flag
+    if not (parsed_args.me or parsed_args.openme or parsed_args.meopen):
+        errors.append("--openme (-o), --meopen (-m), or --me (-e) is required")
+
+    # Validate --port
+    if not (1 <= parsed_args.port <= 65535):
+        errors.append(f"--port (-p) invalid: {parsed_args.port}. Must be between 1 and 65535")
+
+    # Validate --ip-address format if provided
+    if parsed_args.ip_address and not validators.is_valid_ip4_address(parsed_args.ip_address):
+        errors.append(f"--ip-address (-i) invalid: {parsed_args.ip_address}")
+
+    # --ip-address only makes sense for open/close actions
+    if parsed_args.me and parsed_args.ip_address:
+        errors.append("--ip-address (-i) cannot be used with --me (-e)")
+
+    return errors
+
+
+validation_errors = validate_args(args)
+if validation_errors:
+    parser.error("Argument validation failed:\n  - " + "\n  - ".join(validation_errors))
+
 # Connect to the server using SSL
 # TODO
 #context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
-
-# If none of these flags are set, display the help and leave
-if not args.me or args.openme or args.miopen:
-    parser.print_help()
-    exit()
 
 # Display ip info
 if args.me:
     display_ip_details() 
 
 # Open or close ports
-if args.openme or args.miopen:
+if args.openme or args.meopen:
     # Load certs
-    context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+    #context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+    context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
     context.load_cert_chain(certfile=config.CLIENT_CERT, keyfile=config.CLIENT_KEY)
     context.load_verify_locations(cafile=config.CA_CERT)
 
+    # Disable strict hostname checking since the server cert may not have a hostname (or we may connect via IP)
+    context.verify_flags &= ~ssl.VERIFY_X509_STRICT
+
     with socket.create_connection((args.server, args.port)) as sock:
-        with context.wrap_socket(sock, server_hostname=args.server) as secure_sock:
-            if args.miopen:
-                message = "MEOPEN" if args.ip_address is None else f"MIOPEN {args.ip_address}"
+        with context.wrap_socket(sock, server_hostname=args.server_hostname) as secure_sock:
+            if args.meopen:
+                message = "MEOPEN" if args.ip_address is None else f"MEOPEN {args.ip_address}"
             else: 
                 message = "OPEN ME" if args.ip_address is None else f"OPEN {args.ip_address}"
             secure_sock.sendall(message.encode())
