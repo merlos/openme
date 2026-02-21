@@ -106,7 +106,7 @@ By default, the server will open the IP address of the client. But you can also 
 
 See the file `daemon/config.yaml`
 
-# Tests
+### Tests
 
 In the python packages it uses `unittest` as testing framework. It also uses `coverage.py` 
 
@@ -123,6 +123,22 @@ To run the tests in the python-client
 cd pyhton-client
 coverage run -m unittest discover
 ```
+
+### Server deployment script
+
+there is a deployment script that uses ssh for deployment it uses SSH ids for identification. 
+
+```sh
+ssh-keygen -t ed25519 -C "openme@host" -f ~/.ssh/openme
+ssh-copy-id user@openme-host
+```
+
+Then deploy the daemon
+
+```sh
+deploy_daemon.sh -i ~/.ssh/openme user@openme-host
+```
+
 
 ## OPENME protocol specification
 
@@ -184,7 +200,7 @@ There are some stuff the implementation does not support yet or I need to think 
 
 ## LICENSE
 
-Openme. Copyright (C) 2023-2024 @merlos
+Openme. Copyright (C) 2023-2026 @merlos
 
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 
