@@ -15,6 +15,8 @@ from types import SimpleNamespace
 
 from defaults import config as default_config
 from validators import is_valid_ip4_address
+from validators import is_valid_port_number
+from validators import InvalidPortNumber
 from validators import validate_config
 
 config = SimpleNamespace(**default_config)
@@ -27,7 +29,7 @@ def debug(message):
     global config
 
     if config.DEBUG:
-        print(message)
+        logging.debug(message)
 
 def merge_configs(default_config, config_overwrites=[]):
     """
@@ -42,10 +44,16 @@ def merge_configs(default_config, config_overwrites=[]):
 
 def generate_iptables_command(ip_address, port, protocol, action):
     """
-    creates the iptablees binary command.
+    Creates the iptables binary command.
 
-    Assumes ip_address and port have been already verifie
+    Validates ip_address, port, protocol, and action before building the command.
     """
+    if not is_valid_ip4_address(ip_address):
+        raise ValueError(f"Invalid IP address: {ip_address}")
+
+    if not is_valid_port_number(port):
+        raise InvalidPortNumber(f"Invalid port number: {port}")
+
     if protocol not in ["tcp", "udp"]:
         return "Invalid protocol. Supported protocols are tcp and udp."
 
@@ -59,32 +67,40 @@ def generate_iptables_command(ip_address, port, protocol, action):
     
     return command
 
-def open_ports(ip_address, ports=[]):
+def open_ports(ip_address, ports=None):
     """
-    Opens the ports calling iptables
+    Opens the ports calling iptables.
 
-    ports an array of ports
+    ports: list of dicts with 'port' and 'protocol' keys (defaults to config.PORTS)
     """
-    # Add a rule to iptables to allow incoming connections from the specified IP address
-    for port in ports:
-        # we open both
-        open_tcp_port = ['iptables', '-A', 'INPUT', '-p', 'tcp', '-s', ip_address, '--dport', str(port), '-j', 'ACCEPT']
-        open_udp_port = ['iptables', '-A', 'INPUT', '-p', 'udp', '-s', ip_address, '--dport', str(port), '-j', 'ACCEPT']
+    if ports is None:
+        ports = config.PORTS
+    for port_info in ports:
+        port = port_info['port']
+        protocol = port_info['protocol']
+        command = generate_iptables_command(ip_address, port, protocol, "add")
         if config.DEBUG:
-            open_tcp_port_s = ' '.join(open_tcp_port)
-            open_udp_port_s = ' '.join(open_udp_port)
-            debug(open_tcp_port_s)
-            debug(open_udp_port_s)
+            debug(command)
         else:
-            subprocess.run(open_tcp_port)
-            subprocess.run(open_udp_port)
+            subprocess.run(command.split())
 
 
-def close_ports(ip_address, ports=[]): 
+def close_ports(ip_address, ports=None):
     """
-    Closes the ports
+    Closes the ports calling iptables.
+
+    ports: list of dicts with 'port' and 'protocol' keys (defaults to config.PORTS)
     """
-    debug(f"Close ports {ip_address}")
+    if ports is None:
+        ports = config.PORTS
+    for port_info in ports:
+        port = port_info['port']
+        protocol = port_info['protocol']
+        command = generate_iptables_command(ip_address, port, protocol, "remove")
+        if config.DEBUG:
+            debug(command)
+        else:
+            subprocess.run(command.split())
 
 
 def handle_client_connection(conn, addr):
