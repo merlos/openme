@@ -117,8 +117,13 @@ func BuildPacket(opts *KnockOptions) ([]byte, error) {
 	return pkt, nil
 }
 
-// HealthCheck performs a TCP connection to the server's health port and returns
-// true if the connection succeeds (server is alive).
+// HealthCheck attempts a TCP connection to the server's health port and returns
+// true if the connection succeeds.
+//
+// Important: the health port is only open after a successful knock. A false
+// return may mean the server is unreachable, but it more commonly means the
+// client has not knocked yet (or the knock_timeout has expired).
+// Use openme status --knock to knock and check in one step.
 func HealthCheck(host string, port uint16, timeout time.Duration) bool {
 	addr := fmt.Sprintf("%s:%d", host, port)
 	conn, err := net.DialTimeout("tcp", addr, timeout)

@@ -5,8 +5,12 @@
 //  2. Verifies each packet's Ed25519 signature against the client whitelist.
 //  3. Decrypts the payload using ECDH with the ephemeral key in the packet.
 //  4. Checks timestamp freshness and nonce uniqueness (replay protection).
-//  5. Opens the requested firewall rule for the client's source IP.
-//  6. Runs a TCP health port that accepts and immediately closes connections.
+//  5. Opens firewall rules (including the TCP health port) for the client's IP.
+//
+// The TCP health port is NOT permanently open. It is treated as a regular
+// port rule and opened by the firewall manager only after a successful knock,
+// for the duration of knock_timeout. This means openme status can only succeed
+// after a valid knock — confirming the full authentication round trip worked.
 package server
 
 import (
@@ -20,20 +24,15 @@ import (
 	"time"
 
 	internlcrypto "github.com/openme/openme/internal/crypto"
-	"github.com/openme/openme/internal/firewall"
 	"github.com/openme/openme/pkg/protocol"
 )
 
-// FirewallOpener is the interface the server uses to open firewall rules.
-type FirewallOpener interface {
-	Open(srcIP net.IP, ports []firewall.PortRuleIface) error
-}
-
-// KnockHandler is called by the server for each valid knock with the resolved source IP,
-// the decrypted target IP (or source IP if wildcard), and the port rules to open.
+// KnockHandler is called by the server for each valid knock with the resolved
+// source IP, the decrypted target IP (or source IP if wildcard), and the port
+// rules to open (already includes the health port for this client).
 type KnockHandler func(srcIP, targetIP net.IP, ports []PortRule)
 
-// PortRule mirrors config.PortRule to avoid circular imports.
+// PortRule mirrors config.PortRule to avoid a circular import.
 type PortRule struct {
 	Port  uint16
 	Proto string
@@ -41,10 +40,18 @@ type PortRule struct {
 
 // ClientRecord holds server-side data for a registered client.
 type ClientRecord struct {
-	Name          string
+	// Name is the human-readable client identifier (e.g. "alice").
+	Name string
+
+	// Ed25519PubKey is the client's signing public key.
 	Ed25519PubKey ed25519.PublicKey
-	Ports         []PortRule
-	Expires       *time.Time
+
+	// Ports is the effective list of ports to open on a successful knock.
+	// This already includes the health port unless DisableHealthPort is true.
+	Ports []PortRule
+
+	// Expires is an optional expiry time for this client's key.
+	Expires *time.Time
 }
 
 // Options holds server startup configuration.
@@ -52,7 +59,9 @@ type Options struct {
 	// UDPPort is the port to listen for SPA knock packets.
 	UDPPort uint16
 
-	// HealthPort is the TCP port for liveness checks.
+	// HealthPort is the TCP port used for post-knock liveness checks.
+	// It is opened by the firewall manager alongside the client's other ports
+	// after a successful knock. It is never permanently open.
 	HealthPort uint16
 
 	// ServerPrivKey is the server's Curve25519 private key (32 bytes).
@@ -85,11 +94,10 @@ func New(opts *Options) *Server {
 	}
 }
 
-// Run starts the UDP listener and TCP health port. It blocks until ctx is cancelled.
+// Run starts the UDP listener. It blocks until ctx is cancelled.
+// The health port is managed entirely by the firewall — this method no longer
+// opens any TCP listener of its own.
 func (s *Server) Run(ctx context.Context) error {
-	// Start health port.
-	go s.runHealth(ctx)
-
 	addr := fmt.Sprintf(":%d", s.opts.UDPPort)
 	conn, err := net.ListenPacket("udp", addr)
 	if err != nil {
@@ -97,14 +105,18 @@ func (s *Server) Run(ctx context.Context) error {
 	}
 	defer conn.Close()
 
-	s.opts.Log.Info("openme server listening", "udp_port", s.opts.UDPPort, "health_port", s.opts.HealthPort)
+	s.opts.Log.Info("openme server listening",
+		"udp_port", s.opts.UDPPort,
+		"health_port", s.opts.HealthPort,
+		"note", "health port is closed until a client authenticates",
+	)
 
 	go func() {
 		<-ctx.Done()
 		conn.Close()
 	}()
 
-	buf := make([]byte, protocol.PacketSize*2) // oversized to detect large packets
+	buf := make([]byte, protocol.PacketSize*2) // oversized to detect bad packets
 	for {
 		n, srcAddr, err := conn.ReadFrom(buf)
 		if err != nil {
@@ -121,21 +133,19 @@ func (s *Server) Run(ctx context.Context) error {
 }
 
 // handlePacket processes a single received UDP packet.
+// Every failure path silently discards the packet — the server never responds.
 func (s *Server) handlePacket(raw []byte, srcAddr net.Addr) {
 	srcIP := extractIP(srcAddr)
 
-	// Silently discard packets of the wrong size (looks like noise).
 	if len(raw) != protocol.PacketSize {
 		s.opts.Log.Debug("dropping packet: wrong size", "size", len(raw), "src", srcIP)
 		return
 	}
-
 	if raw[protocol.OffVersion] != protocol.Version {
 		s.opts.Log.Debug("dropping packet: wrong version", "version", raw[0], "src", srcIP)
 		return
 	}
 
-	// Extract ephemeral public key and derive shared secret.
 	var ephemeralPub [internlcrypto.Curve25519KeySize]byte
 	copy(ephemeralPub[:], raw[protocol.OffEphemeralPubKey:protocol.OffEphemeralPubKey+internlcrypto.Curve25519KeySize])
 
@@ -145,7 +155,6 @@ func (s *Server) handlePacket(raw []byte, srcAddr net.Addr) {
 		return
 	}
 
-	// Decrypt the payload.
 	nonce := raw[protocol.OffNonce : protocol.OffNonce+protocol.NonceSize]
 	ciphertext := raw[protocol.OffCiphertext : protocol.OffCiphertext+protocol.CiphertextSize]
 
@@ -161,13 +170,11 @@ func (s *Server) handlePacket(raw []byte, srcAddr net.Addr) {
 		return
 	}
 
-	// Timestamp + nonce replay check.
 	if err := s.replayCache.Check(pt.Timestamp, pt.RandomNonce); err != nil {
 		s.opts.Log.Warn("replay detected", "src", srcIP, "err", err)
 		return
 	}
 
-	// Signature verification — find matching client.
 	sigMsg := raw[:protocol.SignedPortionSize]
 	sig := raw[protocol.OffSignature : protocol.OffSignature+internlcrypto.Curve25519KeySize*2]
 
@@ -177,13 +184,11 @@ func (s *Server) handlePacket(raw []byte, srcAddr net.Addr) {
 		return
 	}
 
-	// Check client key expiry.
 	if client.Expires != nil && time.Now().After(*client.Expires) {
 		s.opts.Log.Warn("client key expired", "client", client.Name, "expired", *client.Expires)
 		return
 	}
 
-	// Resolve target IP: wildcard → use source IP.
 	targetIP := pt.TargetIP
 	if targetIP.IsUnspecified() {
 		targetIP = srcIP
@@ -193,17 +198,17 @@ func (s *Server) handlePacket(raw []byte, srcAddr net.Addr) {
 		"client", client.Name,
 		"src", srcIP,
 		"target_ip", targetIP,
-		"target_port", pt.TargetPort,
 		"fingerprint", internlcrypto.FingerprintKey(client.Ed25519PubKey),
 	)
 
 	if s.opts.OnKnock != nil {
+		// client.Ports already includes the health port rule (injected by buildClientRecords).
 		s.opts.OnKnock(srcIP, targetIP, client.Ports)
 	}
 }
 
 // findClient iterates registered clients and returns the first whose Ed25519
-// public key produces a valid signature over sigMsg.
+// public key produces a valid signature over sigMsg. Returns nil if none match.
 func (s *Server) findClient(sigMsg, sig []byte) *ClientRecord {
 	for _, c := range s.opts.Clients {
 		if internlcrypto.Verify(c.Ed25519PubKey, sigMsg, sig) {
@@ -211,37 +216,6 @@ func (s *Server) findClient(sigMsg, sig []byte) *ClientRecord {
 		}
 	}
 	return nil
-}
-
-// runHealth starts a TCP listener that accepts and immediately closes connections.
-func (s *Server) runHealth(ctx context.Context) {
-	addr := fmt.Sprintf(":%d", s.opts.HealthPort)
-	ln, err := net.Listen("tcp", addr)
-	if err != nil {
-		s.opts.Log.Error("health port listen failed", "port", s.opts.HealthPort, "err", err)
-		return
-	}
-	defer ln.Close()
-
-	go func() {
-		<-ctx.Done()
-		ln.Close()
-	}()
-
-	for {
-		conn, err := ln.Accept()
-		if err != nil {
-			select {
-			case <-ctx.Done():
-				return
-			default:
-				continue
-			}
-		}
-		// Write a minimal status line and close.
-		fmt.Fprintf(conn, "openme v%d ok\n", protocol.Version)
-		conn.Close()
-	}
 }
 
 // extractIP parses the IP address from a net.Addr (UDP remote address).
@@ -258,35 +232,27 @@ func extractIP(addr net.Addr) net.IP {
 // Replay cache
 // ────────────────────────────────────────────────────────────────────────────
 
-// replayCache tracks recently seen (timestamp, nonce) pairs to prevent replays.
-// Entries older than window are pruned periodically.
 type replayCache struct {
 	mu     sync.Mutex
-	seen   map[string]time.Time // nonce hex → first-seen time
+	seen   map[string]time.Time
 	window time.Duration
 }
 
 func newReplayCache(window time.Duration) *replayCache {
-	rc := &replayCache{
-		seen:   make(map[string]time.Time),
-		window: window,
-	}
+	rc := &replayCache{seen: make(map[string]time.Time), window: window}
 	go rc.prune()
 	return rc
 }
 
-// Check validates the timestamp is within the replay window and the nonce is fresh.
-// Returns an error if either check fails. On success it records the nonce.
+// Check validates the timestamp is within the replay window and the nonce is
+// fresh. Returns an error if either check fails; on success records the nonce.
 func (rc *replayCache) Check(ts time.Time, nonce [protocol.RandomNonceSize]byte) error {
-	age := time.Since(ts).Abs()
-	if age > rc.window {
+	if time.Since(ts).Abs() > rc.window {
 		return protocol.ErrReplay
 	}
-
 	key := hex.EncodeToString(nonce[:])
 	rc.mu.Lock()
 	defer rc.mu.Unlock()
-
 	if _, seen := rc.seen[key]; seen {
 		return protocol.ErrReplay
 	}
@@ -294,7 +260,7 @@ func (rc *replayCache) Check(ts time.Time, nonce [protocol.RandomNonceSize]byte)
 	return nil
 }
 
-// prune removes expired entries from the seen map every window/2 interval.
+// prune removes expired nonces from the cache every window/2 interval.
 func (rc *replayCache) prune() {
 	ticker := time.NewTicker(rc.window / 2)
 	defer ticker.Stop()

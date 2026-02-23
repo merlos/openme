@@ -101,9 +101,21 @@ sudo systemctl status openme
 
 ## Verify
 
+Once a client is configured and has knocked, you can verify the full round trip:
+
 ```bash
-# From the server itself (or any host)
-openme status --client-config /dev/null   # just checks TCP health port
+# Knock and immediately check the health port (end-to-end test)
+openme status --knock
+
+# Check health port only (requires a prior knock within knock_timeout)
+openme status
 ```
+
+::: {.callout-note}
+The health port is **never permanently open**. It is opened by the firewall
+only after a valid knock, for the `knock_timeout` duration (default 30s).
+A closed health port means either no knock has been sent yet, or the
+`knock_timeout` has expired.
+:::
 
 Next: [Add a client →](adding-clients.qmd)

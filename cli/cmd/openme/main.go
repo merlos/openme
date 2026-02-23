@@ -256,6 +256,9 @@ func runServe(cmd *cobra.Command, args []string) error {
 }
 
 // buildClientRecords converts config.ClientEntry map into server.ClientRecord slice.
+// The health port (TCP) is automatically prepended to every client's port list
+// unless the client has DisableHealthPort set to true. This ensures openme status
+// works after a successful knock without any special-casing in the server.
 func buildClientRecords(cfg *config.ServerConfig) ([]*server.ClientRecord, error) {
 	var records []*server.ClientRecord
 	for name, entry := range cfg.Clients {
@@ -264,9 +267,20 @@ func buildClientRecords(cfg *config.ServerConfig) ([]*server.ClientRecord, error
 			return nil, fmt.Errorf("client %q: decoding ed25519 pubkey: %w", name, err)
 		}
 		ports := config.EffectivePorts(cfg.Defaults.Ports, entry)
-		srvPorts := make([]server.PortRule, len(ports))
-		for i, p := range ports {
-			srvPorts[i] = server.PortRule{Port: p.Port, Proto: p.Proto}
+		srvPorts := make([]server.PortRule, 0, len(ports)+1)
+
+		// Prepend the health port so it opens alongside the client's other ports.
+		// This is the only way the health port becomes reachable — it is never
+		// permanently open on the server.
+		if !entry.DisableHealthPort {
+			srvPorts = append(srvPorts, server.PortRule{
+				Port:  cfg.Server.HealthPort,
+				Proto: "tcp",
+			})
+		}
+
+		for _, p := range ports {
+			srvPorts = append(srvPorts, server.PortRule{Port: p.Port, Proto: p.Proto})
 		}
 		records = append(records, &server.ClientRecord{
 			Name:          name,
@@ -357,21 +371,36 @@ func runConnect(profileName, targetIPStr string) error {
 // ────────────────────────────────────────────────────────────────────────────
 
 func newStatusCmd() *cobra.Command {
-	return &cobra.Command{
+	var knockFirst bool
+
+	cmd := &cobra.Command{
 		Use:   "status [profile]",
-		Short: "Check if the openme server is reachable via the health port",
-		Args:  cobra.MaximumNArgs(1),
+		Short: "Check if the health port is open (requires prior authentication)",
+		Long: `Check reachability of the server's TCP health port.
+
+The health port is only open after a successful knock — it is never permanently
+accessible. Running openme status without --knock requires you to have already
+knocked (within the knock_timeout window).
+
+Use --knock to perform a knock first, then check the health port. This
+validates the full authentication round trip end-to-end.`,
+		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			profileName := ""
 			if len(args) > 0 {
 				profileName = args[0]
 			}
-			return runStatus(profileName)
+			return runStatus(profileName, knockFirst)
 		},
 	}
+	cmd.Flags().BoolVar(&knockFirst, "knock", false, "knock first, then check the health port")
+	return cmd
 }
 
-func runStatus(profileName string) error {
+// runStatus checks whether the server's TCP health port is reachable.
+// If knockFirst is true it sends a knock packet first and waits briefly before
+// checking, validating the full authentication round trip end-to-end.
+func runStatus(profileName string, knockFirst bool) error {
 	cfg, err := config.LoadClientConfig(clientConfigPath)
 	if err != nil {
 		return err
@@ -381,13 +410,31 @@ func runStatus(profileName string) error {
 		return err
 	}
 
-	fmt.Printf("Checking %s:%d (TCP)...\n", profile.ServerHost, profile.ServerUDPPort)
+	if knockFirst {
+		fmt.Println("Knocking first...")
+		if err := runConnect(profileName, "0.0.0.0"); err != nil {
+			return fmt.Errorf("knock failed: %w", err)
+		}
+		// Give the firewall manager time to apply the rule before checking.
+		fmt.Println("Waiting for firewall rule to propagate...")
+		time.Sleep(500 * time.Millisecond)
+	}
+
+	fmt.Printf("Checking health port %s:%d (TCP)...\n", profile.ServerHost, profile.ServerUDPPort)
 	if client.HealthCheck(profile.ServerHost, profile.ServerUDPPort, 3*time.Second) {
-		fmt.Println("✓ Server is reachable.")
+		fmt.Println("✓ Health port is open — authentication succeeded.")
 		return nil
 	}
-	fmt.Println("✗ Server is not reachable.")
-	return fmt.Errorf("server unreachable")
+
+	if knockFirst {
+		fmt.Println("✗ Health port is still closed after knocking.")
+		fmt.Println("  Check server logs and firewall configuration.")
+	} else {
+		fmt.Println("✗ Health port is closed.")
+		fmt.Println("  The health port is only open after a successful knock.")
+		fmt.Println("  Try: openme status --knock")
+	}
+	return fmt.Errorf("health port unreachable")
 }
 
 // ────────────────────────────────────────────────────────────────────────────

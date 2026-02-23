@@ -60,13 +60,23 @@ wrapper around `ssh`.
 ## Status Check
 
 ```bash
-openme status           # checks default profile's health port
-openme status home      # checks the 'home' profile
+# Check health port only — requires a prior knock within knock_timeout
+openme status
+openme status home      # named profile
+
+# Knock first, then check — validates the full authentication round trip
+openme status --knock
+openme status home --knock
 ```
 
-A successful health check means the server's TCP port is accepting connections.
-It does not guarantee that a knock will succeed (key might be revoked, clock
-might be skewed), but it's a useful first diagnostic.
+The health port is **never permanently open**. It is a firewall rule opened
+automatically alongside your other ports after a successful knock, for the
+`knock_timeout` duration (default 30 seconds). This means:
+
+- `openme status` with no flag confirms the port is currently open (i.e. you
+  knocked recently and the window hasn't expired)
+- `openme status --knock` is the end-to-end test: knock → wait → check, confirming
+  the full crypto + firewall round trip works
 
 ---
 

@@ -55,6 +55,15 @@ port itself with openme, so the WireGuard port is only open for 30 seconds
 after a knock. This requires the client to knock first, then establish the
 WireGuard tunnel.
 
+### Why does openme status fail before knocking?
+
+The TCP health port is never permanently open — it is added as a firewall rule
+alongside your other ports only after a valid knock, and removed after
+`knock_timeout`. This is intentional: an always-open health port would make
+the server visible to scanners.
+
+To check the health port in one command: `openme status --knock`
+
 ### What happens if the server restarts?
 
 Active firewall rules added by openme are removed by the OS on reboot (they are

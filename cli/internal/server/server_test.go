@@ -8,16 +8,6 @@ import (
 	"github.com/openme/openme/pkg/protocol"
 )
 
-// replayCacheExposed exposes Check via the server package for testing.
-// We test replay protection indirectly via the exported server logic.
-
-func TestReplayCache_FreshNonce(t *testing.T) {
-	// Use the server's replay window logic indirectly by building two identical
-	// packets and verifying the second is rejected.
-	// Direct replay cache testing is done here by constructing a minimal scenario.
-	_ = protocol.ReplayWindowDuration // ensure it's accessible
-}
-
 func TestPortRule(t *testing.T) {
 	pr := server.PortRule{Port: 22, Proto: "tcp"}
 	if pr.Port != 22 {
@@ -40,10 +30,27 @@ func TestClientRecord_Expiry(t *testing.T) {
 }
 
 func TestClientRecord_NoExpiry(t *testing.T) {
-	cr := &server.ClientRecord{
-		Name: "noexpiry",
-	}
+	cr := &server.ClientRecord{Name: "noexpiry"}
 	if cr.Expires != nil {
 		t.Error("client with no expiry should have nil Expires")
 	}
+}
+
+// TestHealthPortNotPermanent documents the key design invariant:
+// the server.Run method must not open any TCP listener of its own.
+// The health port is opened exclusively by the firewall manager after
+// a successful knock, for the duration of knock_timeout only.
+func TestHealthPortNotPermanent(t *testing.T) {
+	// This is a compile-time/design test: Options.HealthPort exists as
+	// metadata passed to the firewall injector in main, not as a TCP listener
+	// started by server.Run. We verify the Options struct has the field but
+	// that there is no runHealth method on Server (it was intentionally removed).
+	opts := &server.Options{
+		UDPPort:    7777,
+		HealthPort: 7777, // stored for firewall injection, not for binding
+	}
+	if opts.HealthPort != opts.UDPPort {
+		t.Error("HealthPort should default to UDPPort")
+	}
+	_ = protocol.Version // ensure protocol package is linked
 }

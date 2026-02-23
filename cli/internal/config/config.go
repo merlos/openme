@@ -50,6 +50,11 @@ type ClientEntry struct {
 	// Expires is an optional RFC3339 date after which the client key is rejected.
 	// Omit or leave zero to never expire.
 	Expires *time.Time `yaml:"expires,omitempty"`
+
+	// DisableHealthPort disables automatic inclusion of the server health port
+	// in this client's firewall rules. When true, openme status will not work
+	// after knocking. Defaults to false (health port is always included).
+	DisableHealthPort bool `yaml:"disable_health_port,omitempty"`
 }
 
 // ServerDefaults holds server-wide default settings.
