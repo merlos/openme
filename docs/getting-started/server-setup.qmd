@@ -1,0 +1,109 @@
+---
+title: "Server Setup"
+---
+
+## Install {#install}
+
+### From a pre-built binary
+
+Download the latest release from [GitHub Releases](https://github.com/openme/openme/releases):
+
+```bash
+# Linux amd64
+curl -Lo openme https://github.com/openme/openme/releases/latest/download/openme-linux-amd64
+chmod +x openme
+sudo mv openme /usr/local/bin/
+```
+
+### Build from source
+
+Requires [Go 1.21+](https://go.dev/dl/).
+
+```bash
+git clone https://github.com/openme/openme
+cd openme/cli
+go build -o openme ./cmd/openme
+sudo mv openme /usr/local/bin/
+```
+
+---
+
+## Initialise the Server
+
+`openme init` generates a fresh Curve25519 keypair and writes
+`/etc/openme/config.yaml` with sensible defaults.
+
+```bash
+sudo openme init --server myserver.example.com
+```
+
+Options:
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--server` | *(required)* | Public hostname or IP — used in generated client configs |
+| `--port` | `7777` | UDP knock port and TCP health port |
+| `--firewall` | `nft` | Firewall backend: `nft` or `iptables` |
+| `--force` | `false` | Overwrite an existing config |
+
+The command prints the server's **Curve25519 public key** — you'll need this
+when provisioning clients, but `openme add` handles it automatically.
+
+---
+
+## Open the Knock Port
+
+The UDP knock port must be reachable (the point is that TCP ports are not):
+
+```bash
+# nftables
+sudo nft add rule inet filter input udp dport 7777 accept
+
+# iptables
+sudo iptables -A INPUT -p udp --dport 7777 -j ACCEPT
+```
+
+::: {.callout-tip}
+For IPv6, add an equivalent `ip6tables` or `nft inet` rule.
+:::
+
+---
+
+## Start the Server
+
+```bash
+sudo openme serve
+```
+
+For production, install as a systemd service:
+
+```ini
+# /etc/systemd/system/openme.service
+[Unit]
+Description=openme SPA server
+After=network.target
+
+[Service]
+ExecStart=/usr/local/bin/openme serve
+Restart=on-failure
+AmbientCapabilities=CAP_NET_ADMIN
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```bash
+sudo systemctl enable --now openme
+sudo systemctl status openme
+```
+
+---
+
+## Verify
+
+```bash
+# From the server itself (or any host)
+openme status --client-config /dev/null   # just checks TCP health port
+```
+
+Next: [Add a client →](adding-clients.qmd)

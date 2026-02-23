@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>openme — Single Packet Authentication</title>
+  <meta name="description" content="Open your firewall with one encrypted packet. Ports stay closed to scanners. Only authenticated clients can knock." />
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav class="nav">
+    <div class="nav__inner">
+      <a href="/" class="nav__logo">openme</a>
+      <ul class="nav__links">
+        <li><a href="/docs/">Docs</a></li>
+        <li><a href="/docs/protocol/">Protocol</a></li>
+        <li><a href="https://github.com/openme/openme">GitHub</a></li>
+        <li><a href="https://github.com/openme/openme/releases" class="btn btn--sm">Download</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero__inner">
+      <div class="hero__badge">Single Packet Authentication</div>
+      <h1 class="hero__title">
+        Your firewall port,<br />
+        <span class="hero__accent">always closed.</span><br />
+        Until you knock.
+      </h1>
+      <p class="hero__sub">
+        openme sends one encrypted UDP packet to open a firewall port for 30 seconds.
+        To every port scanner on the internet, nothing is ever open.
+      </p>
+      <div class="hero__actions">
+        <a href="/docs/getting-started/" class="btn btn--primary">Get Started</a>
+        <a href="https://github.com/openme/openme" class="btn btn--outline">View on GitHub</a>
+      </div>
+      <div class="hero__terminal">
+        <div class="terminal">
+          <div class="terminal__bar">
+            <span class="terminal__dot terminal__dot--red"></span>
+            <span class="terminal__dot terminal__dot--yellow"></span>
+            <span class="terminal__dot terminal__dot--green"></span>
+            <span class="terminal__filename">~</span>
+          </div>
+          <div class="terminal__body">
+            <div class="terminal__line"><span class="terminal__prompt">$</span> openme connect home</div>
+            <div class="terminal__line terminal__line--out">Knocking home.example.com:7777 ...</div>
+            <div class="terminal__line terminal__line--out">Knock sent.</div>
+            <div class="terminal__line terminal__line--out">Running post-knock: ssh <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="0772746275476f686a6229627f666a776b622964686a">[email&#160;protected]</a></div>
+            <div class="terminal__line"><span class="terminal__prompt">user@home:~$</span> <span class="terminal__cursor">█</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section class="section section--alt" id="how">
+    <div class="container">
+      <h2 class="section__title">How it works</h2>
+      <p class="section__sub">
+        One 167-byte UDP packet. No round trips. No open ports. No traces.
+      </p>
+      <div class="flow">
+        <div class="flow__step">
+          <div class="flow__num">1</div>
+          <div class="flow__content">
+            <h3>Generate ephemeral keys</h3>
+            <p>A fresh Curve25519 keypair is created for this knock only. After sending, the private key is discarded. This gives you forward secrecy — old captures cannot be decrypted later.</p>
+          </div>
+        </div>
+        <div class="flow__arrow">↓</div>
+        <div class="flow__step">
+          <div class="flow__num">2</div>
+          <div class="flow__content">
+            <h3>Encrypt and sign</h3>
+            <p>ECDH with the server's public key derives a shared secret. The payload (timestamp, nonce, target IP) is encrypted with ChaCha20-Poly1305. The whole packet is signed with your Ed25519 key.</p>
+          </div>
+        </div>
+        <div class="flow__arrow">↓</div>
+        <div class="flow__step">
+          <div class="flow__num">3</div>
+          <div class="flow__content">
+            <h3>Server verifies and opens</h3>
+            <p>The server checks the signature, decrypts the payload, validates the timestamp, and checks the nonce is fresh. On success, a firewall rule opens for your IP. It closes automatically after 30 seconds.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section class="section" id="features">
+    <div class="container">
+      <h2 class="section__title">Why openme</h2>
+      <div class="features">
+
+        <div class="feature">
+          <div class="feature__icon">🔒</div>
+          <h3>Always closed</h3>
+          <p>Ports never appear open to scanners. The server doesn't even send an ICMP unreachable — the knock port is a black hole.</p>
+        </div>
+
+        <div class="feature">
+          <div class="feature__icon">⚡</div>
+          <h3>One packet</h3>
+          <p>No handshake, no round trip, no session. A single 167-byte UDP datagram is all it takes.</p>
+        </div>
+
+        <div class="feature">
+          <div class="feature__icon">🔐</div>
+          <h3>Modern crypto</h3>
+          <p>Curve25519 ECDH, ChaCha20-Poly1305 AEAD, Ed25519 signatures. The same stack used by WireGuard and Signal.</p>
+        </div>
+
+        <div class="feature">
+          <div class="feature__icon">⏩</div>
+          <h3>Forward secrecy</h3>
+          <p>Ephemeral keys per knock mean captured traffic cannot be decrypted, even if the server key is compromised later.</p>
+        </div>
+
+        <div class="feature">
+          <div class="feature__icon">🌐</div>
+          <h3>IPv4 + IPv6</h3>
+          <p>Full dual-stack support. Open rules for IPv4, IPv6, or both. Works with iptables and nftables.</p>
+        </div>
+
+        <div class="feature">
+          <div class="feature__icon">📱</div>
+          <h3>Mobile ready</h3>
+          <p>QR-code provisioning for mobile clients. Scan once to configure. iOS and Android apps coming soon.</p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- QUICKSTART -->
+  <section class="section section--alt" id="quickstart">
+    <div class="container">
+      <h2 class="section__title">Up and running in 5 minutes</h2>
+      <div class="quickstart">
+
+        <div class="quickstart__col">
+          <h3>Server</h3>
+          <div class="codeblock">
+            <div class="codeblock__label">Linux server</div>
+            <pre><code><span class="c"># Install</span>
+curl -Lo openme https://github.com/openme/openme/releases/latest/download/openme-linux-amd64
+sudo install openme /usr/local/bin/
+
+<span class="c"># Initialise</span>
+sudo openme init --server myserver.example.com
+
+<span class="c"># Add a client</span>
+sudo openme add alice
+
+<span class="c"># Start</span>
+sudo openme serve</code></pre>
+          </div>
+        </div>
+
+        <div class="quickstart__col">
+          <h3>Client</h3>
+          <div class="codeblock">
+            <div class="codeblock__label">macOS / Linux / Windows</div>
+            <pre><code><span class="c"># Paste the config printed by 'openme add'</span>
+nano ~/.openme/config.yaml
+
+<span class="c"># Check server is reachable</span>
+openme status
+
+<span class="c"># Knock and SSH</span>
+openme connect</code></pre>
+          </div>
+        </div>
+
+      </div>
+      <div class="quickstart__cta">
+        <a href="/docs/getting-started/" class="btn btn--primary">Full setup guide →</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- PLATFORMS -->
+  <section class="section" id="platforms">
+    <div class="container">
+      <h2 class="section__title">Every platform</h2>
+      <p class="section__sub">Server on Linux. Client everywhere.</p>
+      <div class="platforms">
+        <div class="platform platform--available">
+          <div class="platform__icon">🐧</div>
+          <div class="platform__name">Linux</div>
+          <div class="platform__status">Available</div>
+        </div>
+        <div class="platform platform--available">
+          <div class="platform__icon">🍎</div>
+          <div class="platform__name">macOS</div>
+          <div class="platform__status">Available</div>
+        </div>
+        <div class="platform platform--available">
+          <div class="platform__icon">🪟</div>
+          <div class="platform__name">Windows</div>
+          <div class="platform__status">Available</div>
+        </div>
+        <div class="platform platform--soon">
+          <div class="platform__icon">🤖</div>
+          <div class="platform__name">Android</div>
+          <div class="platform__status">Coming soon</div>
+        </div>
+        <div class="platform platform--soon">
+          <div class="platform__icon">📱</div>
+          <div class="platform__name">iOS</div>
+          <div class="platform__status">Coming soon</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer__inner">
+        <div class="footer__brand">
+          <span class="footer__logo">openme</span>
+          <span class="footer__tagline">Single Packet Authentication</span>
+        </div>
+        <ul class="footer__links">
+          <li><a href="/docs/">Documentation</a></li>
+          <li><a href="/docs/protocol/">Protocol</a></li>
+          <li><a href="https://github.com/openme/openme">GitHub</a></li>
+          <li><a href="https://github.com/openme/openme/releases">Releases</a></li>
+        </ul>
+      </div>
+      <p class="footer__copy">MIT License ·

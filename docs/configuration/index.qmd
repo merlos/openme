@@ -1,0 +1,19 @@
+---
+title: "Configuration Reference"
+---
+
+openme uses YAML configuration files for both the server and the client.
+All key material is stored inline in base64 (WireGuard-style), so there is
+only one file to back up per host.
+
+- [Server Config](server.qmd) — `/etc/openme/config.yaml`
+- [Client Config](client.qmd) — `~/.openme/config.yaml`
+- [Firewall Backends](firewall.qmd) — `iptables` vs `nft`
+
+## File Permissions
+
+Both config files are written with **`0600`** permissions because they contain
+private key material. The directories (`/etc/openme/`, `~/.openme/`) are
+created with `0750` and `0700` respectively.
+
+Never commit config files to version control.

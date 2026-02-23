@@ -1,0 +1,70 @@
+---
+title: "Client Configuration"
+---
+
+Default location: `~/.openme/config.yaml`
+Override with: `openme --client-config /path/to/config.yaml connect`
+
+## Full Example
+
+```yaml
+profiles:
+  default:
+    server_host: "myserver.example.com"
+    server_udp_port: 7777
+    server_pubkey: "base64-encoded-curve25519-public-key=="
+    private_key:   "base64-encoded-ed25519-private-key=="
+    public_key:    "base64-encoded-ed25519-public-key=="
+    post_knock:    "ssh user@myserver.example.com"
+
+  home:
+    server_host: "home.example.com"
+    server_udp_port: 7777
+    server_pubkey: "base64-encoded-curve25519-public-key=="
+    private_key:   "base64-encoded-ed25519-private-key=="
+    public_key:    "base64-encoded-ed25519-public-key=="
+```
+
+---
+
+## `profiles` Block
+
+Each key under `profiles` is a profile name. The profile named `default` is
+used when no profile is specified on the command line.
+
+| Key | Type | Required | Description |
+|-----|------|----------|-------------|
+| `server_host` | string | ✅ | Hostname or IP address of the openme server. |
+| `server_udp_port` | uint16 | ✅ | UDP port to send knock packets to. |
+| `server_pubkey` | base64 | ✅ | Server's Curve25519 public key (32 bytes). Printed by `openme init` and embedded in `openme add` output. |
+| `private_key` | base64 | ✅ | **Secret.** Your Ed25519 private key (64 bytes). |
+| `public_key` | base64 | ✅ | Your Ed25519 public key (32 bytes). |
+| `post_knock` | string | — | Shell command to run automatically after a successful knock. |
+
+### `post_knock`
+
+The `post_knock` command is run via `sh -c` after the UDP packet is sent.
+It inherits the terminal's stdin/stdout/stderr, making it transparent for
+interactive use:
+
+```yaml
+post_knock: "ssh -p 2222 user@myserver.example.com"
+```
+
+::: {.callout-note}
+`post_knock` runs immediately after sending the knock — there is no built-in
+delay. For slow connections, consider adding a small sleep:
+`post_knock: "sleep 1 && ssh user@host"`
+:::
+
+## Multiple Profiles
+
+There is no limit on the number of profiles. The `default` profile is used
+when `openme connect` is called without a profile name:
+
+```bash
+openme connect           # uses 'default' profile
+openme connect home      # uses 'home' profile
+openme connect work      # uses 'work' profile
+openme status work       # health-checks the 'work' server
+```

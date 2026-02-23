@@ -1,0 +1,124 @@
+---
+title: "Cryptography"
+---
+
+openme uses a small, carefully chosen set of modern primitives. Every choice
+has a rationale grounded in current cryptographic consensus.
+
+## Primitives at a Glance
+
+| Purpose | Algorithm | Standard |
+|---------|-----------|----------|
+| Key agreement | Curve25519 ECDH | RFC 7748 |
+| Key derivation | HKDF-SHA256 | RFC 5869 |
+| Symmetric encryption + authentication | ChaCha20-Poly1305 | RFC 8439 |
+| Signature | Ed25519 | RFC 8032 |
+| Replay nonce | 128-bit CSPRNG | — |
+
+---
+
+## Key Types
+
+### Curve25519 — Server Static Keypair
+
+The server holds a **static** Curve25519 keypair:
+
+- **Private key**: 32 bytes, clamped per RFC 7748 §5, stored in `/etc/openme/config.yaml` at `0600`
+- **Public key**: 32 bytes, distributed to clients out-of-band (printed by `openme init`, embedded in client config and QR)
+
+The server private key must be kept secret. Compromise allows an attacker to
+decrypt any captured knock packet **sent after the compromise** — but not
+packets sent before (forward secrecy is provided by the client's ephemeral key,
+not the server's static key). See [Security Model](../security/index.qmd).
+
+### Curve25519 — Client Ephemeral Keypair
+
+The client generates a **fresh** Curve25519 keypair for every knock:
+
+```
+ephemeral_priv ← CSPRNG(32 bytes), clamped
+ephemeral_pub  ← Curve25519(ephemeral_priv, basepoint)
+```
+
+The ephemeral private key is used once to derive the shared secret and then
+discarded. It is never stored or transmitted. This is the source of **forward
+secrecy**: a future attacker who compromises the server's static key cannot
+decrypt past knock packets because the ephemeral private key no longer exists.
+
+### Ed25519 — Client Signing Keypair
+
+Each registered client holds an **Ed25519 keypair**:
+
+- **Private key**: stored in `~/.openme/config.yaml` at `0600`
+- **Public key**: registered on the server in `/etc/openme/config.yaml`
+
+The signature proves the knock was sent by the registered client and
+not by an unauthenticated third party.
+
+---
+
+## Key Derivation
+
+Raw Curve25519 output is not suitable as a symmetric key directly. openme
+passes it through **HKDF-SHA256** (RFC 5869):
+
+```
+shared_secret_raw = Curve25519(local_priv, remote_pub)
+symmetric_key     = HKDF-SHA256(ikm=shared_secret_raw, salt=∅, info="openme-v1-chacha20poly1305", len=32)
+```
+
+The `info` string binds the derived key to this specific protocol version and
+cipher, preventing cross-protocol key reuse.
+
+---
+
+## Encryption
+
+The 42-byte plaintext is encrypted with **ChaCha20-Poly1305** (RFC 8439):
+
+```
+ciphertext || tag = ChaCha20-Poly1305-Seal(key=symmetric_key, nonce=nonce, plaintext=payload, aad=∅)
+```
+
+- `key` is 32 bytes derived via HKDF above
+- `nonce` is 12 bytes of CSPRNG output, included in the packet
+- The 16-byte authentication tag is appended to the ciphertext (58 bytes total)
+- If the tag verification fails, the server discards the packet silently
+
+ChaCha20-Poly1305 was chosen over AES-GCM because it is:
+
+- Fast in software without hardware AES acceleration (important on ARM servers)
+- Not vulnerable to timing side-channels on platforms lacking AES-NI
+- The cipher used by WireGuard, TLS 1.3, and Signal — well-studied
+
+---
+
+## Signing
+
+The Ed25519 signature covers bytes 0–102 of the packet (everything except the
+signature field itself):
+
+```
+sig = Ed25519-Sign(client_ed25519_priv, packet[0:103])
+```
+
+The server iterates its client whitelist and calls `Ed25519-Verify` for each
+registered public key until one matches (or all fail).
+
+Ed25519 was chosen because:
+
+- Signatures are 64 bytes — compact for a UDP payload
+- Verification is fast (≈ 70,000/s on modern hardware)
+- Deterministic — no random nonce needed during signing, no risk of nonce reuse
+- Widely deployed in SSH, TLS certificates, and package signing
+
+---
+
+## Nonce and Tag Sizes
+
+| Value | Size | Notes |
+|-------|------|-------|
+| AEAD nonce | 12 bytes | ChaCha20-Poly1305 standard nonce size |
+| AEAD tag | 16 bytes | 128-bit authentication |
+| Random nonce | 16 bytes | 128 bits; probability of collision after 2^64 knocks |
+| Ed25519 sig | 64 bytes | Fixed by the algorithm |

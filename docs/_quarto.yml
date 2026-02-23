@@ -1,0 +1,86 @@
+project:
+  type: website
+  output-dir: _site
+
+website:
+  title: "openme"
+  description: "Single Packet Authentication — open your firewall with one encrypted packet"
+  favicon: img/favicon.ico
+  repo-url: https://github.com/openme/openme
+  repo-actions: [edit, issue]
+
+  navbar:
+    logo: img/logo.svg
+    logo-alt: "openme"
+    left:
+      - text: "Docs"
+        menu:
+          - text: "Getting Started"
+            href: getting-started/index.qmd
+          - text: "Configuration"
+            href: configuration/index.qmd
+          - text: "Protocol"
+            href: protocol/index.qmd
+          - text: "Security Model"
+            href: security/index.qmd
+          - text: "FAQ"
+            href: faq/index.qmd
+      - text: "API Reference"
+        href: api/index.qmd
+    right:
+      - icon: github
+        href: https://github.com/openme/openme
+      - text: "Website"
+        href: https://openme.dev
+
+  sidebar:
+    - title: "Getting Started"
+      style: docked
+      contents:
+        - getting-started/index.qmd
+        - getting-started/server-setup.qmd
+        - getting-started/client-setup.qmd
+        - getting-started/adding-clients.qmd
+        - getting-started/cross-compilation.qmd
+
+    - title: "Configuration"
+      contents:
+        - configuration/index.qmd
+        - configuration/server.qmd
+        - configuration/client.qmd
+        - configuration/firewall.qmd
+
+    - title: "Protocol"
+      contents:
+        - protocol/index.qmd
+        - protocol/packet-format.qmd
+        - protocol/cryptography.qmd
+        - protocol/handshake.qmd
+        - protocol/replay-protection.qmd
+
+    - title: "Security"
+      contents:
+        - security/index.qmd
+        - security/threat-model.qmd
+        - security/key-management.qmd
+
+    - title: "FAQ"
+      contents:
+        - faq/index.qmd
+
+  page-footer:
+    left: "© 2025 openme contributors — MIT License"
+    right:
+      - icon: github
+        href: https://github.com/openme/openme
+
+format:
+  html:
+    theme:
+      light: flatly
+      dark: darkly
+    highlight-style: github
+    code-copy: true
+    code-overflow: wrap
+    toc: true
+    toc-depth: 3

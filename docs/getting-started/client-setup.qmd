@@ -1,0 +1,81 @@
+---
+title: "Client Setup"
+---
+
+## Config File
+
+The client config lives at `~/.openme/config.yaml` (created with `0600`
+permissions — it contains your private key).
+
+Paste the block printed by `openme add` on the server, or write it manually:
+
+```yaml
+profiles:
+  default:                                  # used by `openme connect`
+    server_host: "myserver.example.com"
+    server_udp_port: 7777
+    server_pubkey: "base64..."              # server's Curve25519 public key
+    private_key:   "base64..."             # your Ed25519 private key
+    public_key:    "base64..."             # your Ed25519 public key
+    post_knock:    "ssh user@myserver.example.com"  # optional
+
+  home:                                     # used by `openme connect home`
+    server_host: "home.example.com"
+    server_udp_port: 7777
+    server_pubkey: "base64..."
+    private_key:   "base64..."
+    public_key:    "base64..."
+```
+
+The profile named `default` is used when no profile name is given. You can
+have as many named profiles as you like — one per server.
+
+---
+
+## Connect {#connect}
+
+```bash
+# Health check — confirm server is reachable before knocking
+openme status
+
+# Knock using the default profile
+openme connect
+
+# Knock using a named profile
+openme connect home
+
+# Open the firewall to a specific IP instead of your source IP
+openme connect --ip 10.0.0.5
+
+# Open the firewall to a specific IPv6 address
+openme connect --ip 2001:db8::42
+```
+
+If `post_knock` is set in the profile, it is run automatically after a
+successful knock — useful to make `openme connect` feel like a transparent
+wrapper around `ssh`.
+
+---
+
+## Status Check
+
+```bash
+openme status           # checks default profile's health port
+openme status home      # checks the 'home' profile
+```
+
+A successful health check means the server's TCP port is accepting connections.
+It does not guarantee that a knock will succeed (key might be revoked, clock
+might be skewed), but it's a useful first diagnostic.
+
+---
+
+## Scripting
+
+```bash
+# Knock then connect — inline without post_knock in config
+openme connect home && ssh user@home.example.com
+
+# Use a specific config file
+openme --client-config /etc/myapp/openme.yaml connect
+```

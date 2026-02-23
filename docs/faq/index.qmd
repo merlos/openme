@@ -1,0 +1,108 @@
+---
+title: "FAQ"
+---
+
+## General
+
+### What is Single Packet Authentication?
+
+SPA is a technique where a server keeps all ports closed (not even responding
+to probes) and only opens them temporarily in response to a valid cryptographic
+knock — a specially crafted single packet. Unlike traditional port knocking,
+which uses a sequence of packets to known ports, SPA uses one packet carrying
+an encrypted, signed payload.
+
+### How is openme different from traditional port knocking?
+
+Traditional port knocking sends a sequence of TCP/UDP packets to specific port
+numbers and the sequence itself is the "password". This is easy to detect by
+passive observation and trivial to replay. openme uses a single packet with
+modern public-key cryptography — the payload is encrypted and signed, and each
+packet is unique (ephemeral key + random nonce + timestamp).
+
+### How is openme different from fwknop?
+
+[fwknop](https://www.cipherdyne.org/fwknop/) is the original SPA tool and a
+solid choice. openme differs in:
+
+- **Modern crypto stack** — Curve25519/ChaCha20-Poly1305/Ed25519 vs
+  fwknop's GnuPG or pre-shared key options
+- **Single binary** — no libpcap dependency, no daemon config files separate
+  from the key store
+- **Go** — easy cross-compilation for client use on macOS and Windows without
+  a C toolchain
+- **QR provisioning** — designed for mobile app onboarding from the start
+
+### Does openme replace a firewall?
+
+No. openme sits in front of a firewall and temporarily adds allow rules.
+Your base firewall policy should drop all incoming traffic by default;
+openme then adds exceptions for authenticated clients.
+
+---
+
+## Server
+
+### Which Linux distros are supported?
+
+Any Linux with nftables (kernel ≥ 3.13, nft ≥ 0.9) or iptables. Tested on
+Ubuntu 22.04+, Debian 12, Fedora 38+, and Alpine 3.18+.
+
+### Can I run openme alongside WireGuard?
+
+Yes — they operate independently. A common pattern is to protect the WireGuard
+port itself with openme, so the WireGuard port is only open for 30 seconds
+after a knock. This requires the client to knock first, then establish the
+WireGuard tunnel.
+
+### What happens if the server restarts?
+
+Active firewall rules added by openme are removed by the OS on reboot (they are
+not persistent iptables/nft rules). The in-memory nonce cache is also lost.
+After restart, the server is back to its default closed state. Clients simply
+knock again.
+
+### Can multiple clients knock simultaneously?
+
+Yes. Each knock is handled in its own goroutine. The firewall manager and
+nonce cache are protected by mutexes.
+
+---
+
+## Client
+
+### Does the client need to be root?
+
+No — sending a UDP packet requires no elevated privileges. Only the server
+needs `CAP_NET_ADMIN` (or root) to modify firewall rules.
+
+### What if my clock is out of sync?
+
+Knocks with a timestamp more than `replay_window / 2` (default 30 seconds)
+from the server's clock will be rejected. Use NTP on both client and server.
+If you frequently travel between time zones, ensure your system clock is
+updated automatically.
+
+### Can I use openme without post_knock?
+
+Yes — `post_knock` is optional. `openme connect` sends the knock and exits.
+You can then connect manually, or script it:
+
+```bash
+openme connect home && ssh user@home.example.com
+```
+
+### Is the client config safe to sync with a password manager or cloud backup?
+
+The config file contains your Ed25519 private key. It should be treated like
+an SSH private key — encrypt it at rest (e.g. with `age` or your password
+manager's secure note feature) before storing it in cloud backup.
+
+---
+
+## API Reference
+
+### Where is the auto-generated API documentation?
+
+See [API Reference](../api/index.qmd). It is generated from Go source comments
+using `pkgsite`. Run `make docs` in the `cli/` directory to regenerate it.

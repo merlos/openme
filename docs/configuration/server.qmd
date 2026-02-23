@@ -1,0 +1,92 @@
+---
+title: "Server Configuration"
+---
+
+Default location: `/etc/openme/config.yaml`
+Override with: `openme --config /path/to/config.yaml serve`
+
+## Full Example
+
+```yaml
+server:
+  udp_port: 7777
+  health_port: 7777
+  firewall: nft
+  knock_timeout: 30s
+  replay_window: 60s
+  private_key: "base64-encoded-curve25519-private-key=="
+  public_key:  "base64-encoded-curve25519-public-key=="
+
+defaults:
+  server: "myserver.example.com"
+  ports:
+    - port: 22
+      proto: tcp
+
+clients:
+  alice:
+    ed25519_pubkey: "base64-encoded-ed25519-public-key=="
+    allowed_ports:
+      mode: default
+  bob:
+    ed25519_pubkey: "base64-encoded-ed25519-public-key=="
+    allowed_ports:
+      mode: default_plus
+      ports:
+        - port: 2222
+          proto: tcp
+    expires: "2026-12-31T23:59:59Z"
+```
+
+---
+
+## `server` Block
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `udp_port` | uint16 | `7777` | UDP port to listen for knock packets. |
+| `health_port` | uint16 | same as `udp_port` | TCP port for health checks (`openme status`). |
+| `firewall` | string | `"nft"` | Firewall backend. One of `"nft"` or `"iptables"`. |
+| `knock_timeout` | duration | `"30s"` | How long a firewall rule stays open after a valid knock. |
+| `replay_window` | duration | `"60s"` | Maximum accepted age of a knock timestamp. |
+| `private_key` | base64 | — | **Secret.** Server's Curve25519 private key (32 bytes). |
+| `public_key` | base64 | — | Server's Curve25519 public key (32 bytes). Convenience copy — derived from `private_key`. |
+
+Duration values use Go duration syntax: `"30s"`, `"1m"`, `"90s"`.
+
+---
+
+## `defaults` Block
+
+| Key | Type | Description |
+|-----|------|-------------|
+| `server` | string | Public hostname or IP of this server. Used when generating client configs with `openme add`. |
+| `ports` | list | Default list of ports opened for every client whose `allowed_ports.mode` is `default` or `default_plus`. |
+
+### Port entry
+
+```yaml
+- port: 22
+  proto: tcp   # "tcp" or "udp"
+```
+
+---
+
+## `clients` Block
+
+Each key under `clients` is a client name (e.g. `alice`).
+
+| Key | Type | Required | Description |
+|-----|------|----------|-------------|
+| `ed25519_pubkey` | base64 | ✅ | Client's Ed25519 public key (32 bytes). |
+| `allowed_ports.mode` | string | ✅ | Port access mode. See below. |
+| `allowed_ports.ports` | list | — | Extra ports (used with `default_plus` or `only` modes). |
+| `expires` | RFC3339 | — | Key expiry date. Omit for no expiry. |
+
+### Port Modes
+
+| Mode | Opens |
+|------|-------|
+| `default` | Only the `defaults.ports` list. |
+| `only` | Only the client's own `ports` list. |
+| `default_plus` | `defaults.ports` **plus** the client's `ports` list. |

@@ -1,0 +1,116 @@
+---
+title: "Handshake"
+---
+
+The openme "handshake" is deliberately one-sided: the client sends one packet
+and the server acts on it. There is no response, no acknowledgement, no TCP
+connection, no session. This is what keeps the server stealthy.
+
+## Step-by-Step: Client Side
+
+```{mermaid}
+sequenceDiagram
+    participant C as Client
+    participant S as Server (UDP listener)
+    participant FW as Firewall
+
+    Note over C: 1. Generate ephemeral Curve25519 keypair
+    Note over C: 2. ECDH(ephemeral_priv, server_pub) → shared_key
+    Note over C: 3. Build plaintext: timestamp‖random_nonce‖target_ip‖port
+    Note over C: 4. Encrypt plaintext → ciphertext (ChaCha20-Poly1305)
+    Note over C: 5. Assemble packet: version‖ephem_pub‖nonce‖ciphertext
+    Note over C: 6. Sign packet[0:103] with Ed25519 client_priv
+    C->>S: UDP packet (167 bytes)  [port appears CLOSED]
+    Note over S: 7. Validate size and version byte
+    Note over S: 8. ECDH(server_priv, ephem_pub) → shared_key
+    Note over S: 9. Decrypt ciphertext → plaintext
+    Note over S: 10. Verify Ed25519 sig against client whitelist
+    Note over S: 11. Check timestamp within ±60s
+    Note over S: 12. Check random_nonce not seen before
+    Note over S: 13. Resolve target IP (:: → source IP)
+    S->>FW: Add ACCEPT rule for target_ip:port
+    Note over FW: Rule active for knock_timeout (default 30s)
+    C->>S: TCP connect (SSH, HTTPS, etc.)
+    Note over FW: Timer fires → rule removed
+```
+
+## Step-by-Step: Server Processing
+
+The server processes each received packet in a goroutine. Invalid packets are
+**silently discarded** at every step — the server never sends any response.
+
+### 1. Size and version check
+
+```
+if len(packet) != 167 → discard
+if packet[0] != 0x01  → discard
+```
+
+Packets of the wrong size or version look like noise and are dropped without
+logging at the default log level.
+
+### 2. ECDH shared key derivation
+
+```
+ephemeral_pub = packet[1:33]
+shared_key    = HKDF-SHA256(Curve25519(server_priv, ephemeral_pub), info="openme-v1-chacha20poly1305")
+```
+
+If Curve25519 returns an error (e.g. low-order point), the packet is discarded.
+
+### 3. Decryption
+
+```
+nonce      = packet[33:45]
+ciphertext = packet[45:103]
+plaintext  = ChaCha20-Poly1305-Open(shared_key, nonce, ciphertext)
+```
+
+If the AEAD authentication tag fails (tampered data, wrong key, wrong nonce),
+the packet is discarded silently. An attacker learns nothing from this.
+
+### 4. Signature verification
+
+```
+msg = packet[0:103]
+sig = packet[103:167]
+for each client in whitelist:
+    if Ed25519-Verify(client.pubkey, msg, sig) → matched client found
+if no match → discard
+```
+
+All registered clients are tried. The first match wins.
+
+### 5. Key expiry check
+
+```
+if client.expires != nil && now() > client.expires → discard
+```
+
+### 6. Replay protection
+
+```
+age = |now() - plaintext.timestamp|
+if age > replay_window (60s) → discard
+if plaintext.random_nonce in seen_cache → discard
+seen_cache.add(plaintext.random_nonce, ttl=replay_window)
+```
+
+See [Replay Protection](replay-protection.qmd) for details.
+
+### 7. Target IP resolution
+
+```
+target_ip = plaintext.target_ip
+if target_ip == :: (all zeros) → target_ip = source IP of UDP packet
+```
+
+### 8. Firewall rule
+
+```
+firewall.Open(target_ip, client.allowed_ports)
+schedule: firewall.Close(target_ip, client.allowed_ports) after knock_timeout
+```
+
+The knock timeout (default 30 seconds) is enough to establish a TCP connection.
+If another valid knock arrives before the timer fires, the timer is reset.

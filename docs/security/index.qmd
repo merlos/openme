@@ -1,0 +1,91 @@
+---
+title: "Security Model"
+---
+
+## What openme Protects Against
+
+### Port scanning
+
+The knock UDP port and all target TCP ports are closed to scanners at all
+times. The server never sends any response to a knock packet (not even an ICMP
+unreachable). A passive observer sees only a single UDP datagram to a closed
+port and nothing else.
+
+### Passive traffic analysis
+
+The knock packet is fully encrypted (ChaCha20-Poly1305 AEAD). Its 167 bytes
+are computationally indistinguishable from random noise to anyone who does not
+hold the server's static Curve25519 private key. The source IP, target IP,
+target port, and client identity are all hidden.
+
+### Replay attacks
+
+A captured knock packet cannot be replayed successfully because:
+
+1. The timestamp must be within ±60 seconds of the server's clock.
+2. The 128-bit random nonce must not have been seen before.
+
+See [Replay Protection](../protocol/replay-protection.qmd) for details.
+
+### Unauthenticated knocks
+
+Every packet is verified with an Ed25519 signature against the registered
+client whitelist. An attacker without a valid private key cannot produce a
+packet that passes verification.
+
+### Forward secrecy
+
+The client generates a fresh ephemeral Curve25519 keypair for every knock.
+Even if the server's static private key is compromised in the future, past
+knock packets — which were encrypted to the ephemeral key — cannot be
+decrypted. The ephemeral private key is discarded immediately after use.
+
+---
+
+## What openme Does NOT Protect Against
+
+### Denial of service
+
+The UDP knock port is open and receives all packets. A flood of garbage packets
+will consume CPU for size/version checking but will be dropped quickly. Rate
+limiting per source IP is planned.
+
+### Source IP spoofing (UDP)
+
+UDP packets can be spoofed. If an attacker can spoof the client's source IP,
+the firewall rule opens for the spoofed IP — but the attacker also needs a
+valid signed packet. Producing a valid signature requires the client's
+Ed25519 private key. The combination of spoofing + valid key is equivalent
+to full client compromise.
+
+### Compromised client private key
+
+If a client's Ed25519 private key is stolen, revoke it immediately:
+
+```bash
+sudo openme revoke alice
+```
+
+Revocation takes effect on the next knock attempt — the server does not need
+to be restarted.
+
+### Server clock manipulation
+
+A sufficiently large clock skew between client and server will cause valid
+knocks to be rejected. An attacker who can manipulate the server's clock
+could potentially extend the replay window. Use NTP with authentication
+(`chrony` with NTS) in high-security environments.
+
+### Memory-loss replay after server restart
+
+The nonce cache is in-memory only. After a restart, a packet captured in the
+`replay_window` seconds before the restart could be replayed (the timestamp
+may still be fresh and the nonce is no longer in the cache). The timestamp
+window provides a backstop. Persistent nonce cache is planned.
+
+---
+
+## Key Management
+
+See [Key Management](key-management.qmd) for best practices on generating,
+distributing, rotating, and revoking keys.

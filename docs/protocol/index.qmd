@@ -1,0 +1,31 @@
+---
+title: "Protocol Specification"
+subtitle: "openme SPA Protocol v1"
+---
+
+This section is the authoritative specification of the openme wire protocol.
+It is intended for security researchers, developers implementing compatible
+clients, and anyone who wants to understand what happens on the wire.
+
+## Sections
+
+- [Packet Format](packet-format.qmd) — byte-level wire format
+- [Cryptography](cryptography.qmd) — algorithms, key types, and why they were chosen
+- [Handshake](handshake.qmd) — full knock flow from client to firewall rule
+- [Replay Protection](replay-protection.qmd) — timestamp window and nonce cache
+
+## Design Goals
+
+| Goal | How |
+|------|-----|
+| Port always closed | UDP only; server sniffs passively, never responds |
+| Payload opacity | Full ChaCha20-Poly1305 AEAD — packet indistinguishable from random bytes |
+| Authentication | Ed25519 signature verified against a per-client whitelist |
+| Forward secrecy | Ephemeral Curve25519 ECDH keypair generated fresh per knock |
+| Replay resistance | Timestamp window (±60s) + 128-bit random nonce seen-cache |
+| Simplicity | Single 167-byte datagram; no session state; no round trips |
+
+## Version
+
+This document describes **protocol version 1**, indicated by the first byte of
+every packet.

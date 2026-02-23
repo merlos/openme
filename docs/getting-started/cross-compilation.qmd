@@ -1,0 +1,49 @@
+---
+title: "Cross-Compilation"
+---
+
+The openme CLI is pure Go with no CGo dependencies, making cross-compilation
+trivial — no extra toolchains or Docker required.
+
+## Build for All Platforms
+
+From the `cli/` directory:
+
+```bash
+# Linux amd64 (server)
+GOOS=linux   GOARCH=amd64 go build -o dist/openme-linux-amd64   ./cmd/openme
+
+# Linux arm64 (Raspberry Pi, cloud ARM, AWS Graviton)
+GOOS=linux   GOARCH=arm64 go build -o dist/openme-linux-arm64   ./cmd/openme
+
+# macOS Intel
+GOOS=darwin  GOARCH=amd64 go build -o dist/openme-darwin-amd64  ./cmd/openme
+
+# macOS Apple Silicon
+GOOS=darwin  GOARCH=arm64 go build -o dist/openme-darwin-arm64  ./cmd/openme
+
+# Windows
+GOOS=windows GOARCH=amd64 go build -o dist/openme-windows-amd64.exe ./cmd/openme
+```
+
+## Makefile
+
+A convenience `Makefile` is provided in `cli/`:
+
+```bash
+make build-all    # builds all targets into dist/
+make test         # runs tests with race detector
+make release      # builds + checksums for GitHub Releases
+```
+
+## CI
+
+The GitHub Actions workflow at `.github/workflows/cli.yml` builds all targets
+on every push and uploads the binaries as artifacts. See that file for the
+exact build matrix.
+
+## Notes
+
+- `CGO_ENABLED=0` is set by default to ensure fully static binaries
+- Windows builds do not support `iptables`/`nft` (firewall calls are no-ops); the Windows client is send-only
+- macOS client can send knocks but cannot act as a server (no firewall integration)

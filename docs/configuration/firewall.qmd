@@ -1,0 +1,77 @@
+---
+title: "Firewall Backends"
+---
+
+openme supports two firewall backends on Linux: **nftables** (`nft`) and
+**iptables**. Both are configured via the `server.firewall` key in the server
+config.
+
+## nftables (recommended)
+
+```yaml
+server:
+  firewall: nft
+```
+
+Rules are added to the `inet filter` table in an `openme` chain:
+
+```bash
+# Created automatically on first knock:
+nft add table inet filter
+nft add chain inet filter openme
+
+# Per knock (example — IPv4, SSH):
+nft add rule inet filter openme ip saddr 192.168.1.10 tcp dport 22 accept comment "openme"
+
+# IPv6:
+nft add rule inet filter openme ip6 saddr 2001:db8::1 tcp dport 22 accept comment "openme"
+```
+
+Rules are removed by handle after the knock timeout. Ensure your base
+`nftables.conf` includes a jump to the openme chain in your INPUT rules:
+
+```
+chain input {
+    type filter hook input priority 0;
+    jump openme          # openme manages this chain
+    ...
+}
+```
+
+## iptables
+
+```yaml
+server:
+  firewall: iptables
+```
+
+Rules are inserted at the top of the `INPUT` chain:
+
+```bash
+# IPv4:
+iptables  -I INPUT -s 192.168.1.10 -p tcp --dport 22 -j ACCEPT -m comment --comment "openme"
+
+# IPv6 (automatic when target IP is IPv6):
+ip6tables -I INPUT -s 2001:db8::1 -p tcp --dport 22 -j ACCEPT -m comment --comment "openme"
+```
+
+Rules are deleted with `-D` after the knock timeout. Note that `iptables` and
+`ip6tables` are separate — openme calls the correct one based on the target IP.
+
+## Choosing a Backend
+
+| Factor | nft | iptables |
+|--------|-----|----------|
+| Modern Linux (2015+) | ✅ Preferred | ✅ Available |
+| Atomic rule batching | ✅ | ❌ |
+| IPv4 + IPv6 unified | ✅ `inet` family | ❌ Separate tools |
+| Available on older distros | Sometimes | ✅ Always |
+
+Use `nft` on any system running a kernel ≥ 3.13 and nftables userspace ≥ 0.9.
+Use `iptables` on older systems or if your existing ruleset is iptables-based.
+
+## macOS and Windows
+
+The firewall backend is a no-op on macOS and Windows — the `openme` binary can
+send knock packets from these platforms, but it cannot act as a server
+(no firewall integration). Server deployments require Linux.

@@ -1,0 +1,88 @@
+---
+title: "Adding Clients"
+---
+
+Run `openme add` on the **server** to register a new client. It generates an
+Ed25519 keypair, adds the public key to the server config, and prints a
+ready-to-use client config block.
+
+## Basic Usage
+
+```bash
+sudo openme add alice
+```
+
+Output:
+
+```
+Client "alice" added to server config.
+
+──── Client config for alice (copy to ~/.openme/config.yaml) ────
+profiles:
+  alice:
+    server_host: myserver.example.com
+    server_udp_port: 7777
+    server_pubkey: "base64..."
+    private_key:   "base64..."
+    public_key:    "base64..."
+────────────────────────────────────────────────────────────────
+Key fingerprint: a3f1c2d4e5b60718
+```
+
+## Port Access Modes
+
+By default, a client can open only the server's default ports (SSH on 22).
+
+```bash
+# Default only — just SSH
+sudo openme add alice
+
+# Default + extra ports — SSH plus custom ports
+sudo openme add bob --port-mode default_plus --port 2222/tcp --port 8080/tcp
+
+# Only custom ports — no SSH
+sudo openme add ci-runner --port-mode only --port 443/tcp
+```
+
+## Key Expiry
+
+```bash
+# Expires at end of 2026
+sudo openme add contractor --expires 2026-12-31T23:59:59Z
+```
+
+If `--expires` is omitted, the key never expires.
+
+## QR Code Provisioning
+
+For mobile clients, generate a QR code containing the full client config:
+
+```bash
+# Print QR in terminal (⚠ includes private key — treat as secret)
+sudo openme add alice --qr
+
+# Write QR to a PNG file
+sudo openme add alice --qr-out /tmp/alice.png
+
+# QR without private key (mobile app generates its own keypair)
+sudo openme add alice-mobile --qr --no-privkey
+```
+
+::: {.callout-warning}
+A QR code with the private key included must be treated as a secret. Show it
+briefly to the user and do not store the image. Use `--no-privkey` if you
+prefer the mobile device to generate its own keypair — the user then sends
+you their public key to register separately.
+:::
+
+## Managing Clients
+
+```bash
+# List all registered clients
+openme list
+
+# Revoke a client immediately (takes effect on next knock attempt)
+sudo openme revoke alice
+```
+
+Next: [Client Setup →](client-setup.qmd)

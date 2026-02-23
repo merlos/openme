@@ -1,0 +1,26 @@
+---
+title: "Getting Started"
+---
+
+This guide gets you from zero to a working openme setup in about five minutes.
+You'll end up with:
+
+- A server daemon running on Linux, listening for knock packets
+- A client config on your local machine
+- A successful knock that temporarily opens SSH
+
+**Prerequisites:**
+
+- Linux server with `iptables` or `nftables`
+- Go 1.21+ (to build from source) or a pre-built binary
+- `sudo` / root access on the server
+
+## Steps
+
+1. [Install openme](server-setup.qmd#install) on both server and client
+2. [Set up the server](server-setup.qmd) — `openme init` + `openme serve`
+3. [Add a client](adding-clients.qmd) — `openme add alice`
+4. [Configure the client](client-setup.qmd) — paste the generated config
+5. [Connect](client-setup.qmd#connect) — `openme connect`
+
+Proceed to [Server Setup →](server-setup.qmd)

@@ -1,0 +1,56 @@
+---
+title: "API Reference"
+---
+
+The openme Go API reference is auto-generated from source code comments using
+[`pkgsite`](https://pkg.go.dev/golang.org/x/pkgsite), the same tool that
+powers [pkg.go.dev](https://pkg.go.dev).
+
+## Packages
+
+| Package | Description |
+|---------|-------------|
+| `pkg/protocol` | Wire format constants, packet serialisation, error types |
+| `internal/crypto` | Key generation, ECDH, encryption, signing |
+| `internal/config` | Config structs, YAML loading/saving, port mode logic |
+| `internal/server` | UDP listener, packet verification, replay cache |
+| `internal/client` | Packet builder, knock sender, health check |
+| `internal/firewall` | iptables and nftables backends, rule expiry manager |
+| `internal/qr` | QR code generation for client provisioning |
+
+## Generating Locally
+
+```bash
+# Install pkgsite
+go install golang.org/x/pkgsite/cmd/pkgsite@latest
+
+# From the cli/ directory
+cd cli
+pkgsite -open .
+```
+
+This opens a local pkg.go.dev-style documentation server at `http://localhost:8080`.
+
+## Adding to the Docs Build
+
+The `cli/Makefile` includes a `docs` target that runs pkgsite in static-export
+mode and places the output in `docs/api/generated/`, which Quarto then
+links to:
+
+```bash
+cd cli
+make docs        # generates docs/api/generated/
+cd ../docs
+quarto render    # includes the API reference in the site
+```
+
+## Documentation Standards
+
+All exported symbols in openme are documented. The conventions are:
+
+- **Package-level comments** describe the package's purpose and usage pattern
+- **Function comments** describe parameters, return values, and error conditions
+- **Type comments** describe the purpose and invariants of each field
+
+When adding new exported symbols, follow the same style as existing ones —
+start with the symbol name and use complete sentences.

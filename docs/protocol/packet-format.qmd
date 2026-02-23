@@ -1,0 +1,84 @@
+---
+title: "Packet Format"
+---
+
+Every openme knock is a single UDP datagram of exactly **167 bytes**.
+Packets of any other size are silently discarded by the server.
+
+## Outer Packet
+
+```
+ 0       1      33      45                    103                   167
+ ┌───────┬──────┬───────┬─────────────────────┬─────────────────────┐
+ │version│ephem │ nonce │     ciphertext      │    ed25519_sig      │
+ │ 1 byte│pubkey│12bytes│      58 bytes        │      64 bytes       │
+ │       │32 byt│       │  (plaintext + tag)  │                     │
+ └───────┴──────┴───────┴─────────────────────┴─────────────────────┘
+ ◄───────────────── signed portion (103 bytes) ────────────────────►
+```
+
+| Field | Offset | Size | Description |
+|-------|--------|------|-------------|
+| `version` | 0 | 1 | Protocol version. Currently `0x01`. |
+| `ephemeral_pubkey` | 1 | 32 | Client's ephemeral Curve25519 public key for this knock. |
+| `nonce` | 33 | 12 | ChaCha20-Poly1305 AEAD nonce (random, per knock). |
+| `ciphertext` | 45 | 58 | Encrypted plaintext (42 bytes) + AEAD authentication tag (16 bytes). |
+| `ed25519_sig` | 103 | 64 | Ed25519 signature over bytes 0–102 (the signed portion). |
+
+**Total: 167 bytes.**
+
+The Ed25519 signature covers **all fields except itself** — bytes 0 through 102
+inclusive. This prevents any field from being tampered with after signing.
+
+---
+
+## Plaintext Payload
+
+After successful AEAD decryption, the 42-byte plaintext contains:
+
+```
+ 0           8          24         40    42
+ ┌───────────┬──────────┬──────────┬─────┐
+ │ timestamp │  random  │target_ip │port │
+ │  8 bytes  │  nonce   │ 16 bytes │2 byt│
+ │ (int64 ns)│ 16 bytes │ (IPv6)   │(BE) │
+ └───────────┴──────────┴──────────┴─────┘
+```
+
+| Field | Offset | Size | Description |
+|-------|--------|------|-------------|
+| `timestamp` | 0 | 8 | Unix nanoseconds (big-endian int64). Used for replay window check. |
+| `random_nonce` | 8 | 16 | 128 bits of CSPRNG output. Used for nonce uniqueness check. |
+| `target_ip` | 24 | 16 | IPv6 address (or IPv4-mapped IPv6) to open the firewall to. All-zeros = use source IP of knock packet. |
+| `target_port` | 40 | 2 | Big-endian uint16. The server uses its configured port list; this field is reserved for future per-knock port selection. |
+
+### IPv4 and IPv6
+
+`target_ip` is always 16 bytes. IPv4 addresses are stored as
+[IPv4-mapped IPv6 addresses](https://datatracker.ietf.org/doc/html/rfc4291#section-2.5.5.2)
+(`::ffff:a.b.c.d`). All-zeros (`::`) means "use the source IP of the knock packet."
+
+---
+
+## Byte-Level Example
+
+A valid knock from `192.168.1.10` requesting port 22 for its own source IP:
+
+```
+Offset  Bytes (hex)                              Field
+000000  01                                       version = 1
+000001  a3f1...b2 (32 bytes)                     ephemeral_pubkey
+000021  c4d5e6f7a8b9 (12 bytes)                  nonce
+00002d  <58 bytes AEAD ciphertext+tag>            ciphertext
+000067  <64 bytes Ed25519 signature>              ed25519_sig
+```
+
+Decrypted plaintext:
+
+```
+Offset  Bytes (hex)                              Field
+000000  0000018c4a3b2100                         timestamp (ns since epoch)
+000008  <16 random bytes>                        random_nonce
+000018  00000000000000000000000000000000         target_ip = :: (wildcard)
+000028  0016                                     target_port = 22
+```

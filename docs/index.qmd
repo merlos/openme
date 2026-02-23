@@ -1,0 +1,63 @@
+---
+title: "openme Documentation"
+subtitle: "Single Packet Authentication for Linux firewalls"
+---
+
+Welcome to the openme documentation. openme lets an authenticated client send
+a **single encrypted UDP packet** to temporarily open a firewall port. To any
+port scanner, the port is always closed — only valid clients can trigger a rule.
+
+## Where to Start
+
+::: {.grid}
+
+::: {.g-col-6}
+### 🚀 New to openme?
+Start with the [Getting Started guide](getting-started/index.qmd) — you'll
+have a server running and a client connecting in under five minutes.
+:::
+
+::: {.g-col-6}
+### 🔐 Curious about the security?
+Read the [Protocol specification](protocol/index.qmd) for a full breakdown of
+the cryptographic design, or the [Security Model](security/index.qmd) for the
+threat model.
+:::
+
+::: {.g-col-6}
+### ⚙️ Configuring your deployment?
+The [Configuration reference](configuration/index.qmd) covers every option
+for both server and client config files.
+:::
+
+::: {.g-col-6}
+### 📖 Looking for the API?
+The [API Reference](api/index.qmd) is auto-generated from Go source comments
+using `pkgsite`.
+:::
+
+:::
+
+## At a Glance
+
+```bash
+# Server — one-time setup
+sudo openme init --server myserver.example.com
+sudo openme add alice                           # prints client config
+sudo openme serve
+
+# Client
+openme status                                   # health check
+openme connect                                  # knock + optional post-hook
+openme connect home                             # named profile
+```
+
+## Design Principles
+
+openme is deliberately minimal in its attack surface:
+
+- **One binary** — server daemon, client, and key management in one tool
+- **No PKI** — keys are exchanged out-of-band (copy/paste or QR scan)
+- **No open ports** — the knock port appears closed at all times
+- **Modern cryptography** — Curve25519, ChaCha20-Poly1305, Ed25519
+- **Forward secrecy** — ephemeral ECDH per knock; old captures cannot be decrypted later
