@@ -55,14 +55,19 @@ to securely and stealthily open firewall ports.`,
 	root.PersistentFlags().StringVar(&clientConfigPath, "client-config", config.DefaultClientConfigPath(), "client config file path")
 	root.PersistentFlags().StringVar(&logLevel, "log-level", "info", "log level (debug, info, warn, error)")
 
+	root.AddGroup(
+		&cobra.Group{ID: "server", Title: "Server commands:"},
+		&cobra.Group{ID: "client", Title: "Client commands:"},
+	)
+
 	root.AddCommand(
 		newInitCmd(),
 		newServeCmd(),
-		newConnectCmd(),
-		newStatusCmd(),
 		newAddCmd(),
 		newListCmd(),
 		newRevokeCmd(),
+		newConnectCmd(),
+		newStatusCmd(),
 	)
 
 	if err := root.Execute(); err != nil {
@@ -104,8 +109,9 @@ func newInitCmd() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "init",
-		Short: "Initialise a new openme server configuration",
+		Use:     "init",
+		GroupID: "server",
+		Short:   "Initialise a new openme server configuration",
 		Long: `Generate a fresh Curve25519 keypair and write a default server config.
 
 By default the config is written to /etc/openme/config.yaml.
@@ -193,9 +199,10 @@ Next steps:
 
 func newServeCmd() *cobra.Command {
 	return &cobra.Command{
-		Use:   "serve",
-		Short: "Start the openme SPA server",
-		RunE:  runServe,
+		Use:     "serve",
+		GroupID: "server",
+		Short:   "Start the openme SPA server",
+		RunE:    runServe,
 	}
 }
 
@@ -301,8 +308,9 @@ func newConnectCmd() *cobra.Command {
 	var targetIP string
 
 	cmd := &cobra.Command{
-		Use:   "connect [profile]",
-		Short: "Send a knock packet to open a firewall port",
+		Use:     "connect [profile]",
+		GroupID: "client",
+		Short:   "Send a knock packet to open a firewall port",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			profileName := ""
@@ -374,8 +382,9 @@ func newStatusCmd() *cobra.Command {
 	var knockFirst bool
 
 	cmd := &cobra.Command{
-		Use:   "status [profile]",
-		Short: "Check if the health port is open (requires prior authentication)",
+		Use:     "status [profile]",
+		GroupID: "client",
+		Short:   "Check if the health port is open (requires prior authentication)",
 		Long: `Check reachability of the server's TCP health port.
 
 The health port is only open after a successful knock — it is never permanently
@@ -452,8 +461,9 @@ func newAddCmd() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "add <name>",
-		Short: "Register a new client and generate their config",
+		Use:     "add <name>",
+		GroupID: "server",
+		Short:   "Register a new client and generate their config",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runAdd(args[0], showQR, qrOutputPath, omitPrivateKey, expires, portMode, extraPorts)
@@ -573,9 +583,10 @@ func runAdd(name string, showQR bool, qrOut string, omitPriv bool, expires, port
 
 func newListCmd() *cobra.Command {
 	return &cobra.Command{
-		Use:   "list",
-		Short: "List all registered clients",
-		RunE:  runList,
+		Use:     "list",
+		GroupID: "server",
+		Short:   "List all registered clients",
+		RunE:    runList,
 	}
 }
 
@@ -610,8 +621,9 @@ func runList(cmd *cobra.Command, args []string) error {
 
 func newRevokeCmd() *cobra.Command {
 	return &cobra.Command{
-		Use:   "revoke <name>",
-		Short: "Revoke a client's key (removes it from the server config)",
+		Use:     "revoke <name>",
+		GroupID: "server",
+		Short:   "Revoke a client's key (removes it from the server config)",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runRevoke(args[0])
