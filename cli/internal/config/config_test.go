@@ -3,6 +3,7 @@ package config_test
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
@@ -75,13 +76,15 @@ func TestSaveLoadClientConfig(t *testing.T) {
 		t.Fatalf("SaveClientConfig error = %v", err)
 	}
 
-	// Check file permissions (secret key material).
-	info, err := os.Stat(path)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if info.Mode().Perm() != 0o600 {
-		t.Errorf("config file permissions = %o, want 0600", info.Mode().Perm())
+	// Check file permissions (secret key material). Windows does not support Unix permissions.
+	if runtime.GOOS != "windows" {
+		info, err := os.Stat(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if info.Mode().Perm() != 0o600 {
+			t.Errorf("config file permissions = %o, want 0600", info.Mode().Perm())
+		}
 	}
 
 	loaded, err := config.LoadClientConfig(path)
