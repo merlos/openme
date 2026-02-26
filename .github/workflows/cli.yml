@@ -38,6 +38,7 @@ jobs:
 
       - name: Test (with race detector)
         run: go test -race -coverprofile=coverage.out ./...
+        shell: bash
 
       - name: Upload coverage
         uses: actions/upload-artifact@v4
