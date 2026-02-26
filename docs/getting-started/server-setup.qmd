@@ -53,7 +53,9 @@ when provisioning clients, but `openme add` handles it automatically.
 
 ## Open the Knock Port
 
-The UDP knock port must be reachable (the point is that TCP ports are not):
+The UDP knock port must be reachable (the point is that TCP ports are not).
+The examples below assume you have already applied a default-deny firewall
+policy — if not, see [Harden the Firewall](#harden-firewall) first.
 
 ```bash
 # nftables
@@ -96,6 +98,112 @@ WantedBy=multi-user.target
 sudo systemctl enable --now openme
 sudo systemctl status openme
 ```
+
+---
+
+## Harden the Firewall {#harden-firewall}
+
+The whole point of openme is that **no TCP ports are permanently open**.  
+Apply a default-deny policy before opening anything, then only allow the UDP
+knock port.
+
+### nftables
+
+```bash
+# Flush and rebuild a minimal ruleset
+sudo nft flush ruleset
+
+sudo nft add table inet filter
+
+# Base chains
+sudo nft add chain inet filter input   '{ type filter hook input   priority 0; policy drop; }'
+sudo nft add chain inet filter forward '{ type filter hook forward priority 0; policy drop; }'
+sudo nft add chain inet filter output  '{ type filter hook output  priority 0; policy accept; }'
+
+# Allow established / related traffic and loopback
+sudo nft add rule inet filter input ct state established,related accept
+sudo nft add rule inet filter input iifname "lo" accept
+
+# Allow the UDP knock port (openme)
+sudo nft add rule inet filter input udp dport 7777 accept
+
+# Create the openme chain (openme manages rules inside it)
+sudo nft add chain inet filter openme
+sudo nft add rule inet filter input jump openme
+```
+
+Persist the ruleset:
+
+```bash
+sudo nft list ruleset | sudo tee /etc/nftables.conf
+sudo systemctl enable --now nftables
+```
+
+### iptables / ip6tables
+
+```bash
+# ── IPv4 ──────────────────────────────────────────────────────────────────
+# Flush existing rules and set default DROP on INPUT and FORWARD
+sudo iptables -F
+sudo iptables -X
+sudo iptables -P INPUT   DROP
+sudo iptables -P FORWARD DROP
+sudo iptables -P OUTPUT  ACCEPT
+
+# Allow established / related traffic and loopback
+sudo iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+sudo iptables -A INPUT -i lo -j ACCEPT
+
+# Allow the UDP knock port (openme)
+sudo iptables -A INPUT -p udp --dport 7777 -j ACCEPT
+
+# ── IPv6 ──────────────────────────────────────────────────────────────────
+sudo ip6tables -F
+sudo ip6tables -X
+sudo ip6tables -P INPUT   DROP
+sudo ip6tables -P FORWARD DROP
+sudo ip6tables -P OUTPUT  ACCEPT
+
+sudo ip6tables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+sudo ip6tables -A INPUT -i lo -j ACCEPT
+sudo ip6tables -A INPUT -p udp --dport 7777 -j ACCEPT
+```
+
+Persist across reboots (Debian/Ubuntu):
+
+```bash
+sudo apt install iptables-persistent
+sudo netfilter-persistent save
+```
+
+::: {.callout-warning}
+These rules drop **all incoming TCP connections**, including SSH.  
+Run them from the console or a recovery environment, or add a temporary SSH
+allowance first:
+
+```bash
+# Temporary SSH rule — remove it once openme clients are verified
+sudo iptables  -A INPUT -p tcp --dport 22 -j ACCEPT
+sudo ip6tables -A INPUT -p tcp --dport 22 -j ACCEPT
+```
+
+Once your openme clients are working, remove the temporary SSH rules:
+
+```bash
+sudo iptables  -D INPUT -p tcp --dport 22 -j ACCEPT
+sudo ip6tables -D INPUT -p tcp --dport 22 -j ACCEPT
+```
+
+For nftables, if you added a temporary SSH rule:
+
+```bash
+# Find the rule handle
+sudo nft -a list chain inet filter input
+
+# Delete by handle (replace <handle> with the number shown)
+sudo nft delete rule inet filter input handle <handle>
+```
+:::
 
 ---
 
