@@ -1,0 +1,38 @@
+# ── Go ─────────────────────────────────────────────────────
+cli/openme
+cli/openme-*
+cli/dist/
+cli/coverage.out
+
+# ── Quarto docs ─────────────────────────────────────────────
+docs/_site/
+docs/.quarto/
+
+# ── macOS ───────────────────────────────────────────────────
+.DS_Store
+**/.DS_Store
+
+# ── Windows ─────────────────────────────────────────────────
+Thumbs.db
+
+# ── IDEs ────────────────────────────────────────────────────
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# ── Xcode (macOS / iOS) ─────────────────────────────────────
+macos/*.xcworkspace/xcuserdata/
+ios/*.xcworkspace/xcuserdata/
+macos/DerivedData/
+ios/DerivedData/
+
+# ── Android ─────────────────────────────────────────────────
+android/.gradle/
+android/local.properties
+android/app/build/
+android/build/
+
+# ── openme runtime — NEVER commit keys ──────────────────────
+*.key
+/etc/openme/
