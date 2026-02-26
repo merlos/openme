@@ -38,6 +38,7 @@ openme/
 # Build from source (requires Go 1.21+)
 git clone https://github.com/openme/openme
 cd openme/cli
+go mod download
 go build -o openme ./cmd/openme
 sudo mv openme /usr/local/bin/
 ```

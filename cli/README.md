@@ -136,7 +136,8 @@ Requires **Go 1.21+**.
 
 ```bash
 git clone https://github.com/openme/openme
-cd openme
+cd openme/cli
+go mod download
 go build -o openme ./cmd/openme
 sudo mv openme /usr/local/bin/
 ```
