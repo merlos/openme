@@ -17,6 +17,7 @@
 - On-device Ed25519 key generation via Secure Enclave
 - Face ID / Touch ID authentication before knock
 - Shortcuts app integration
+- Apple Watch
 - iCloud Keychain sync for profiles across Apple devices (opt-in)
 
 ## Development Setup
