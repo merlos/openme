@@ -69,12 +69,19 @@ public enum ClientConfigParser {
     public static func parse(yaml: String) throws -> [String: Profile] {
         var profiles: [String: Profile] = [:]
 
-        // Collect all lines, strip trailing whitespace.
-        let lines = yaml.components(separatedBy: .newlines).map { $0.trimmingCharacters(in: .init(charactersIn: " \t\r")) }
+        // Work on raw lines so we can measure indentation before stripping.
+        let rawLines = yaml.components(separatedBy: .newlines)
 
         var inProfiles = false
         var currentName: String?
         var currentDict: [String: String] = [:]
+        // Detected once we see the first profile-name line.
+        var profileIndent: Int? = nil
+        var kvIndent:      Int? = nil
+
+        func leadingSpaces(_ s: String) -> Int {
+            s.prefix(while: { $0 == " " }).count
+        }
 
         func flushCurrent() {
             guard let name = currentName else { return }
@@ -89,12 +96,11 @@ public enum ClientConfigParser {
             )
         }
 
-        for line in lines {
-            if line.hasPrefix("#") || line.isEmpty { continue }
+        for rawLine in rawLines {
+            let indent = leadingSpaces(rawLine)
+            let line   = rawLine.trimmingCharacters(in: .init(charactersIn: " \t\r"))
 
-            let indent = yaml.components(separatedBy: .newlines)
-                .first(where: { $0.contains(line) })
-                .map { $0.prefix(while: { $0 == " " }).count } ?? 0
+            if line.isEmpty || line.hasPrefix("#") { continue }
 
             if line == "profiles:" {
                 inProfiles = true
@@ -103,22 +109,37 @@ public enum ClientConfigParser {
 
             guard inProfiles else { continue }
 
-            // Profile name — 2-space indent, ends with ":"
-            if indent == 2 && line.hasSuffix(":") && !line.contains(" ") {
+            // Detect profile-name indent from the first indented line after "profiles:".
+            if profileIndent == nil && indent > 0 {
+                profileIndent = indent
+            }
+
+            let pIndent = profileIndent ?? 2
+
+            // Profile name: indented exactly one level, ends with ":", no spaces in name.
+            if indent == pIndent && line.hasSuffix(":") && !line.dropLast().contains(" ") {
                 flushCurrent()
                 currentName = String(line.dropLast())
                 currentDict = [:]
+                // Learn key-value indent from the next deeper line.
+                kvIndent = nil
                 continue
             }
 
-            // Key-value pair — 4-space indent
-            if indent == 4, let colonIdx = line.firstIndex(of: ":") {
-                let key = String(line[line.startIndex..<colonIdx])
-                    .trimmingCharacters(in: .whitespaces)
-                let value = String(line[line.index(after: colonIdx)...])
-                    .trimmingCharacters(in: .whitespaces)
-                    .trimmingCharacters(in: CharacterSet(charactersIn: "\"'"))
-                currentDict[key] = value
+            // Key-value pair: deeper than profile indent.
+            if indent > pIndent {
+                // Learn kv indent on first encounter.
+                if kvIndent == nil { kvIndent = indent }
+                guard indent == kvIndent else { continue }
+
+                if let colonIdx = line.firstIndex(of: ":") {
+                    let key = String(line[line.startIndex..<colonIdx])
+                        .trimmingCharacters(in: .whitespaces)
+                    let value = String(line[line.index(after: colonIdx)...])
+                        .trimmingCharacters(in: .whitespaces)
+                        .trimmingCharacters(in: CharacterSet(charactersIn: "\"'"))
+                    currentDict[key] = value
+                }
             }
         }
         flushCurrent()
