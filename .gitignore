@@ -1,4 +1,4 @@
-# ── Go ─────────────────────────────────────────────────────
+
 cli/openme
 cli/openme-*
 cli/dist/
@@ -21,11 +21,52 @@ Thumbs.db
 *.swp
 *.swo
 
-# ── Xcode (macOS / iOS) ─────────────────────────────────────
+# ── Xcode (macOS / iOS / watchOS / tvOS) ────────────────────
+# Legacy paths (pre-apple/ restructure)
 macos/*.xcworkspace/xcuserdata/
 ios/*.xcworkspace/xcuserdata/
 macos/DerivedData/
 ios/DerivedData/
+
+# User-specific Xcode state (applies to the whole apple/ tree)
+apple/**/*.xcworkspace/xcuserdata/
+apple/**/*.xcodeproj/xcuserdata/
+apple/**/*.xcworkspace/xcshareddata/swiftpm/resolution.json
+apple/**/xcuserdata/
+**/*.xcuserdata
+
+# Derived data & build artefacts
+apple/DerivedData/
+DerivedData/
+
+# Swift Package Manager
+apple/**/.build/
+apple/**/Package.resolved
+.build/
+
+# Playgrounds
+apple/**/*.playground/timeline.xctimeline
+apple/**/*.playground/playground.xcworkspace
+
+# Crashlytics / Fastlane
+apple/**/Crashlytics/
+apple/**/fastlane/report.xml
+apple/**/fastlane/Preview.html
+apple/**/fastlane/screenshots/
+apple/**/fastlane/test_output/
+
+# CocoaPods (not used, but prevent accidental commits if ever added)
+apple/**/Pods/
+apple/**/Podfile.lock
+
+# Xcode Previews
+apple/**/__Previews/
+
+# TestFlight / Archives
+apple/**/*.xcarchive
+apple/**/*.ipa
+apple/**/*.dSYM.zip
+apple/**/*.dSYM
 
 # ── Android ─────────────────────────────────────────────────
 android/.gradle/
