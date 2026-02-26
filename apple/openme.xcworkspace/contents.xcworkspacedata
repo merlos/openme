@@ -8,6 +8,9 @@
       location = "group:OpenMeKit">
    </FileRef>
    <FileRef
-      location = "group:openme-ios">
+      location = "group:openme-ios/openme-ios.xcodeproj">
+   </FileRef>
+   <FileRef
+      location = "group:openme-watch/openme-watch.xcodeproj">
    </FileRef>
 </Workspace>

@@ -64,22 +64,42 @@ public final class ProfileStore: ObservableObject {
             .sorted { $0.name < $1.name }
     }
 
+    /// Replaces all profiles (used by WatchConnectivity sync on watchOS).
+    public func replaceAll(_ profiles: [String: Profile]) throws {
+        allProfiles = profiles
+        try save()
+        syncEntries()
+    }
+
+    /// Exposes all full profiles for serialisation / watch sync.
+    public var profilesDictionary: [String: Profile] { allProfiles }
+
     private func save() throws {
         let yaml = ClientConfigParser.serialize(profiles: allProfiles)
         guard let data = yaml.data(using: .utf8) else { return }
 
         let dir = configURL.deletingLastPathComponent()
-        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true, attributes: [
-            .posixPermissions: 0o700
-        ])
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         try data.write(to: configURL, options: .atomic)
 
-        // Enforce 0600 — file contains private keys.
-        try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: configURL.path)
+        #if !os(watchOS)
+        // Enforce 0600 — file contains private keys. (watchOS ignores POSIX permissions)
+        try? FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: configURL.path)
+        #endif
     }
 
     private static func defaultConfigURL() -> URL {
-        // Sandboxed: ~/Library/Containers/<bundle-id>/Data/Library/Application Support/openme/config.yaml
+        // On iOS share the file with the widget via the App Group container so
+        // that both processes read/write the same config.yaml.
+        #if os(iOS)
+        if let group = FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: "group.org.merlos.openme") {
+            return group
+                .appendingPathComponent("Library/Application Support/openme", isDirectory: true)
+                .appendingPathComponent("config.yaml")
+        }
+        #endif
+        // macOS (sandboxed) and watchOS fall back to their own Application Support directory.
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
         return appSupport.appendingPathComponent("openme/config.yaml")
     }

@@ -41,6 +41,12 @@ public struct ProfileEntry: Identifiable {
     public let name: String
     public let serverHost: String
     public let serverUDPPort: UInt16
+
+    public init(name: String, serverHost: String, serverUDPPort: UInt16) {
+        self.name = name
+        self.serverHost = serverHost
+        self.serverUDPPort = serverUDPPort
+    }
 }
 
 // MARK: - YAML parsing
