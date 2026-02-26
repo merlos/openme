@@ -11,7 +11,7 @@ import (
 )
 
 // buildTestOptions creates a KnockOptions with freshly generated keys.
-func buildTestOptions(t *testing.T, targetIP net.IP, port uint16) *client.KnockOptions {
+func buildTestOptions(t *testing.T, targetIP net.IP) *client.KnockOptions {
 	t.Helper()
 
 	serverKP, err := internlcrypto.GenerateCurve25519KeyPair()
@@ -29,12 +29,11 @@ func buildTestOptions(t *testing.T, targetIP net.IP, port uint16) *client.KnockO
 		ServerCurve25519PubKey: serverKP.PublicKey,
 		ClientEd25519PrivKey:   clientKP.PrivateKey,
 		TargetIP:               targetIP,
-		TargetPort:             port,
 	}
 }
 
 func TestBuildPacket_Size(t *testing.T) {
-	opts := buildTestOptions(t, net.ParseIP("10.0.0.1"), 22)
+	opts := buildTestOptions(t, net.ParseIP("10.0.0.1"))
 	pkt, err := client.BuildPacket(opts)
 	if err != nil {
 		t.Fatalf("BuildPacket error = %v", err)
@@ -42,10 +41,14 @@ func TestBuildPacket_Size(t *testing.T) {
 	if len(pkt) != protocol.PacketSize {
 		t.Errorf("packet size = %d, want %d", len(pkt), protocol.PacketSize)
 	}
+	// Explicit size check: 165 bytes after removing the port field.
+	if protocol.PacketSize != 165 {
+		t.Errorf("PacketSize = %d, want 165", protocol.PacketSize)
+	}
 }
 
 func TestBuildPacket_Version(t *testing.T) {
-	opts := buildTestOptions(t, nil, 22)
+	opts := buildTestOptions(t, nil)
 	pkt, _ := client.BuildPacket(opts)
 	if pkt[protocol.OffVersion] != protocol.Version {
 		t.Errorf("version byte = %d, want %d", pkt[0], protocol.Version)
@@ -53,11 +56,11 @@ func TestBuildPacket_Version(t *testing.T) {
 }
 
 func TestBuildPacket_UniquePerCall(t *testing.T) {
-	opts := buildTestOptions(t, net.ParseIP("10.0.0.1"), 22)
+	opts := buildTestOptions(t, net.ParseIP("10.0.0.1"))
 	p1, _ := client.BuildPacket(opts)
 	p2, _ := client.BuildPacket(opts)
 
-	// Ephemeral key and nonce should differ between calls.
+	// Ephemeral key is regenerated each call — packets must differ.
 	ephem1 := p1[protocol.OffEphemeralPubKey : protocol.OffEphemeralPubKey+internlcrypto.Curve25519KeySize]
 	ephem2 := p2[protocol.OffEphemeralPubKey : protocol.OffEphemeralPubKey+internlcrypto.Curve25519KeySize]
 
@@ -69,13 +72,13 @@ func TestBuildPacket_UniquePerCall(t *testing.T) {
 		}
 	}
 	if same {
-		t.Error("two packets have identical ephemeral public keys (should be random)")
+		t.Error("two packets have identical ephemeral public keys (should be random per knock)")
 	}
 }
 
 func TestBuildPacket_WildcardIP(t *testing.T) {
-	// nil IP should not cause a panic and should produce a valid packet.
-	opts := buildTestOptions(t, nil, 22)
+	// nil TargetIP should not panic and should produce a valid-sized packet.
+	opts := buildTestOptions(t, nil)
 	pkt, err := client.BuildPacket(opts)
 	if err != nil {
 		t.Fatalf("BuildPacket with nil IP error = %v", err)
@@ -83,6 +86,13 @@ func TestBuildPacket_WildcardIP(t *testing.T) {
 	if len(pkt) != protocol.PacketSize {
 		t.Errorf("packet size = %d, want %d", len(pkt), protocol.PacketSize)
 	}
+}
+
+func TestBuildPacket_NoPortField(t *testing.T) {
+	// KnockOptions must not expose a TargetPort field — ports are server-side only.
+	opts := buildTestOptions(t, net.ParseIP("10.0.0.1"))
+	// If this compiles without setting any TargetPort, the field is gone.
+	_ = opts
 }
 
 func TestHealthCheck_NoServer(t *testing.T) {

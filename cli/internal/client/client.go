@@ -3,9 +3,13 @@
 // To send a knock:
 //  1. Generate an ephemeral Curve25519 keypair.
 //  2. Derive a shared secret via ECDH with the server's static public key.
-//  3. Encrypt the plaintext payload (timestamp + nonce + target IP + port).
+//  3. Encrypt the plaintext payload (timestamp + nonce + target IP).
 //  4. Sign the full packet with the client's Ed25519 private key.
 //  5. Send the packet as a single UDP datagram.
+//
+// Ports to open are not specified in the packet. They are determined entirely
+// by the server's per-client configuration, which prevents clients from
+// requesting ports they are not authorised for.
 package client
 
 import (
@@ -34,10 +38,8 @@ type KnockOptions struct {
 
 	// TargetIP is the IP address the server should open the firewall to.
 	// Use "0.0.0.0" or "::" to indicate "use my source IP".
+	// Ports are determined by the server's per-client config, not by the client.
 	TargetIP net.IP
-
-	// TargetPort is the port to open.
-	TargetPort uint16
 }
 
 // Knock builds and sends a single SPA knock packet to the server.
@@ -66,35 +68,35 @@ func Knock(opts *KnockOptions) error {
 //
 // Packet layout:
 //
-//	[version(1)] [ephemeral_pubkey(32)] [nonce(12)] [ciphertext+tag(58)] [ed25519_sig(64)]
+//	[version(1)] [ephemeral_pubkey(32)] [nonce(12)] [ciphertext+tag(56)] [ed25519_sig(64)]
+//
+// Total: 165 bytes.
 func BuildPacket(opts *KnockOptions) ([]byte, error) {
-	// Step 1: generate ephemeral Curve25519 keypair.
+	// Step 1: generate ephemeral Curve25519 keypair (discarded after use).
 	ephemeral, err := internlcrypto.GenerateCurve25519KeyPair()
 	if err != nil {
 		return nil, fmt.Errorf("generating ephemeral keypair: %w", err)
 	}
 
-	// Step 2: ECDH → shared secret.
+	// Step 2: ECDH → shared secret → symmetric key via HKDF.
 	sharedKey, err := internlcrypto.ECDHSharedSecret(ephemeral.PrivateKey, opts.ServerCurve25519PubKey)
 	if err != nil {
 		return nil, fmt.Errorf("ECDH: %w", err)
 	}
 
-	// Step 3: build and encrypt plaintext.
+	// Step 3: build plaintext and encrypt.
 	randNonce, err := internlcrypto.RandomNonce(protocol.RandomNonceSize)
 	if err != nil {
 		return nil, err
 	}
-
 	aeadNonce, err := internlcrypto.RandomNonce(protocol.NonceSize)
 	if err != nil {
 		return nil, err
 	}
 
 	pt := &protocol.Plaintext{
-		Timestamp:  time.Now().UTC(),
-		TargetIP:   normaliseTargetIP(opts.TargetIP),
-		TargetPort: opts.TargetPort,
+		Timestamp: time.Now().UTC(),
+		TargetIP:  normaliseTargetIP(opts.TargetIP),
 	}
 	copy(pt.RandomNonce[:], randNonce)
 
@@ -110,7 +112,7 @@ func BuildPacket(opts *KnockOptions) ([]byte, error) {
 	copy(pkt[protocol.OffNonce:], aeadNonce)
 	copy(pkt[protocol.OffCiphertext:], ciphertext)
 
-	// Step 5: sign the packet up to (but not including) the signature field.
+	// Step 5: sign bytes 0..SignedPortionSize and append.
 	sig := internlcrypto.Sign(opts.ClientEd25519PrivKey, pkt[:protocol.SignedPortionSize])
 	copy(pkt[protocol.OffSignature:], sig)
 
@@ -135,8 +137,7 @@ func HealthCheck(host string, port uint16, timeout time.Duration) bool {
 }
 
 // normaliseTargetIP converts a nil or wildcard IP to the canonical zero form.
-// "0.0.0.0" and "::" both become 16-byte all-zero slices, which the server
-// interprets as "use the source IP of the knock packet".
+// All-zero 16 bytes signals the server to use the knock packet's source IP.
 func normaliseTargetIP(ip net.IP) net.IP {
 	if ip == nil || ip.IsUnspecified() {
 		return net.IPv6zero

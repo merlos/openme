@@ -19,8 +19,8 @@ sequenceDiagram
     Note over C: 3. Build plaintext: timestamp‖random_nonce‖target_ip‖port
     Note over C: 4. Encrypt plaintext → ciphertext (ChaCha20-Poly1305)
     Note over C: 5. Assemble packet: version‖ephem_pub‖nonce‖ciphertext
-    Note over C: 6. Sign packet[0:103] with Ed25519 client_priv
-    C->>S: UDP packet (167 bytes)  [port appears CLOSED]
+    Note over C: 6. Sign packet[0:101] with Ed25519 client_priv
+    C->>S: UDP packet (165 bytes)  [port appears CLOSED]
     Note over S: 7. Validate size and version byte
     Note over S: 8. ECDH(server_priv, ephem_pub) → shared_key
     Note over S: 9. Decrypt ciphertext → plaintext
@@ -42,7 +42,7 @@ The server processes each received packet in a goroutine. Invalid packets are
 ### 1. Size and version check
 
 ```
-if len(packet) != 167 → discard
+if len(packet) != 165 → discard
 if packet[0] != 0x01  → discard
 ```
 
@@ -72,8 +72,8 @@ the packet is discarded silently. An attacker learns nothing from this.
 ### 4. Signature verification
 
 ```
-msg = packet[0:103]
-sig = packet[103:167]
+msg = packet[0:101]
+sig = packet[101:165]
 for each client in whitelist:
     if Ed25519-Verify(client.pubkey, msg, sig) → matched client found
 if no match → discard

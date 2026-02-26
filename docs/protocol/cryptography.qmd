@@ -74,7 +74,7 @@ cipher, preventing cross-protocol key reuse.
 
 ## Encryption
 
-The 42-byte plaintext is encrypted with **ChaCha20-Poly1305** (RFC 8439):
+The 40-byte plaintext is encrypted with **ChaCha20-Poly1305** (RFC 8439):
 
 ```
 ciphertext || tag = ChaCha20-Poly1305-Seal(key=symmetric_key, nonce=nonce, plaintext=payload, aad=∅)
@@ -82,7 +82,7 @@ ciphertext || tag = ChaCha20-Poly1305-Seal(key=symmetric_key, nonce=nonce, plain
 
 - `key` is 32 bytes derived via HKDF above
 - `nonce` is 12 bytes of CSPRNG output, included in the packet
-- The 16-byte authentication tag is appended to the ciphertext (58 bytes total)
+- The 16-byte authentication tag is appended to the ciphertext (56 bytes total)
 - If the tag verification fails, the server discards the packet silently
 
 ChaCha20-Poly1305 was chosen over AES-GCM because it is:

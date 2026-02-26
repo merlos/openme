@@ -7,7 +7,7 @@ openme is a **Single Packet Authentication (SPA)** tool. To a port scanner, ever
 ```
 Client                              Server (port always CLOSED to scanners)
   │                                     │
-  │──── 167 bytes of encrypted UDP ────>│  verify signature
+  │──── 165 bytes of encrypted UDP ────>│  verify signature
   │                                     │  decrypt payload
   │                                     │  open firewall rule for 30s
   │<══════════ SSH / HTTPS / etc. ══════│

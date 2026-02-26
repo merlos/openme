@@ -346,7 +346,6 @@ func runConnect(profileName, targetIPStr string) error {
 		ServerCurve25519PubKey: serverPub,
 		ClientEd25519PrivKey:   ed25519.PrivateKey(privKeyBytes),
 		TargetIP:               targetIP,
-		TargetPort:             22, // default; future: configurable per profile
 	}
 
 	fmt.Printf("Knocking %s:%d ...\n", profile.ServerHost, profile.ServerUDPPort)

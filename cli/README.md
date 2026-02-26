@@ -50,20 +50,20 @@
 ```
 ┌──────────┬───────────────────┬───────┬─────────────────┬───────────────┐
 │ version  │  ephemeral_pubkey │ nonce │   ciphertext    │  ed25519_sig  │
-│  1 byte  │      32 bytes     │ 12 B  │    58 bytes     │   64 bytes    │
+│  1 byte  │      32 bytes     │ 12 B  │    56 bytes     │   64 bytes    │
 └──────────┴───────────────────┴───────┴─────────────────┴───────────────┘
                                         ▲                  ▲
                                   ChaCha20-Poly1305    signs everything
                                   AEAD tag included    to the left
-Total: 167 bytes
+Total: 165 bytes
 ```
 
 The **ciphertext** decrypts to:
 
 ```
 ┌─────────────┬──────────────┬─────────────┬─────────────┐
-│  timestamp  │ random_nonce │  target_ip  │ target_port │
-│   8 bytes   │   16 bytes   │  16 bytes   │   2 bytes   │
+│  timestamp  │ random_nonce │  target_ip  │
+│   8 bytes   │   16 bytes   │  16 bytes   │
 └─────────────┴──────────────┴─────────────┴─────────────┘
 ```
 

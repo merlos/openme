@@ -1,12 +1,16 @@
 // Package protocol defines the openme Single Packet Authentication (SPA) wire format.
 //
-// Packet layout (183 bytes total):
+// Packet layout (165 bytes total):
 //
-//	[version(1)] [ephemeral_pubkey(32)] [nonce(12)] [ciphertext(39)] [tag(16)] [ed25519_sig(64)] [reserved(19)]
+//	[version(1)] [ephemeral_pubkey(32)] [nonce(12)] [ciphertext(56)] [ed25519_sig(64)]
 //
 // The ciphertext decrypts to:
 //
-//	[timestamp(8)] [random_nonce(16)] [target_ip(16)] [target_port(2)]
+//	[timestamp(8)] [random_nonce(16)] [target_ip(16)]
+//
+// Ports to open are determined entirely by the server's per-client configuration.
+// The client does not specify ports in the knock packet — this simplifies the
+// wire format and prevents clients from requesting ports they are not authorised for.
 //
 // Security properties:
 //   - Forward secrecy via ephemeral Curve25519 ECDH key per knock
@@ -46,17 +50,15 @@ const (
 	// TargetIPSize is the size of the target IP field (IPv6-compatible, 16 bytes).
 	TargetIPSize = 16
 
-	// TargetPortSize is the size of the target port field in bytes.
-	TargetPortSize = 2
-
 	// PlaintextSize is the total size of the unencrypted payload.
-	PlaintextSize = TimestampSize + RandomNonceSize + TargetIPSize + TargetPortSize // 42 bytes
+	// timestamp(8) + random_nonce(16) + target_ip(16) = 40 bytes.
+	PlaintextSize = TimestampSize + RandomNonceSize + TargetIPSize // 40 bytes
 
 	// CiphertextSize is PlaintextSize + TagSize.
-	CiphertextSize = PlaintextSize + TagSize // 58 bytes
+	CiphertextSize = PlaintextSize + TagSize // 56 bytes
 
 	// PacketSize is the total wire size of a SPA packet.
-	PacketSize = 1 + EphemeralPubKeySize + NonceSize + CiphertextSize + Ed25519SigSize // 167 bytes
+	PacketSize = 1 + EphemeralPubKeySize + NonceSize + CiphertextSize + Ed25519SigSize // 165 bytes
 
 	// SignedPortionSize is the number of bytes covered by the Ed25519 signature.
 	SignedPortionSize = PacketSize - Ed25519SigSize
@@ -74,7 +76,7 @@ const (
 	OffEphemeralPubKey = 1
 	OffNonce           = OffEphemeralPubKey + EphemeralPubKeySize // 33
 	OffCiphertext      = OffNonce + NonceSize                     // 45
-	OffSignature       = OffCiphertext + CiphertextSize           // 103
+	OffSignature       = OffCiphertext + CiphertextSize           // 101
 )
 
 // Plaintext holds the decrypted payload of a SPA packet.
@@ -87,10 +89,9 @@ type Plaintext struct {
 
 	// TargetIP is the IP address to open the firewall to.
 	// Use net.IPv4zero or net.IPv6zero for "source IP of knock packet".
+	// Ports are determined by the server's per-client configuration, not by
+	// this field — the client has no say over which ports are opened.
 	TargetIP net.IP
-
-	// TargetPort is the port to open.
-	TargetPort uint16
 }
 
 // MarshalPlaintext serialises a Plaintext into a fixed-size byte slice.
@@ -102,10 +103,9 @@ func MarshalPlaintext(p *Plaintext) []byte {
 
 	ip := p.TargetIP.To16()
 	if ip == nil {
-		ip = make([]byte, 16) // zero = wildcard
+		ip = make([]byte, 16) // zero = wildcard → use knock source IP
 	}
 	copy(buf[TimestampSize+RandomNonceSize:], ip)
-	binary.BigEndian.PutUint16(buf[TimestampSize+RandomNonceSize+TargetIPSize:], p.TargetPort)
 
 	return buf
 }
@@ -118,18 +118,16 @@ func UnmarshalPlaintext(raw []byte) (*Plaintext, error) {
 	}
 
 	ts := int64(binary.BigEndian.Uint64(raw[0:]))
+
 	var rn [RandomNonceSize]byte
 	copy(rn[:], raw[TimestampSize:TimestampSize+RandomNonceSize])
 
 	ip := make(net.IP, 16)
-	copy(ip, raw[TimestampSize+RandomNonceSize:TimestampSize+RandomNonceSize+TargetIPSize])
-
-	port := binary.BigEndian.Uint16(raw[TimestampSize+RandomNonceSize+TargetIPSize:])
+	copy(ip, raw[TimestampSize+RandomNonceSize:])
 
 	return &Plaintext{
 		Timestamp:   time.Unix(0, ts),
 		RandomNonce: rn,
 		TargetIP:    ip,
-		TargetPort:  port,
 	}, nil
 }

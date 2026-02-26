@@ -13,10 +13,10 @@ port and nothing else.
 
 ### Passive traffic analysis
 
-The knock packet is fully encrypted (ChaCha20-Poly1305 AEAD). Its 167 bytes
+The knock packet is fully encrypted (ChaCha20-Poly1305 AEAD). Its 165 bytes
 are computationally indistinguishable from random noise to anyone who does not
-hold the server's static Curve25519 private key. The source IP, target IP,
-target port, and client identity are all hidden.
+hold the server's static Curve25519 private key. The source IP, target IP, and client identity are all hidden.
+The ports to be opened are never transmitted — they are determined server-side.
 
 ### Replay attacks
 
