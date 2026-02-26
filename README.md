@@ -122,4 +122,4 @@ Each platform has its own subdirectory, build toolchain and README. Start with t
 
 ## License
 
-MIT
+MIT — see [LICENSE](LICENSE).

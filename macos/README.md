@@ -9,11 +9,9 @@
 - **Distribution:** Mac App Store / direct DMG
 
 ## Planned Features
-
+- GUI for the CLI. It is shipped with the go executable
 - Menu bar icon with per-profile knock actions
 - Profile manager sheet
-- QR code scanning via camera
-- Keychain integration for private key storage
 - macOS Shortcuts support (`openme connect home`)
 - Auto-knock on specific SSIDs
 

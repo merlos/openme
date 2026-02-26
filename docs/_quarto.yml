@@ -69,7 +69,7 @@ website:
         - faq/index.qmd
 
   page-footer:
-    left: "© 2025 openme contributors — MIT License"
+    left: "© 2026 merlos.org — MIT License"
     right:
       - icon: github
         href: https://github.com/openme/openme
