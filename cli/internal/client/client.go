@@ -16,6 +16,7 @@ import (
 	"crypto/ed25519"
 	"fmt"
 	"net"
+	"strconv"
 	"time"
 
 	internlcrypto "github.com/openme/openme/internal/crypto"
@@ -50,7 +51,7 @@ func Knock(opts *KnockOptions) error {
 		return fmt.Errorf("building knock packet: %w", err)
 	}
 
-	addr := fmt.Sprintf("%s:%d", opts.ServerHost, opts.ServerUDPPort)
+	addr := net.JoinHostPort(opts.ServerHost, strconv.Itoa(int(opts.ServerUDPPort)))
 	conn, err := net.Dial("udp", addr)
 	if err != nil {
 		return fmt.Errorf("dialing UDP %s: %w", addr, err)
@@ -127,7 +128,7 @@ func BuildPacket(opts *KnockOptions) ([]byte, error) {
 // client has not knocked yet (or the knock_timeout has expired).
 // Use openme status --knock to knock and check in one step.
 func HealthCheck(host string, port uint16, timeout time.Duration) bool {
-	addr := fmt.Sprintf("%s:%d", host, port)
+	addr := net.JoinHostPort(host, strconv.Itoa(int(port)))
 	conn, err := net.DialTimeout("tcp", addr, timeout)
 	if err != nil {
 		return false

@@ -554,7 +554,7 @@ func runAdd(name string, showQR bool, qrOut string, omitPriv bool, expires, port
 			fmt.Println("\n⚠ QR does not include private key. The mobile app must generate its own keypair")
 			fmt.Printf("  and you must run: openme add %s-mobile (with the mobile's public key)\n\n", name)
 		} else {
-			fmt.Println("\n⚠ WARNING: QR contains the client private key. Treat it as a secret!\n")
+			fmt.Println("\n⚠ WARNING: QR contains the client private key. Treat it as a secret!")
 		}
 		if err := qr.Generate(payload, &qr.GenerateOptions{
 			OmitPrivateKey: omitPriv,
