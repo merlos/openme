@@ -100,14 +100,14 @@ func TestManager_CloseAll(t *testing.T) {
 }
 
 func TestNewBackend_Invalid(t *testing.T) {
-	if _, err := firewall.NewBackend("unknown"); err == nil {
+	if _, err := firewall.NewBackend("unknown", slog.Default()); err == nil {
 		t.Error("NewBackend with unknown name should return error")
 	}
 }
 
 func TestNewBackend_Valid(t *testing.T) {
 	for _, name := range []string{"iptables", "nft"} {
-		if _, err := firewall.NewBackend(name); err != nil {
+		if _, err := firewall.NewBackend(name, slog.Default()); err != nil {
 			t.Errorf("NewBackend(%q) error = %v", name, err)
 		}
 	}

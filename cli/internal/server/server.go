@@ -27,10 +27,10 @@ import (
 	"github.com/openme/openme/pkg/protocol"
 )
 
-// KnockHandler is called by the server for each valid knock with the resolved
-// source IP, the decrypted target IP (or source IP if wildcard), and the port
-// rules to open (already includes the health port for this client).
-type KnockHandler func(srcIP, targetIP net.IP, ports []PortRule)
+// KnockHandler is called by the server for each valid knock with the client
+// name, the resolved source IP, the decrypted target IP (or source IP if
+// wildcard), and the port rules to open.
+type KnockHandler func(clientName string, srcIP, targetIP net.IP, ports []PortRule)
 
 // PortRule mirrors config.PortRule to avoid a circular import.
 type PortRule struct {
@@ -203,7 +203,7 @@ func (s *Server) handlePacket(raw []byte, srcAddr net.Addr) {
 
 	if s.opts.OnKnock != nil {
 		// client.Ports already includes the health port rule (injected by buildClientRecords).
-		s.opts.OnKnock(srcIP, targetIP, client.Ports)
+		s.opts.OnKnock(client.Name, srcIP, targetIP, client.Ports)
 	}
 }
 

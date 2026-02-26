@@ -132,7 +132,7 @@ Example:
 // It refuses to overwrite an existing config unless --force is given.
 func runInit(force bool, serverHost string, udpPort uint16, firewallBackend string) error {
 	// Validate firewall backend early so we fail before writing anything.
-	if _, err := firewall.NewBackend(firewallBackend); err != nil {
+	if _, err := firewall.NewBackend(firewallBackend, slog.Default()); err != nil {
 		return err
 	}
 
@@ -221,7 +221,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 	}
 
 	// Set up firewall manager.
-	fw, err := firewall.NewBackend(cfg.Server.Firewall)
+	fw, err := firewall.NewBackend(cfg.Server.Firewall, log)
 	if err != nil {
 		return err
 	}
@@ -234,7 +234,8 @@ func runServe(cmd *cobra.Command, args []string) error {
 		ReplayWindow: cfg.Server.ReplayWindow.Duration,
 		Clients:      clients,
 		Log:          log,
-		OnKnock: func(srcIP, targetIP net.IP, ports []server.PortRule) {
+		OnKnock: func(clientName string, srcIP, targetIP net.IP, ports []server.PortRule) {
+			log.Info("firewall: IP added", "client", clientName, "ip", targetIP)
 			cfgPorts := make([]config.PortRule, len(ports))
 			for i, p := range ports {
 				cfgPorts[i] = config.PortRule{Port: p.Port, Proto: p.Proto}
