@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Workspace
+   version = "1.0">
+   <FileRef
+      location = "group:openme-macos/openme-macos.xcodeproj">
+   </FileRef>
+   <FileRef
+      location = "group:OpenMeKit">
+   </FileRef>
+   <FileRef
+      location = "group:openme-ios">
+   </FileRef>
+</Workspace>
