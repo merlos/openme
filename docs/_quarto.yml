@@ -25,6 +25,8 @@ website:
             href: security/index.qmd
           - text: "FAQ"
             href: faq/index.qmd
+          - text: "Android SDK"
+            href: android-sdk/index.qmd
       - text: "API Reference"
         href: api/index.qmd
     right:
@@ -67,6 +69,10 @@ website:
     - title: "FAQ"
       contents:
         - faq/index.qmd
+
+    - title: "Android SDK"
+      contents:
+        - android-sdk/index.qmd
 
   page-footer:
     left: "© 2026 merlos.org — MIT License"
