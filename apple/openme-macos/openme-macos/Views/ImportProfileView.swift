@@ -1,6 +1,7 @@
 import SwiftUI
 import OpenMeKit
 import UniformTypeIdentifiers
+import AppKit
 
 /// Lets the user paste a YAML block (output of `openme add`) or drag-drop a .yaml file
 /// to import one or more profiles into the local config.
@@ -24,18 +25,26 @@ struct ImportProfileView: View {
                 .foregroundStyle(.secondary)
 
             // ── YAML text area ───────────────────────────────────────────────
-            TextEditor(text: $yamlText)
-                .font(.system(.caption, design: .monospaced))
-                .frame(minHeight: 200)
-                .border(isDropTargeted ? Color.accentColor : Color(nsColor: .separatorColor))
-                .onDrop(of: [.yaml, .fileURL], isTargeted: $isDropTargeted) { providers in
-                    handleDrop(providers)
+            // YAMLTextEditor is an NSViewRepresentable wrapper around NSTextView
+            // that intercepts file drops at the AppKit level. Plain TextEditor
+            // cannot be used here because NSTextView handles Finder file drops
+            // internally (inserting the file path) before SwiftUI's .onDrop
+            // ever fires.
+            YAMLTextEditor(
+                text: $yamlText,
+                isDropTargeted: $isDropTargeted,
+                onFileDrop: { content in
+                    yamlText = content
                 }
-                .onChange(of: yamlText) {
-                    parseError = nil
-                    parsedProfiles = [:]
-                    importSuccess = false
-                }
+            )
+            .font(.system(.caption, design: .monospaced))
+            .frame(minHeight: 200)
+            .border(isDropTargeted ? Color.accentColor : Color(nsColor: .separatorColor))
+            .onChange(of: yamlText) {
+                parseError = nil
+                parsedProfiles = [:]
+                importSuccess = false
+            }
 
             // ── Parse preview ────────────────────────────────────────────────
             if !parsedProfiles.isEmpty {
@@ -112,15 +121,126 @@ struct ImportProfileView: View {
             parseError = error.localizedDescription
         }
     }
+}
 
-    private func handleDrop(_ providers: [NSItemProvider]) -> Bool {
-        guard let provider = providers.first else { return false }
-        provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier, options: nil) { item, _ in
-            guard let data = item as? Data,
-                  let url = URL(dataRepresentation: data, relativeTo: nil),
-                  let text = try? String(contentsOf: url, encoding: .utf8) else { return }
-            DispatchQueue.main.async { yamlText = text }
+// MARK: - YAMLTextEditor
+
+/// A SwiftUI-compatible text editor backed by `NSTextView` that intercepts
+/// file drops at the AppKit level.
+///
+/// `TextEditor` cannot be used for this purpose because `NSTextView` handles
+/// drops from Finder by inserting the file path as plain text, completely
+/// bypassing SwiftUI's `.onDrop` modifier. This wrapper subclasses `NSTextView`
+/// to override `draggingEntered(_:)` and `performDragOperation(_:)` so that
+/// dropped files are read and their contents placed in the editor instead.
+private struct YAMLTextEditor: NSViewRepresentable {
+    @Binding var text: String
+    @Binding var isDropTargeted: Bool
+    var onFileDrop: (String) -> Void
+    var font: NSFont = .monospacedSystemFont(ofSize: NSFont.smallSystemFontSize, weight: .regular)
+
+    func makeNSView(context: Context) -> NSScrollView {
+        let textView = FileDropTextView()
+        textView.onFileDrop = onFileDrop
+        textView.onDropTargetChanged = { targeted in
+            DispatchQueue.main.async { isDropTargeted = targeted }
         }
-        return true
+        textView.isEditable = true
+        textView.isRichText = false
+        textView.font = font
+        textView.delegate = context.coordinator
+        textView.string = text
+        textView.isAutomaticQuoteSubstitutionEnabled = false
+        textView.isAutomaticDashSubstitutionEnabled = false
+
+        let scrollView = NSScrollView()
+        scrollView.documentView = textView
+        scrollView.hasVerticalScroller = true
+        scrollView.autohidesScrollers = true
+        return scrollView
+    }
+
+    func updateNSView(_ scrollView: NSScrollView, context: Context) {
+        guard let textView = scrollView.documentView as? NSTextView else { return }
+        // Only update if the binding changed externally (e.g. "Paste from Clipboard"),
+        // to avoid clobbering the cursor position while the user is typing.
+        if textView.string != text {
+            textView.string = text
+        }
+        textView.font = font
+    }
+
+    func makeCoordinator() -> Coordinator { Coordinator(self) }
+
+    final class Coordinator: NSObject, NSTextViewDelegate {
+        var parent: YAMLTextEditor
+        init(_ parent: YAMLTextEditor) { self.parent = parent }
+
+        func textDidChange(_ notification: Notification) {
+            guard let tv = notification.object as? NSTextView else { return }
+            parent.text = tv.string
+        }
     }
 }
+
+extension YAMLTextEditor {
+    /// Applies a monospaced font to the editor.
+    func font(_ font: NSFont) -> YAMLTextEditor {
+        var copy = self
+        copy.font = font
+        return copy
+    }
+}
+
+// MARK: - FileDropTextView
+
+/// `NSTextView` subclass that intercepts file drops and calls `onFileDrop`
+/// with the file contents instead of inserting the file path.
+private final class FileDropTextView: NSTextView {
+    var onFileDrop: ((String) -> Void)?
+    var onDropTargetChanged: ((Bool) -> Void)?
+
+    private static let fileTypes = [UTType.fileURL.identifier]
+
+    // MARK: NSDraggingDestination overrides
+
+    override func draggingEntered(_ sender: NSDraggingInfo) -> NSDragOperation {
+        if fileURL(from: sender) != nil {
+            onDropTargetChanged?(true)
+            return .copy
+        }
+        return super.draggingEntered(sender)
+    }
+
+    override func draggingExited(_ sender: NSDraggingInfo?) {
+        onDropTargetChanged?(false)
+        super.draggingExited(sender)
+    }
+
+    override func draggingEnded(_ sender: NSDraggingInfo) {
+        onDropTargetChanged?(false)
+        super.draggingEnded(sender)
+    }
+
+    override func performDragOperation(_ sender: NSDraggingInfo) -> Bool {
+        if let url = fileURL(from: sender),
+           let content = try? String(contentsOf: url, encoding: .utf8) {
+            DispatchQueue.main.async { self.onFileDrop?(content) }
+            return true
+        }
+        return super.performDragOperation(sender)
+    }
+
+    // MARK: Helpers
+
+    /// Extracts the first file URL from the drag pasteboard, if any.
+    private func fileURL(from info: NSDraggingInfo) -> URL? {
+        let pb = info.draggingPasteboard
+        guard let urls = pb.readObjects(
+            forClasses: [NSURL.self],
+            options: [.urlReadingFileURLsOnly: true]
+        ) as? [URL] else { return nil }
+        return urls.first
+    }
+}
+
