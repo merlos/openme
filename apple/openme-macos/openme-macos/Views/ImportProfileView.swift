@@ -80,8 +80,9 @@ struct ImportProfileView: View {
                     }
                 }
 
-                Button("Parse") { parseYAML() }
-                    .disabled(yamlText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                Button("Select File…") {
+                    selectFile()
+                }
 
                 Spacer()
 
@@ -89,10 +90,10 @@ struct ImportProfileView: View {
                     .keyboardShortcut(.escape)
 
                 Button("Import") {
-                    importParsed()
+                    importAll()
                 }
                 .keyboardShortcut(.return, modifiers: .command)
-                .disabled(parsedProfiles.isEmpty)
+                .disabled(yamlText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 .buttonStyle(.borderedProminent)
             }
         }
@@ -102,23 +103,34 @@ struct ImportProfileView: View {
 
     // MARK: - Helpers
 
-    private func parseYAML() {
+    /// Parses the current YAML text and immediately imports it.
+    private func importAll() {
+        parseError = nil
         do {
-            parsedProfiles = try ClientConfigParser.parse(yaml: yamlText)
-            parseError = nil
+            let parsed = try ClientConfigParser.parse(yaml: yamlText)
+            try store.merge(parsed)
+            parsedProfiles = parsed
+            importSuccess = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { dismiss() }
         } catch {
             parsedProfiles = [:]
             parseError = error.localizedDescription
         }
     }
 
-    private func importParsed() {
-        do {
-            try store.merge(parsedProfiles)
-            importSuccess = true
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { dismiss() }
-        } catch {
-            parseError = error.localizedDescription
+    /// Opens a standard file-chooser panel and loads the selected YAML file.
+    private func selectFile() {
+        let panel = NSOpenPanel()
+        panel.title = "Select YAML config file"
+        panel.allowedContentTypes = [
+            UTType.yaml,
+            UTType(filenameExtension: "yml") ?? .data
+        ]
+        panel.allowsMultipleSelection = false
+        panel.canChooseDirectories = false
+        if panel.runModal() == .OK, let url = panel.url,
+           let text = try? String(contentsOf: url, encoding: .utf8) {
+            yamlText = text
         }
     }
 }

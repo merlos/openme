@@ -35,6 +35,8 @@ struct openme_macosApp: App {
             ProfileManagerView()
                 .environmentObject(store)
                 .frame(minWidth: 580, minHeight: 400)
+                .onAppear  { NSApp.setActivationPolicy(.regular) }
+                .onDisappear { NSApp.setActivationPolicy(.accessory) }
         }
         .windowResizability(.contentMinSize)
         .defaultLaunchBehavior(.suppressed)
@@ -43,6 +45,8 @@ struct openme_macosApp: App {
             ImportProfileView()
                 .environmentObject(store)
                 .frame(minWidth: 440, minHeight: 360)
+                .onAppear  { NSApp.setActivationPolicy(.regular) }
+                .onDisappear { NSApp.setActivationPolicy(.accessory) }
         }
         .windowResizability(.contentMinSize)
         .defaultLaunchBehavior(.suppressed)
