@@ -83,7 +83,7 @@ object KnockService {
      * Use a TCP health-port check to verify the rule is active.
      *
      * @param serverHost Hostname or IP address string of the openme server.
-     * @param serverPort UDP port the server is listening on (usually `7777`).
+     * @param serverPort UDP port the server is listening on (usually `54154`).
      * @param serverPubKeyBase64 Base64-encoded 32-byte X25519 public key of the server.
      * @param clientPrivKeyBase64 Base64-encoded Ed25519 private key of this client.
      *   Accepts both 32-byte (seed only) and 64-byte (seed + public key) encodings.

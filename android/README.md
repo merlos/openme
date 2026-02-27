@@ -1,6 +1,6 @@
 # openme Android
 
-Android app + client library for the [openme](https://github.com/openme/openme) Single Packet Authentication (SPA) protocol.
+Android app + client library for the [openme](https://github.com/merlos/openme) Single Packet Authentication (SPA) protocol.
 
 ## Project structure
 

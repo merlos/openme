@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/openme/openme/pkg/protocol"
+	"github.com/merlos/openme/pkg/protocol"
 )
 
 func TestMarshalUnmarshalPlaintext_RoundTrip(t *testing.T) {

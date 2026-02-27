@@ -6,11 +6,11 @@ title: "Server Setup"
 
 ### From a pre-built binary
 
-Download the latest release from [GitHub Releases](https://github.com/openme/openme/releases):
+Download the latest release from [GitHub Releases](https://github.com/merlos/openme/releases):
 
 ```bash
 # Linux amd64
-curl -Lo openme https://github.com/openme/openme/releases/latest/download/openme-linux-amd64
+curl -Lo openme https://github.com/merlos/openme/releases/latest/download/openme-linux-amd64
 chmod +x openme
 sudo mv openme /usr/local/bin/
 ```
@@ -20,7 +20,7 @@ sudo mv openme /usr/local/bin/
 Requires [Go 1.21+](https://go.dev/dl/).
 
 ```bash
-git clone https://github.com/openme/openme
+git clone https://github.com/merlos/openme
 cd openme/cli
 go build -o openme ./cmd/openme
 sudo mv openme /usr/local/bin/
@@ -42,7 +42,7 @@ Options:
 | Flag | Default | Description |
 |------|---------|-------------|
 | `--server` | *(required)* | Public hostname or IP — used in generated client configs |
-| `--port` | `7777` | UDP knock port and TCP health port |
+| `--port` | `54154` | UDP knock port and TCP health port |
 | `--firewall` | `nft` | Firewall backend: `nft` or `iptables` |
 | `--force` | `false` | Overwrite an existing config |
 
@@ -59,10 +59,10 @@ policy — if not, see [Harden the Firewall](#harden-firewall) first.
 
 ```bash
 # nftables
-sudo nft add rule inet filter input udp dport 7777 accept
+sudo nft add rule inet filter input udp dport 54154 accept
 
 # iptables
-sudo iptables -A INPUT -p udp --dport 7777 -j ACCEPT
+sudo iptables -A INPUT -p udp --dport 54154 -j ACCEPT
 ```
 
 ::: {.callout-tip}
@@ -125,7 +125,7 @@ sudo nft add rule inet filter input ct state established,related accept
 sudo nft add rule inet filter input iifname "lo" accept
 
 # Allow the UDP knock port (openme)
-sudo nft add rule inet filter input udp dport 7777 accept
+sudo nft add rule inet filter input udp dport 54154 accept
 
 # Create the openme chain (openme manages rules inside it)
 sudo nft add chain inet filter openme
@@ -155,7 +155,7 @@ sudo iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 sudo iptables -A INPUT -i lo -j ACCEPT
 
 # Allow the UDP knock port (openme)
-sudo iptables -A INPUT -p udp --dport 7777 -j ACCEPT
+sudo iptables -A INPUT -p udp --dport 54154 -j ACCEPT
 
 # ── IPv6 ──────────────────────────────────────────────────────────────────
 sudo ip6tables -F
@@ -166,7 +166,7 @@ sudo ip6tables -P OUTPUT  ACCEPT
 
 sudo ip6tables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 sudo ip6tables -A INPUT -i lo -j ACCEPT
-sudo ip6tables -A INPUT -p udp --dport 7777 -j ACCEPT
+sudo ip6tables -A INPUT -p udp --dport 54154 -j ACCEPT
 ```
 
 Persist across reboots (Debian/Ubuntu):

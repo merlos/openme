@@ -52,7 +52,7 @@ fun ProfileDetailScreen(
     // Track mutable field state for editing
     var name by remember { mutableStateOf(profileName) }
     var serverHost by remember { mutableStateOf("") }
-    var serverPort by remember { mutableStateOf("7777") }
+    var serverPort by remember { mutableStateOf("54154") }
     var serverPubKey by remember { mutableStateOf("") }
     var privateKey by remember { mutableStateOf("") }
     var publicKey by remember { mutableStateOf("") }
@@ -201,7 +201,7 @@ fun ProfileDetailScreen(
                         Profile(
                             name = name.ifBlank { profileName },
                             serverHost = serverHost,
-                            serverUDPPort = serverPort.toIntOrNull() ?: 7777,
+                            serverUDPPort = serverPort.toIntOrNull() ?: 54154,
                             serverPubKey = serverPubKey,
                             privateKey = privateKey,
                             publicKey = publicKey,

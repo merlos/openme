@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/openme/openme/internal/config"
+	"github.com/merlos/openme/internal/config"
 )
 
 // Backend is the interface implemented by both iptables and nftables backends.

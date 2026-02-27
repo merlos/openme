@@ -176,7 +176,7 @@ class ProfileStore(context: Context) {
         Profile(
             name = obj.getString("name"),
             serverHost = obj.optString("serverHost"),
-            serverUDPPort = obj.optInt("serverUDPPort", 7777),
+            serverUDPPort = obj.optInt("serverUDPPort", 54154),
             serverPubKey = obj.optString("serverPubKey"),
             privateKey = obj.optString("privateKey"),
             publicKey = obj.optString("publicKey"),
@@ -189,7 +189,7 @@ class ProfileStore(context: Context) {
         ProfileEntry(
             name = obj.getString("name"),
             serverHost = obj.optString("serverHost"),
-            serverUDPPort = obj.optInt("serverUDPPort", 7777),
+            serverUDPPort = obj.optInt("serverUDPPort", 54154),
         )
     } catch (_: Exception) { null }
 

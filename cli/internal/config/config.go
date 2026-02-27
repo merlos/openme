@@ -104,8 +104,8 @@ type ServerConfig struct {
 // DefaultServerConfig returns a ServerConfig with sensible defaults.
 func DefaultServerConfig() *ServerConfig {
 	cfg := &ServerConfig{}
-	cfg.Server.UDPPort = 7777
-	cfg.Server.HealthPort = 7777
+	cfg.Server.UDPPort = 54154
+	cfg.Server.HealthPort = 54154
 	cfg.Server.Firewall = "nft"
 	cfg.Server.KnockTimeout = Duration{30 * time.Second}
 	cfg.Server.ReplayWindow = Duration{60 * time.Second}

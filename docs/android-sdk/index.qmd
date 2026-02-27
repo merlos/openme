@@ -55,7 +55,7 @@ val yaml = """
     profiles:
         my-server:
             server_host: "203.0.113.1"
-            server_udp_port: 7777
+            server_udp_port: 54154
             server_pubkey: "<base64>"
             private_key: "<base64>"
             public_key: "<base64>"
@@ -117,7 +117,7 @@ Pure-Kotlin, static implementation of the 165-byte SPA packet:
 ```kotlin
 KnockService.knock(
     serverHost = "203.0.113.1",
-    serverPort = 7777,
+    serverPort = 54154,
     serverPubKeyBase64 = "<base64>",
     clientPrivKeyBase64 = "<base64>",
 )
@@ -211,4 +211,4 @@ gradle wrapper
 
 Contributions are welcome. The library lives under `android/openmekit/` and the app
 under `android/app/`. See the top-level
-[README](https://github.com/openme/openme/blob/main/README.md) for development setup.
+[README](https://github.com/merlos/openme/blob/main/README.md) for development setup.

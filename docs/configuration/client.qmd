@@ -11,7 +11,7 @@ Override with: `openme --client-config /path/to/config.yaml connect`
 profiles:
   default:
     server_host: "myserver.example.com"
-    server_udp_port: 7777
+    server_udp_port: 54154
     server_pubkey: "base64-encoded-curve25519-public-key=="
     private_key:   "base64-encoded-ed25519-private-key=="
     public_key:    "base64-encoded-ed25519-public-key=="
@@ -19,7 +19,7 @@ profiles:
 
   home:
     server_host: "home.example.com"
-    server_udp_port: 7777
+    server_udp_port: 54154
     server_pubkey: "base64-encoded-curve25519-public-key=="
     private_key:   "base64-encoded-ed25519-private-key=="
     public_key:    "base64-encoded-ed25519-public-key=="

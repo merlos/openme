@@ -9,8 +9,8 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/openme/openme/internal/config"
-	internlcrypto "github.com/openme/openme/internal/crypto"
+	"github.com/merlos/openme/internal/config"
+	internlcrypto "github.com/merlos/openme/internal/crypto"
 )
 
 func TestRunInit_CreatesConfig(t *testing.T) {
@@ -22,7 +22,7 @@ func TestRunInit_CreatesConfig(t *testing.T) {
 	serverConfigPath = path
 	defer func() { serverConfigPath = orig }()
 
-	if err := runInit(false, "test.example.com", 7777, "nft"); err != nil {
+	if err := runInit(false, "test.example.com", 54154, "nft"); err != nil {
 		t.Fatalf("runInit error = %v", err)
 	}
 
@@ -34,8 +34,8 @@ func TestRunInit_CreatesConfig(t *testing.T) {
 	if cfg.Defaults.Server != "test.example.com" {
 		t.Errorf("Server = %q, want test.example.com", cfg.Defaults.Server)
 	}
-	if cfg.Server.UDPPort != 7777 {
-		t.Errorf("UDPPort = %d, want 7777", cfg.Server.UDPPort)
+	if cfg.Server.UDPPort != 54154 {
+		t.Errorf("UDPPort = %d, want 54154", cfg.Server.UDPPort)
 	}
 	if cfg.Server.HealthPort != cfg.Server.UDPPort {
 		t.Errorf("HealthPort %d should equal UDPPort %d", cfg.Server.HealthPort, cfg.Server.UDPPort)
@@ -68,12 +68,12 @@ func TestRunInit_RefusesOverwrite(t *testing.T) {
 	defer func() { serverConfigPath = orig }()
 
 	// First init should succeed.
-	if err := runInit(false, "server.example.com", 7777, "nft"); err != nil {
+	if err := runInit(false, "server.example.com", 54154, "nft"); err != nil {
 		t.Fatalf("first runInit error = %v", err)
 	}
 
 	// Second init without --force should fail.
-	if err := runInit(false, "server.example.com", 7777, "nft"); err == nil {
+	if err := runInit(false, "server.example.com", 54154, "nft"); err == nil {
 		t.Error("second runInit without --force should return an error")
 	}
 }
@@ -86,7 +86,7 @@ func TestRunInit_ForceOverwrite(t *testing.T) {
 	serverConfigPath = path
 	defer func() { serverConfigPath = orig }()
 
-	if err := runInit(false, "first.example.com", 7777, "nft"); err != nil {
+	if err := runInit(false, "first.example.com", 54154, "nft"); err != nil {
 		t.Fatal(err)
 	}
 
@@ -112,7 +112,7 @@ func TestRunInit_InvalidFirewall(t *testing.T) {
 	serverConfigPath = path
 	defer func() { serverConfigPath = orig }()
 
-	if err := runInit(false, "server.example.com", 7777, "bogus"); err == nil {
+	if err := runInit(false, "server.example.com", 54154, "bogus"); err == nil {
 		t.Error("runInit with invalid firewall should return error")
 	}
 	// Config file should not have been created.
@@ -129,7 +129,7 @@ func TestRunInit_ConfigFilePermissions(t *testing.T) {
 	serverConfigPath = path
 	defer func() { serverConfigPath = orig }()
 
-	if err := runInit(false, "server.example.com", 7777, "nft"); err != nil {
+	if err := runInit(false, "server.example.com", 54154, "nft"); err != nil {
 		t.Fatal(err)
 	}
 

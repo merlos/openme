@@ -21,7 +21,7 @@ public struct Profile: Codable, Identifiable, Equatable {
 
     /// Hostname or IP address of the openme server.
     public var serverHost: String
-    /// UDP port the server listens on for SPA knock packets (default `7777`).
+    /// UDP port the server listens on for SPA knock packets (default `54154`).
     public var serverUDPPort: UInt16
     /// Base64-encoded Curve25519 public key of the server.
     /// Used for the ECDH key agreement step of the knock protocol.
@@ -40,7 +40,7 @@ public struct Profile: Codable, Identifiable, Equatable {
     /// - Parameters:
     ///   - name: Unique profile identifier used as the YAML map key.
     ///   - serverHost: Hostname or IP of the openme server.
-    ///   - serverUDPPort: UDP port the server listens on. Defaults to `7777`.
+    ///   - serverUDPPort: UDP port the server listens on. Defaults to `54154`.
     ///   - serverPubKey: Base64-encoded Curve25519 public key of the server.
     ///   - privateKey: Base64-encoded Ed25519 private key of this client.
     ///   - publicKey: Base64-encoded Ed25519 public key of this client.
@@ -48,7 +48,7 @@ public struct Profile: Codable, Identifiable, Equatable {
     public init(
         name: String,
         serverHost: String = "",
-        serverUDPPort: UInt16 = 7777,
+        serverUDPPort: UInt16 = 54154,
         serverPubKey: String = "",
         privateKey: String = "",
         publicKey: String = "",
@@ -105,7 +105,7 @@ public struct ProfileEntry: Identifiable {
 /// profiles:
 ///   <name>:
 ///     server_host: "..."
-///     server_udp_port: 7777
+///     server_udp_port: 54154
 ///     server_pubkey: "..."
 ///     private_key: "..."
 ///     public_key:  "..."
@@ -211,7 +211,7 @@ public enum ClientConfigParser {
             profiles[name] = Profile(
                 name: name,
                 serverHost:    host,
-                serverUDPPort: UInt16(currentDict["server_udp_port"] ?? "7777") ?? 7777,
+                serverUDPPort: UInt16(currentDict["server_udp_port"] ?? "54154") ?? 54154,
                 serverPubKey:  serverKey,
                 privateKey:    privateKey,
                 publicKey:     publicKey,
@@ -311,7 +311,7 @@ public enum ClientConfigParser {
     /// {
     ///   "profile": "home",
     ///   "host": "myserver.example.com",
-    ///   "udp_port": 7777,
+    ///   "udp_port": 54154,
     ///   "server_pubkey": "<base64>",
     ///   "client_privkey": "<base64>",
     ///   "client_pubkey": "<base64>"

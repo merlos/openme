@@ -49,7 +49,7 @@ public enum KnockService {
     ///
     /// - Parameters:
     ///   - serverHost: Hostname or IP address string of the openme server.
-    ///   - serverPort: UDP port the server is listening on (usually `7777`).
+    ///   - serverPort: UDP port the server is listening on (usually `54154`).
     ///   - serverPubKeyBase64: Base64-encoded 32-byte Curve25519 public key of the server.
     ///   - clientPrivKeyBase64: Base64-encoded Ed25519 private key of this client.
     ///     Accepts both 32-byte (seed) and 64-byte (seed + public key) encodings.

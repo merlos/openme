@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/openme/openme/internal/server"
-	"github.com/openme/openme/pkg/protocol"
+	"github.com/merlos/openme/internal/server"
+	"github.com/merlos/openme/pkg/protocol"
 )
 
 func TestPortRule(t *testing.T) {
@@ -46,8 +46,8 @@ func TestHealthPortNotPermanent(t *testing.T) {
 	// started by server.Run. We verify the Options struct has the field but
 	// that there is no runHealth method on Server (it was intentionally removed).
 	opts := &server.Options{
-		UDPPort:    7777,
-		HealthPort: 7777, // stored for firewall injection, not for binding
+		UDPPort:    54154,
+		HealthPort: 54154, // stored for firewall injection, not for binding
 	}
 	if opts.HealthPort != opts.UDPPort {
 		t.Error("HealthPort should default to UDPPort")

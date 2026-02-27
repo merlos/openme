@@ -75,7 +75,7 @@ import OpenMeKit
 
 KnockService.knock(
     serverHost: "myserver.example.com",
-    serverPort: 7777,
+    serverPort: 54154,
     serverPubKeyBase64: "<base64 server pubkey>",
     clientPrivKeyBase64: "<base64 client privkey>"
 ) { result in
@@ -105,7 +105,7 @@ if let p = store.profile(named: "home") {
 let p = Profile(
     name: "office",
     serverHost: "office.example.com",
-    serverUDPPort: 7777,
+    serverUDPPort: 54154,
     serverPubKey: "...",
     privateKey: "...",
     publicKey: "..."

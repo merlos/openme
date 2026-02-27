@@ -7,13 +7,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/openme/openme/internal/config"
+	"github.com/merlos/openme/internal/config"
 )
 
 func TestDefaultServerConfig(t *testing.T) {
 	cfg := config.DefaultServerConfig()
-	if cfg.Server.UDPPort != 7777 {
-		t.Errorf("UDPPort = %d, want 7777", cfg.Server.UDPPort)
+	if cfg.Server.UDPPort != 54154 {
+		t.Errorf("UDPPort = %d, want 54154", cfg.Server.UDPPort)
 	}
 	if cfg.Server.Firewall != "nft" {
 		t.Errorf("Firewall = %q, want nft", cfg.Server.Firewall)
@@ -63,7 +63,7 @@ func TestSaveLoadClientConfig(t *testing.T) {
 		Profiles: map[string]*config.Profile{
 			"default": {
 				ServerHost:    "1.2.3.4",
-				ServerUDPPort: 7777,
+				ServerUDPPort: 54154,
 				ServerPubKey:  "serverpub==",
 				PrivateKey:    "clientpriv==",
 				PublicKey:     "clientpub==",

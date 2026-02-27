@@ -5,9 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/openme/openme/internal/client"
-	internlcrypto "github.com/openme/openme/internal/crypto"
-	"github.com/openme/openme/pkg/protocol"
+	"github.com/merlos/openme/internal/client"
+	internlcrypto "github.com/merlos/openme/internal/crypto"
+	"github.com/merlos/openme/pkg/protocol"
 )
 
 // buildTestOptions creates a KnockOptions with freshly generated keys.
@@ -25,7 +25,7 @@ func buildTestOptions(t *testing.T, targetIP net.IP) *client.KnockOptions {
 
 	return &client.KnockOptions{
 		ServerHost:             "127.0.0.1",
-		ServerUDPPort:          7777,
+		ServerUDPPort:          54154,
 		ServerCurve25519PubKey: serverKP.PublicKey,
 		ClientEd25519PrivKey:   clientKP.PrivateKey,
 		TargetIP:               targetIP,

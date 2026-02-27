@@ -36,14 +36,14 @@ openme/
 
 ```bash
 # Build from source (requires Go 1.21+)
-git clone https://github.com/openme/openme
+git clone https://github.com/merlos/openme
 cd openme/cli
 go mod download
 go build -o openme ./cmd/openme
 sudo mv openme /usr/local/bin/
 ```
 
-Pre-built binaries for Linux, macOS and Windows are available on the [Releases](https://github.com/openme/openme/releases) page.
+Pre-built binaries for Linux, macOS and Windows are available on the [Releases](https://github.com/merlos/openme/releases) page.
 
 ### Server setup
 

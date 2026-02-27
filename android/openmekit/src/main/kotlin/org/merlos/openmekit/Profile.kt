@@ -13,7 +13,7 @@ package org.merlos.openmekit
  *
  * @property name Unique profile identifier — used as the YAML map key and displayed in the UI.
  * @property serverHost Hostname or IP address of the openme server.
- * @property serverUDPPort UDP port the server listens on for SPA knock packets (default `7777`).
+ * @property serverUDPPort UDP port the server listens on for SPA knock packets (default `54154`).
  * @property serverPubKey Base64-encoded Curve25519 (X25519) public key of the server.
  *   Used for the ECDH key agreement step of the knock protocol.
  * @property privateKey Base64-encoded Ed25519 private key (32-byte seed, or 64-byte seed + public key).
@@ -24,7 +24,7 @@ package org.merlos.openmekit
 data class Profile(
     val name: String,
     val serverHost: String = "",
-    val serverUDPPort: Int = 7777,
+    val serverUDPPort: Int = 54154,
     val serverPubKey: String = "",
     val privateKey: String = "",
     val publicKey: String = "",

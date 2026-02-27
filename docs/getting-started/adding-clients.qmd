@@ -21,7 +21,7 @@ Client "alice" added to server config.
 profiles:
   alice:
     server_host: myserver.example.com
-    server_udp_port: 7777
+    server_udp_port: 54154
     server_pubkey: "base64..."
     private_key:   "base64..."
     public_key:    "base64..."

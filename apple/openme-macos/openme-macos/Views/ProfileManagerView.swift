@@ -117,8 +117,8 @@ private struct ProfileDetailView: View {
                         FieldRow(label: "Host", hint: "server.example.com") {
                             TextField("server.example.com", text: $profile.serverHost)
                         }
-                        FieldRow(label: "UDP Port", hint: "7777") {
-                            TextField("7777", value: $profile.serverUDPPort, format: .number)
+                        FieldRow(label: "UDP Port", hint: "54154") {
+                            TextField("54154", value: $profile.serverUDPPort, format: .number)
                                 .frame(maxWidth: 100)
                         }
                         FieldRow(label: "Server public key", hint: "base64 Curve25519 key") {

@@ -6,7 +6,7 @@ website:
   title: "openme"
   description: "Single Packet Authentication — open your firewall with one encrypted packet"
   favicon: img/favicon.ico
-  repo-url: https://github.com/openme/openme
+  repo-url: https://github.com/merlos/openme
   repo-actions: [edit, issue]
 
   navbar:
@@ -31,9 +31,9 @@ website:
         href: api/index.qmd
     right:
       - icon: github
-        href: https://github.com/openme/openme
+        href: https://github.com/merlos/openme
       - text: "Website"
-        href: https://openme.dev
+        href: https://openme.merlos.org
 
   sidebar:
     - title: "Getting Started"
@@ -78,7 +78,7 @@ website:
     left: "© 2026 merlos.org — MIT License"
     right:
       - icon: github
-        href: https://github.com/openme/openme
+        href: https://github.com/merlos/openme
 
 format:
   html:

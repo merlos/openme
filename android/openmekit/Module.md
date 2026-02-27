@@ -1,6 +1,6 @@
 # Module OpenMeKit Android
 
-**OpenMeKit** is the official Android client library for the [openme](https://github.com/openme/openme)
+**OpenMeKit** is the official Android client library for the [openme](https://github.com/merlos/openme)
 Single Packet Authentication (SPA) protocol.
 
 ## Overview

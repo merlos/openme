@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/openme/openme/internal/config"
-	"github.com/openme/openme/internal/firewall"
+	"github.com/merlos/openme/internal/config"
+	"github.com/merlos/openme/internal/firewall"
 )
 
 // mockBackend records Open/Close calls for test assertions.

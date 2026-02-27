@@ -18,7 +18,7 @@ import org.json.JSONObject
  * profiles:
  *   <name>:
  *     server_host: "..."
- *     server_udp_port: 7777
+ *     server_udp_port: 54154
  *     server_pubkey: "..."
  *     private_key: "..."
  *     public_key: "..."
@@ -30,7 +30,7 @@ import org.json.JSONObject
  * {
  *   "profile": "my-server",
  *   "host": "203.0.113.1",
- *   "udp_port": 7777,
+ *   "udp_port": 54154,
  *   "server_pubkey": "<base64>",
  *   "client_privkey": "<base64>",
  *   "client_pubkey": "<base64>"
@@ -96,7 +96,7 @@ object ClientConfigParser {
 
         fun commitProfile(name: String, dict: Map<String, String>) {
             val host = dict["server_host"] ?: return
-            val port = dict["server_udp_port"]?.toIntOrNull() ?: 7777
+            val port = dict["server_udp_port"]?.toIntOrNull() ?: 54154
             val serverPub = dict["server_pubkey"]?.takeIf { it.isNotBlank() } ?: return
             val privKey = dict["private_key"]?.takeIf { it.isNotBlank() } ?: return
             val pubKey = dict["public_key"] ?: ""
@@ -210,7 +210,7 @@ object ClientConfigParser {
                 ?: throw ParserError.InvalidQRPayload
             val host = obj.optString("host").takeIf { it.isNotBlank() }
                 ?: throw ParserError.InvalidQRPayload
-            val port = obj.optInt("udp_port", 7777)
+            val port = obj.optInt("udp_port", 54154)
             val serverPub = obj.optString("server_pubkey").takeIf { it.isNotBlank() }
                 ?: throw ParserError.InvalidQRPayload
             val privKey = obj.optString("client_privkey").takeIf { it.isNotBlank() } ?: ""

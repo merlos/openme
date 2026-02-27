@@ -9,8 +9,8 @@ Override with: `openme --config /path/to/config.yaml serve`
 
 ```yaml
 server:
-  udp_port: 7777
-  health_port: 7777
+  udp_port: 54154
+  health_port: 54154
   firewall: nft
   knock_timeout: 30s
   replay_window: 60s
@@ -44,7 +44,7 @@ clients:
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
-| `udp_port` | uint16 | `7777` | UDP port to listen for knock packets. |
+| `udp_port` | uint16 | `54154` | UDP port to listen for knock packets. |
 | `health_port` | uint16 | same as `udp_port` | TCP port for health checks (`openme status`). |
 | `firewall` | string | `"nft"` | Firewall backend. One of `"nft"` or `"iptables"`. |
 | `knock_timeout` | duration | `"30s"` | How long a firewall rule stays open after a valid knock. |

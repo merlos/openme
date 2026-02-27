@@ -1,4 +1,4 @@
-module github.com/openme/openme
+module github.com/merlos/openme
 
 go 1.21
 

@@ -76,7 +76,7 @@ class KnockServiceTest {
             profiles:
                 my-server:
                     server_host: "10.0.0.1"
-                    server_udp_port: 7777
+                    server_udp_port: 54154
                     server_pubkey: "abc123=="
                     private_key: "priv456=="
                     public_key: "pub789=="
@@ -87,14 +87,14 @@ class KnockServiceTest {
         assertEquals(1, profiles.size)
         val p = profiles["my-server"]!!
         assertEquals("10.0.0.1", p.serverHost)
-        assertEquals(7777, p.serverUDPPort)
+        assertEquals(54154, p.serverUDPPort)
         assertEquals("abc123==", p.serverPubKey)
         assertEquals("priv456==", p.privateKey)
     }
 
     @Test
     fun `QR parser handles valid JSON`() {
-        val json = """{"profile":"vpn","host":"1.2.3.4","udp_port":7777,"server_pubkey":"srvpub==","client_privkey":"clipriv==","client_pubkey":"clipub=="}"""
+        val json = """{"profile":"vpn","host":"1.2.3.4","udp_port":54154,"server_pubkey":"srvpub==","client_privkey":"clipriv==","client_pubkey":"clipub=="}"""
         val p = ClientConfigParser.parseQRPayload(json)
         assertEquals("vpn", p.name)
         assertEquals("1.2.3.4", p.serverHost)

@@ -1,6 +1,6 @@
 BINARY   = openme
 DIST     = dist
-MODULE   = github.com/openme/openme
+MODULE   = github.com/merlos/openme
 
 TARGETS = \
 	linux/amd64 \

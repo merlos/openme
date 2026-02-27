@@ -26,12 +26,12 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	internlcrypto "github.com/openme/openme/internal/crypto"
-	"github.com/openme/openme/internal/client"
-	"github.com/openme/openme/internal/config"
-	"github.com/openme/openme/internal/firewall"
-	"github.com/openme/openme/internal/qr"
-	"github.com/openme/openme/internal/server"
+	internlcrypto "github.com/merlos/openme/internal/crypto"
+	"github.com/merlos/openme/internal/client"
+	"github.com/merlos/openme/internal/config"
+	"github.com/merlos/openme/internal/firewall"
+	"github.com/merlos/openme/internal/qr"
+	"github.com/merlos/openme/internal/server"
 )
 
 const defaultServerConfigPath = "/etc/openme/config.yaml"
@@ -128,7 +128,7 @@ Example:
 
 	cmd.Flags().BoolVar(&force, "force", false, "overwrite existing config without prompting")
 	cmd.Flags().StringVar(&serverHost, "server", "", "public hostname or IP of this server (required)")
-	cmd.Flags().Uint16Var(&udpPort, "port", 7777, "UDP (and TCP health) port")
+	cmd.Flags().Uint16Var(&udpPort, "port", 54154, "UDP (and TCP health) port")
 	cmd.Flags().StringVar(&firewallBackend, "firewall", "nft", "firewall backend: nft or iptables")
 	_ = cmd.MarkFlagRequired("server")
 

@@ -13,7 +13,7 @@ Paste the block printed by `openme add` on the server, or write it manually:
 profiles:
   default:                                  # used by `openme connect`
     server_host: "myserver.example.com"
-    server_udp_port: 7777
+    server_udp_port: 54154
     server_pubkey: "base64..."              # server's Curve25519 public key
     private_key:   "base64..."             # your Ed25519 private key
     public_key:    "base64..."             # your Ed25519 public key
@@ -21,7 +21,7 @@ profiles:
 
   home:                                     # used by `openme connect home`
     server_host: "home.example.com"
-    server_udp_port: 7777
+    server_udp_port: 54154
     server_pubkey: "base64..."
     private_key:   "base64..."
     public_key:    "base64..."

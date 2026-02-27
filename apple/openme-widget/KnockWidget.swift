@@ -36,7 +36,7 @@ struct KnockProvider: AppIntentTimelineProvider {
     }
 
     private var placeholderProfiles: [ProfileEntry] {
-        [ProfileEntry(name: "home", serverHost: "example.com", serverUDPPort: 7777)]
+        [ProfileEntry(name: "home", serverHost: "example.com", serverUDPPort: 54154)]
     }
 }
 

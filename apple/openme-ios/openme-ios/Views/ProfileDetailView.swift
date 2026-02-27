@@ -45,7 +45,7 @@ struct ProfileDetailView: View {
                             .keyboardType(.URL)
                         }
                         LabeledContent("UDP Port") {
-                            TextField("7777", value: Binding(
+                            TextField("54154", value: Binding(
                                 get: { Int(p.serverUDPPort) },
                                 set: { p.serverUDPPort = UInt16($0); draft = p }
                             ), format: .number.grouping(.never))
