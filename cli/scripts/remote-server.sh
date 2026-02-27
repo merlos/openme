@@ -44,7 +44,10 @@ block_all() {
         -m conntrack --ctstate ESTABLISHED,RELATED \
         -j ACCEPT
 
-    echo "    Default policy → DROP; loopback + established → ACCEPT"
+    # Open the UDP knock port so clients can reach the openme server.
+    iptables -A "${CHAIN_INPUT}" -p udp --dport 7777 -j ACCEPT
+
+    echo "    Default policy → DROP; loopback + established + UDP 7777 → ACCEPT"
 }
 
 # ── Remove the block rules ────────────────────────────────────────────────────
@@ -86,7 +89,7 @@ if [[ ! -f "${SERVER_CONFIG}" ]]; then
     SERVER_IP="${SERVER_IP:-127.0.0.1}"
 
     echo "==> No server config found. Initialising ${SERVER_CONFIG} …"
-    "${OPENME}" --config "${SERVER_CONFIG}" init --server "${SERVER_IP}" --force
+    "${OPENME}" --config "${SERVER_CONFIG}" init --server "${SERVER_IP}" --firewall iptables --force
 
     echo "==> Adding client 'alice' …"
     "${OPENME}" --config "${SERVER_CONFIG}" add alice > "${CLIENT_CONFIG}"
