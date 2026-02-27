@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+
+    <!-- Package metadata -->
+    <PackageId>OpenMeKit</PackageId>
+    <Version>0.1.0</Version>
+    <Authors>merlos</Authors>
+    <Description>openme SPA client library for .NET. Provides profile management and the full 165-byte knock packet construction and dispatch.</Description>
+    <PackageProjectUrl>https://openme.merlos.org</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/merlos/openme</RepositoryUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Curve25519 (X25519 ECDH) + Ed25519 signing. Both are used by the SPA packet builder. -->
+    <PackageReference Include="BouncyCastle.Cryptography" Version="2.4.0" />
+  </ItemGroup>
+
+</Project>
