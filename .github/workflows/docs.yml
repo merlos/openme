@@ -7,6 +7,7 @@ on:
     paths:
       - 'docs/**'
       - 'website/**'
+      - 'apple/OpenMeKit/**'
       - '.github/workflows/docs.yml'
   workflow_dispatch:
 
@@ -22,7 +23,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
+  build-quarto:
     name: Build Quarto docs
     runs-on: ubuntu-latest
 
@@ -31,18 +32,72 @@ jobs:
 
       - uses: quarto-dev/quarto-actions/setup@v2
 
-      - name: Configure Pages
-        uses: actions/configure-pages@v5
-
       - name: Render docs
         run: quarto render
         working-directory: docs
 
-      - name: Assemble site (website at root, docs at /docs/)
+      - name: Upload Quarto site artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: quarto-site
+          path: docs/_site/
+
+  build-docc:
+    name: Build OpenMeKit DocC reference
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate DocC static site
         run: |
-          mkdir -p _site/docs
+          swift package \
+            --allow-writing-to-directory ./openmekit-docs \
+            generate-documentation \
+            --target OpenMeKit \
+            --output-path ./openmekit-docs \
+            --transform-for-static-hosting \
+            --hosting-base-path /docs/openmekit
+        working-directory: apple/OpenMeKit
+
+      - name: Upload DocC site artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docc-site
+          path: apple/OpenMeKit/openmekit-docs/
+
+  assemble:
+    name: Assemble full site
+    runs-on: ubuntu-latest
+    needs: [build-quarto, build-docc]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Quarto site
+        uses: actions/download-artifact@v4
+        with:
+          name: quarto-site
+          path: _quarto/
+
+      - name: Download DocC site
+        uses: actions/download-artifact@v4
+        with:
+          name: docc-site
+          path: _docc/
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Assemble site
+        run: |
+          mkdir -p _site/docs/openmekit
+          # Marketing site at root
           cp -r website/. _site/
-          cp -r docs/_site/. _site/docs/
+          # Quarto docs at /docs/
+          cp -r _quarto/. _site/docs/
+          # OpenMeKit DocC reference at /docs/openmekit/
+          cp -r _docc/. _site/docs/openmekit/
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
@@ -52,7 +107,7 @@ jobs:
   deploy:
     name: Deploy to GitHub Pages
     runs-on: ubuntu-latest
-    needs: build
+    needs: assemble
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

@@ -20,12 +20,12 @@ Client                              Server (port always CLOSED to scanners)
 ```
 openme/
 ├── cli/          Go server daemon + cross-platform CLI
+├── apple/
+│   └── OpenMeKit/  Swift package — shared SPA client library (macOS, iOS, watchOS)
 ├── windows/      Windows GUI client          (planned)
-├── macos/        macOS menu bar client       (planned)
 ├── android/      Android app                 (planned)
-├── ios/          iOS app                     (planned)
-├── docs/         Quarto documentation site
-└── website/      Marketing landing page
+├── docs/         Quarto documentation site   → openme.merlos.org/docs/
+└── website/      Marketing landing page      → openme.merlos.org
 ```
 
 ---
@@ -82,7 +82,7 @@ See [cli/README.md](cli/README.md) for the full CLI reference, configuration opt
 
 ## Documentation
 
-Full documentation lives in [`docs/`](docs/) and is built with [Quarto](https://quarto.org).
+The full documentation is published at **[openme.merlos.org/docs](https://openme.merlos.org/docs)**.
 
 | Section | Description |
 |---------|-------------|
@@ -92,8 +92,9 @@ Full documentation lives in [`docs/`](docs/) and is built with [Quarto](https://
 | [Security Model](docs/security/) | Threat model, what is and isn't protected |
 | [FAQ](docs/faq/) | Common questions |
 | [API Reference](docs/api/) | Auto-generated from Go source via pkgsite |
+| [OpenMeKit SDK Reference](docs/openmekit/) | Swift API reference for the Apple client library |
 
-To build and preview the docs locally:
+### Build the Quarto docs locally
 
 ```bash
 cd docs
