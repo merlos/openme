@@ -8,6 +8,7 @@ struct ProfileListView: View {
 
     @State private var showImport         = false
     @State private var importInitialTab: ImportProfileView.Tab = .yaml
+    @State private var showEmptyAddMenu     = false
     @State private var rowKnockStatus: [String: String] = [:]
 
     var body: some View {
@@ -110,23 +111,18 @@ struct ProfileListView: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
-                Menu {
-                    Button {
-                        importInitialTab = .qr
-                        showImport = true
-                    } label: {
-                        Label("Scan QR Code", systemImage: "qrcode.viewfinder")
+                Button("Import Profile") { showEmptyAddMenu = true }
+                    .buttonStyle(.borderedProminent)
+                    .confirmationDialog("Add Profile", isPresented: $showEmptyAddMenu, titleVisibility: .visible) {
+                        Button("Scan QR Code") {
+                            importInitialTab = .qr
+                            showImport = true
+                        }
+                        Button("Load Config File") {
+                            importInitialTab = .yaml
+                            showImport = true
+                        }
                     }
-                    Button {
-                        importInitialTab = .yaml
-                        showImport = true
-                    } label: {
-                        Label("Load Config File", systemImage: "doc.text")
-                    }
-                } label: {
-                    Text("Import Profile")
-                }
-                .buttonStyle(.borderedProminent)
             }
             .padding()
         }
