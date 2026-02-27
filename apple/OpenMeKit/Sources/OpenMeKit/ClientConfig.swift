@@ -303,6 +303,53 @@ public enum ClientConfigParser {
         return out
     }
 
+    /// Parses a QR code payload JSON string into a single-profile dictionary.
+    ///
+    /// The QR payload produced by `openme qr` is a JSON object with snake_case
+    /// field names matching the `qr.Payload` Go struct:
+    /// ```json
+    /// {
+    ///   "profile": "home",
+    ///   "host": "myserver.example.com",
+    ///   "udp_port": 7777,
+    ///   "server_pubkey": "<base64>",
+    ///   "client_privkey": "<base64>",
+    ///   "client_pubkey": "<base64>"
+    /// }
+    /// ```
+    ///
+    /// - Parameter json: The raw string decoded from a QR code.
+    /// - Returns: A dictionary with a single ``Profile`` entry keyed by the
+    ///   profile name from the payload.
+    /// - Throws: ``ParserError/noProfilesFound`` if the JSON cannot be decoded
+    ///   or required fields are missing.
+    public static func parseQRPayload(json string: String) throws -> [String: Profile] {
+        struct QRPayload: Decodable {
+            let profile:      String
+            let host:         String
+            let udp_port:     UInt16
+            let server_pubkey: String
+            let client_privkey: String?
+            let client_pubkey:  String
+        }
+        guard let data = string.data(using: .utf8),
+              let payload = try? JSONDecoder().decode(QRPayload.self, from: data),
+              !payload.host.isEmpty,
+              !payload.server_pubkey.isEmpty,
+              !payload.client_pubkey.isEmpty
+        else { throw ParserError.noProfilesFound }
+
+        let profile = Profile(
+            name:         payload.profile.isEmpty ? payload.host : payload.profile,
+            serverHost:   payload.host,
+            serverUDPPort: payload.udp_port,
+            serverPubKey: payload.server_pubkey,
+            privateKey:   payload.client_privkey ?? "",
+            publicKey:    payload.client_pubkey
+        )
+        return [profile.name: profile]
+    }
+
     /// Errors thrown by ``ClientConfigParser/parse(yaml:)``.
     public enum ParserError: LocalizedError {
         /// The YAML string contained no `profiles:` key or all entries were malformed.
