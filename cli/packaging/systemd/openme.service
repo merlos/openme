@@ -1,0 +1,23 @@
+[Unit]
+Description=openme Single Packet Authorization server
+Documentation=https://openme.merlos.org/docs/getting-started/server-setup
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/openme serve
+Restart=on-failure
+RestartSec=5
+# openme serve needs root to manipulate firewall rules (iptables/nftables).
+# If your deployment uses a wrapper script that handles privilege escalation,
+# replace User=root with a dedicated service account and grant CAP_NET_ADMIN.
+User=root
+
+# Harden the service surface while still allowing firewall manipulation.
+ProtectSystem=full
+PrivateTmp=true
+NoNewPrivileges=false
+CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_RAW
+
+[Install]
+WantedBy=multi-user.target

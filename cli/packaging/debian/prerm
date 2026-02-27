@@ -1,0 +1,14 @@
+#!/bin/sh
+set -e
+
+case "$1" in
+    remove|purge)
+        if command -v systemctl >/dev/null 2>&1; then
+            systemctl stop openme.service 2>/dev/null || true
+            systemctl disable openme.service 2>/dev/null || true
+            systemctl daemon-reload || true
+        fi
+        ;;
+esac
+
+exit 0

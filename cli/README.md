@@ -24,6 +24,92 @@ See the [Getting Started guide](https://openme.merlos.org/docs/getting-started/)
 
 ---
 
+## Installation
+
+### Debian / Ubuntu / Raspbian
+
+Download the `.deb` for your architecture from the [Releases](https://github.com/merlos/openme/releases) page, then:
+
+```bash
+# amd64 (x86-64 servers/desktops)
+sudo dpkg -i openme_<version>_amd64.deb
+
+# arm64 (Raspberry Pi 5, 64-bit arm servers …)
+sudo dpkg -i openme_<version>_arm64.deb
+```
+
+The package installs the binary at `/usr/bin/openme`, drops a systemd unit at
+`/lib/systemd/system/openme.service`, and enables it automatically via the
+`postinst` script.  Initialise the server before starting:
+
+```bash
+sudo openme init --server myserver.example.com
+sudo openme add alice
+sudo systemctl start openme
+```
+
+To build the `.deb` packages yourself (requires `dpkg-dev`):
+
+```bash
+cd cli
+make package-deb          # builds both amd64 and arm64 into dist/
+# or individually:
+make package-deb-amd64
+make package-deb-arm64
+```
+
+---
+
+### Arch Linux
+
+A `PKGBUILD` is provided in [`packaging/arch/`](packaging/arch/):
+
+```bash
+git clone https://github.com/merlos/openme
+cd openme/cli/packaging/arch
+makepkg -si
+```
+
+This builds from source (requires `go`), installs the binary and the
+systemd unit, then enables the service.
+
+---
+
+### OpenWrt
+
+openme is distributed as an OpenWrt feed package.  Place the contents of
+[`packaging/openwrt/`](packaging/openwrt/) inside your OpenWrt feed directory:
+
+```
+<feed>/net/openme/Makefile
+<feed>/net/openme/files/openme.init
+```
+
+Then build and install:
+
+```bash
+# From the OpenWrt build system root:
+./scripts/feeds update <feed>
+./scripts/feeds install openme
+make package/openme/compile
+# Install on the router:
+scp bin/packages/*/openme*.ipk root@<router>:/tmp/
+ssh root@<router> opkg install /tmp/openme_*.ipk
+```
+
+After installation, initialise the server config and start:
+
+```bash
+openme init --server <hostname-or-ip>
+/etc/init.d/openme enable
+/etc/init.d/openme start
+```
+
+The procd init script in `/etc/init.d/openme` manages restarts and
+automatically reloads when `/etc/openme/config.yaml` changes.
+
+---
+
 ## Build from Source
 
 Requires **Go 1.21+**.

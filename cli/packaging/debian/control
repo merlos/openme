@@ -1,0 +1,17 @@
+Package: openme
+Version: {{VERSION}}
+Architecture: {{ARCH}}
+Maintainer: Juan M. Merlos <merlos@users.noreply.github.com>
+Homepage: https://openme.merlos.org
+Section: net
+Priority: optional
+Depends: systemd
+Description: Single Packet Authorization server and client
+ openme is a lightweight SPA (Single Packet Authorization) tool.
+ openme serve listens on a UDP port and temporarily opens a firewall
+ rule when it receives a valid cryptographically-signed knock packet
+ from an authorised client.  Only clients holding a valid Ed25519 key
+ can knock — to a port scanner the service port is always closed.
+ .
+ This package includes both the server (openme serve) and the client
+ (openme connect / openme add) in a single binary.
