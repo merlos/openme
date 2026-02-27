@@ -1,10 +1,14 @@
 import OpenMeKit
 import SwiftUI
+import WatchConnectivity
 
 /// Watch detail view: knock now or toggle continuous knocking.
 struct WatchKnockView: View {
+    @StateObject private var sessionDelegate = WatchSessionDelegate()
+
     let profileName: String
     @EnvironmentObject var knockManager: KnockManager
+    @EnvironmentObject var store: ProfileStore
 
     @State private var status: KnockStatus = .idle
 
@@ -72,6 +76,14 @@ struct WatchKnockView: View {
         }
         .navigationTitle(profileName)
         .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            // Ensure KnockManager can resolve profiles on watchOS
+            if knockManager.store == nil {
+                knockManager.store = store
+            }
+            // Bind WatchConnectivity delegate to receive profiles from iPhone
+            sessionDelegate.bind(store: store)
+        }
     }
 
     private func sendKnock() {
@@ -90,3 +102,4 @@ struct WatchKnockView: View {
         }
     }
 }
+

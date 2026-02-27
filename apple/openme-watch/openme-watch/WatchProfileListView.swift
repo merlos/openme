@@ -11,17 +11,18 @@ struct WatchProfileListView: View {
 
     var body: some View {
         NavigationStack {
-            Group {
+            List {
                 if store.profiles.isEmpty {
                     VStack(spacing: 10) {
                         Image(systemName: "lock.fill")
-                        Text("No profiles.\nOpen the iOS app to import.")
+                        Text("No profiles.\nPull to sync or open the iOS app.")
                             .font(.footnote)
                             .multilineTextAlignment(.center)
                     }
                     .foregroundStyle(.secondary)
+                    .listRowBackground(Color.clear)
                 } else {
-                    List(store.profiles) { entry in
+                    ForEach(store.profiles) { entry in
                         NavigationLink(destination: WatchKnockView(profileName: entry.name)
                             .environmentObject(knockManager)
                         ) {
@@ -37,12 +38,13 @@ struct WatchProfileListView: View {
                             }
                         }
                     }
-                    .refreshable {
-                        sessionDelegate.requestSync()
-                        // Give the phone a moment to respond
-                        try? await Task.sleep(nanoseconds: 1_500_000_000)
-                    }
                 }
+            }
+            .refreshable {
+                print("[WatchProfileList] Pull-to-refresh triggered")
+                sessionDelegate.requestSync()
+                // Give the phone a moment to respond before the spinner disappears
+                try? await Task.sleep(nanoseconds: 1_500_000_000)
             }
             .navigationTitle("openme")
         }

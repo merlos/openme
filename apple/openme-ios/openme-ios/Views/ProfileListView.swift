@@ -110,8 +110,23 @@ struct ProfileListView: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
-                Button("Import Profile") { importInitialTab = .yaml; showImport = true }
-                    .buttonStyle(.borderedProminent)
+                Menu {
+                    Button {
+                        importInitialTab = .qr
+                        showImport = true
+                    } label: {
+                        Label("Scan QR Code", systemImage: "qrcode.viewfinder")
+                    }
+                    Button {
+                        importInitialTab = .yaml
+                        showImport = true
+                    } label: {
+                        Label("Load Config File", systemImage: "doc.text")
+                    }
+                } label: {
+                    Text("Import Profile")
+                }
+                .buttonStyle(.borderedProminent)
             }
             .padding()
         }
