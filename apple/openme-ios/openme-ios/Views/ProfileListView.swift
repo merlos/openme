@@ -130,7 +130,7 @@ private struct ProfileRowView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(entry.name).fontWeight(.medium)
                 if knockStatus.isEmpty {
-                    Text("\(entry.serverHost):\(entry.serverUDPPort)")
+                    Text("\(entry.serverHost):\(String(entry.serverUDPPort))")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 } else {
