@@ -60,11 +60,18 @@ jobs:
             --hosting-base-path /docs/openmekit
         working-directory: apple/OpenMeKit
 
+      # Tar the DocC output before uploading — DocC generates JSON symbol files
+      # with Swift method-selector names (e.g. parse(yaml:).json) that contain
+      # colons. Artifact upload rejects colons because they are invalid on NTFS.
+      # Packing into a single tar avoids individual file-path validation.
+      - name: Archive DocC output
+        run: tar -czf openmekit-docs.tar.gz -C apple/OpenMeKit openmekit-docs
+
       - name: Upload DocC site artifact
         uses: actions/upload-artifact@v4
         with:
           name: docc-site
-          path: apple/OpenMeKit/openmekit-docs/
+          path: openmekit-docs.tar.gz
 
   assemble:
     name: Assemble full site
@@ -84,7 +91,10 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: docc-site
-          path: _docc/
+          path: _docc-archive/
+
+      - name: Extract DocC archive
+        run: tar -xzf _docc-archive/openmekit-docs.tar.gz -C _docc-archive
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
@@ -97,7 +107,7 @@ jobs:
           # Quarto docs at /docs/
           cp -r _quarto/. _site/docs/
           # OpenMeKit DocC reference at /docs/openmekit/
-          cp -r _docc/. _site/docs/openmekit/
+          cp -r _docc-archive/openmekit-docs/. _site/docs/openmekit/
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
