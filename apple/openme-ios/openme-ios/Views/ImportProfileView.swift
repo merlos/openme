@@ -56,10 +56,17 @@ private struct YAMLImportTab: View {
 
     var body: some View {
         Form {
-            Section("Paste YAML") {
+            Section {
                 TextEditor(text: $yamlText)
                     .font(.system(.caption, design: .monospaced))
                     .frame(minHeight: 180)
+            } header: {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Paste YAML")
+                    (Text("Output of: ") + Text("openme add <profile-name>").monospaced())
+                        .font(.system(size: 11))
+                        .textCase(nil)
+                }
             }
             Section {
                 Button { isFileImporter = true } label: {

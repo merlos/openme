@@ -1,6 +1,5 @@
 import OpenMeKit
 import SwiftUI
-import UniformTypeIdentifiers
 
 /// Main screen: list of configured profiles with knock buttons.
 struct ProfileListView: View {
@@ -9,10 +8,7 @@ struct ProfileListView: View {
 
     @State private var showImport         = false
     @State private var importInitialTab: ImportProfileView.Tab = .yaml
-    @State private var showAddMenu          = false
-    @State private var showFileImporter     = false
-    @State private var lastResult: KnockResult?
-    @State private var resultProfile        = ""
+    @State private var rowKnockStatus: [String: String] = [:]
 
     var body: some View {
         Group {
@@ -25,30 +21,22 @@ struct ProfileListView: View {
         .navigationTitle("openme")
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
-                Button { showAddMenu = true } label: {
+                Menu {
+                    Button {
+                        importInitialTab = .qr
+                        showImport = true
+                    } label: {
+                        Label("Scan QR Code", systemImage: "qrcode.viewfinder")
+                    }
+                    Button {
+                        importInitialTab = .yaml
+                        showImport = true
+                    } label: {
+                        Label("Load Config File", systemImage: "doc.text")
+                    }
+                } label: {
                     Label("Add Profile", systemImage: "plus")
                 }
-            }
-        }
-        .confirmationDialog("Add Profile", isPresented: $showAddMenu, titleVisibility: .visible) {
-            Button("Scan QR Code") {
-                importInitialTab = .qr
-                showImport = true
-            }
-            Button("Load Config File") {
-                showFileImporter = true
-            }
-        }
-        .fileImporter(
-            isPresented: $showFileImporter,
-            allowedContentTypes: [.yaml, UTType(filenameExtension: "yaml") ?? .data]
-        ) { result in
-            guard let url = try? result.get(),
-                  url.startAccessingSecurityScopedResource() else { return }
-            defer { url.stopAccessingSecurityScopedResource() }
-            if let yaml = try? String(contentsOf: url),
-               let profiles = try? ClientConfigParser.parse(yaml: yaml) {
-                try? store.merge(profiles)
             }
         }
         .sheet(isPresented: $showImport) {
@@ -57,13 +45,6 @@ struct ProfileListView: View {
                     .environmentObject(store)
             }
         }
-        .alert(resultTitle, isPresented: .constant(lastResult != nil), actions: {
-            Button("OK") { lastResult = nil }
-        }, message: {
-            if case .failure(let msg) = lastResult {
-                Text(msg)
-            }
-        })
     }
 
     // MARK: - Subviews
@@ -76,7 +57,8 @@ struct ProfileListView: View {
                         .environmentObject(store)
                         .environmentObject(knockManager)
                 } label: {
-                    ProfileRowView(entry: entry, knockManager: knockManager)
+                    ProfileRowView(entry: entry, knockManager: knockManager,
+                                  knockStatus: rowKnockStatus[entry.name] ?? "")
                 }
                 .swipeActions(edge: .leading, allowsFullSwipe: true) {
                     Button(role: .destructive) {
@@ -88,8 +70,15 @@ struct ProfileListView: View {
                 .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                     Button {
                         knockManager.knock(profile: entry.name) { result in
-                            resultProfile = entry.name
-                            lastResult = result
+                            switch result {
+                            case .success:
+                                rowKnockStatus[entry.name] = "✓ Knock sent"
+                            case .failure(let e):
+                                rowKnockStatus[entry.name] = "✗ \(e)"
+                            }
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                                rowKnockStatus.removeValue(forKey: entry.name)
+                            }
                         }
                     } label: {
                         Label("Knock", systemImage: "lock.open.fill")
@@ -121,18 +110,10 @@ struct ProfileListView: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
-                Button("Import Profile") { showAddMenu = true }
+                Button("Import Profile") { importInitialTab = .yaml; showImport = true }
                     .buttonStyle(.borderedProminent)
             }
             .padding()
-        }
-    }
-
-    private var resultTitle: String {
-        switch lastResult {
-        case .success:          return "Knock sent"
-        case .failure:          return "Knock failed"
-        case .none:             return ""
         }
     }
 }
@@ -142,14 +123,22 @@ struct ProfileListView: View {
 private struct ProfileRowView: View {
     let entry: ProfileEntry
     @ObservedObject var knockManager: KnockManager
+    let knockStatus: String
 
     var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
                 Text(entry.name).fontWeight(.medium)
-                Text("\(entry.serverHost):\(entry.serverUDPPort)")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                if knockStatus.isEmpty {
+                    Text("\(entry.serverHost):\(entry.serverUDPPort)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text(knockStatus)
+                        .font(.caption)
+                        .foregroundStyle(knockStatus.hasPrefix("✓") ? .green : .red)
+                        .transition(.opacity)
+                }
             }
 
             Spacer()
@@ -161,5 +150,6 @@ private struct ProfileRowView: View {
                     .symbolEffect(.variableColor.iterative)
             }
         }
+        .animation(.easeInOut(duration: 0.2), value: knockStatus)
     }
 }
