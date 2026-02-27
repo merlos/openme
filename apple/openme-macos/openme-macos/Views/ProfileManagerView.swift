@@ -37,7 +37,7 @@ struct ProfileManagerView: View {
                 }
                 .padding(6)
             }
-            .frame(minWidth: 160, idealWidth: 180)
+            .frame(minWidth: 120, idealWidth: 140, maxWidth: 160)
 
             // ── Right: Profile detail ────────────────────────────────────────
             if let name = selection, let profile = store.profile(named: name) {
@@ -105,47 +105,65 @@ private struct ProfileDetailView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Form {
-                Section("Server") {
-                    LabeledContent("Profile name") {
-                        TextField("default", text: $profile.name)
-                            .textFieldStyle(.roundedBorder)
-                    }
-                    LabeledContent("Host") {
-                        TextField("server.example.com", text: $profile.serverHost)
-                            .textFieldStyle(.roundedBorder)
-                    }
-                    LabeledContent("UDP Port") {
-                        TextField("7777", value: $profile.serverUDPPort, format: .number)
-                            .textFieldStyle(.roundedBorder)
-                    }
-                    LabeledContent("Server public key") {
-                        TextField("base64…", text: $profile.serverPubKey)
-                            .textFieldStyle(.roundedBorder)
-                            .font(.system(.caption, design: .monospaced))
-                    }
-                }
+            ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
 
-                Section("Client Keys") {
-                    LabeledContent("Private key") {
-                        SecureField("base64…", text: $profile.privateKey)
-                            .textFieldStyle(.roundedBorder)
-                            .font(.system(.caption, design: .monospaced))
+                // ── Server ────────────────────────────────────────────────────
+                GroupBox("Server") {
+                    VStack(alignment: .leading, spacing: 12) {
+                        FieldRow(label: "Profile name", hint: "my-server") {
+                            TextField("my-server", text: $profile.name)
+                        }
+                        FieldRow(label: "Host", hint: "server.example.com") {
+                            TextField("server.example.com", text: $profile.serverHost)
+                        }
+                        FieldRow(label: "UDP Port", hint: "7777") {
+                            TextField("7777", value: $profile.serverUDPPort, format: .number)
+                                .frame(maxWidth: 100)
+                        }
+                        FieldRow(label: "Server public key", hint: "base64 Curve25519 key") {
+                            TextField("base64…", text: $profile.serverPubKey)
+                                .font(.system(.caption, design: .monospaced))
+                        }
                     }
-                    LabeledContent("Public key") {
-                        TextField("base64…", text: $profile.publicKey)
-                            .textFieldStyle(.roundedBorder)
-                            .font(.system(.caption, design: .monospaced))
-                    }
+                    .padding(.top, 4)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
+                .frame(maxWidth: .infinity)
 
-                Section("Post-knock command (optional)") {
-                    TextField("ssh user@server.example.com", text: $profile.postKnock)
-                        .textFieldStyle(.roundedBorder)
-                        .font(.system(.caption, design: .monospaced))
+                // ── Client Keys ───────────────────────────────────────────────
+                GroupBox("Client Keys") {
+                    VStack(alignment: .leading, spacing: 12) {
+                        FieldRow(label: "Private key", hint: "base64 Ed25519 private key") {
+                            SecureField("base64…", text: $profile.privateKey)
+                                .font(.system(.caption, design: .monospaced))
+                        }
+                        FieldRow(label: "Public key", hint: "base64 Ed25519 public key") {
+                            TextField("base64…", text: $profile.publicKey)
+                                .font(.system(.caption, design: .monospaced))
+                        }
+                    }
+                    .padding(.top, 4)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
+                .frame(maxWidth: .infinity)
+
+                // ── Post-knock ────────────────────────────────────────────────
+                GroupBox("Post-knock command (optional)") {
+                    FieldRow(label: "Shell command", hint: "open ssh://server.example.com") {
+                        TextField("ssh user@server.example.com", text: $profile.postKnock)
+                            .font(.system(.caption, design: .monospaced))
+                    }
+                    .padding(.top, 4)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .frame(maxWidth: .infinity)
             }
-            .formStyle(.grouped)
+            .padding(20)
+            .frame(maxWidth: .infinity)
+            } // ScrollView
+
+            Divider()
 
             HStack {
                 Spacer()
@@ -153,8 +171,33 @@ private struct ProfileDetailView: View {
                     .keyboardShortcut("s", modifiers: .command)
                     .buttonStyle(.borderedProminent)
             }
-            .padding(.horizontal)
-            .padding(.bottom, 12)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 10)
+        } // VStack
+    }
+}
+
+// MARK: - FieldRow
+
+/// A label above a field, with an optional greyed-out hint below.
+/// The field stretches to fill available width by default.
+private struct FieldRow<Field: View>: View {
+    let label: String
+    let hint: String
+    @ViewBuilder let field: () -> Field
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(label)
+                .font(.callout)
+                .foregroundStyle(.primary)
+            field()
+                .textFieldStyle(.roundedBorder)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            Text(hint)
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
