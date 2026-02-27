@@ -138,8 +138,18 @@ public enum ClientConfigParser {
         var profileIndent: Int? = nil
         var kvIndent:      Int? = nil
 
+        /// Returns the leading-whitespace depth of a raw YAML line.
+        /// Each space counts as 1; each tab is expanded to 4 spaces so that
+        /// tab-indented YAML (typed manually or emitted by some editors) is
+        /// handled the same way as space-indented YAML.
         func leadingSpaces(_ s: String) -> Int {
-            s.prefix(while: { $0 == " " }).count
+            var count = 0
+            for ch in s {
+                if ch == " "  { count += 1 }
+                else if ch == "\t" { count += 4 }
+                else { break }
+            }
+            return count
         }
 
         func flushCurrent() {
