@@ -1,12 +1,12 @@
 import SwiftUI
 import OpenMeKit
+import AppKit
 
 /// The SwiftUI content shown inside the `MenuBarExtra` menu.
 struct MenuBarMenuView: View {
 
     @EnvironmentObject private var store: ProfileStore
     @EnvironmentObject private var knockManager: KnockManager
-    @Environment(\.openWindow) private var openWindow
 
     // Last feedback message shown briefly at the top of the menu.
     @State private var feedbackMessage: String? = nil
@@ -43,14 +43,27 @@ struct MenuBarMenuView: View {
         Divider()
 
         // ── Management actions ────────────────────────────────────────────
+        // openWindow(id:) is unreliable inside a .menu-style MenuBarExtra because
+        // the menu view is torn down before the action fires. We post notifications
+        // instead; openme_macosApp observes them and calls openWindow from a
+        // stable Scene context.
         Button("Manage Profiles…") {
-            openWindow(id: "profile-manager")
-            NSApp.activate(ignoringOtherApps: true)
+            NotificationCenter.default.post(name: .openProfileManager, object: nil)
         }
 
         Button("Import Profile…") {
-            openWindow(id: "import-profile")
-            NSApp.activate(ignoringOtherApps: true)
+            NotificationCenter.default.post(name: .openImportProfile, object: nil)
+        }
+
+        Divider()
+
+        // ── Links ─────────────────────────────────────────────────────────
+        Button("Website") {
+            NSWorkspace.shared.open(URL(string: "https://openme.merlos.org")!)
+        }
+
+        Button("Documentation") {
+            NSWorkspace.shared.open(URL(string: "https://openme.merlos.org/docs")!)
         }
 
         Divider()

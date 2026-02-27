@@ -7,6 +7,7 @@
 
 import SwiftUI
 import OpenMeKit
+import AppKit
 
 @main
 struct openme_macosApp: App {
@@ -22,7 +23,11 @@ struct openme_macosApp: App {
                     knockManager.store = store
                 }
         } label: {
-            Image(systemName: "lock.shield")
+            // The label view lives for the full app lifetime, making it the
+            // right place to observe notifications that need to open windows.
+            // (MenuBarMenuView is torn down when the menu closes, so
+            // @Environment(\.openWindow) called from there is unreliable.)
+            MenuBarLabelView()
         }
         .menuBarExtraStyle(.menu)
 
@@ -41,5 +46,25 @@ struct openme_macosApp: App {
         }
         .windowResizability(.contentMinSize)
         .defaultLaunchBehavior(.suppressed)
+    }
+}
+
+/// Persistent status-bar label view that owns the notification observers for
+/// opening windows. Because this view is always alive (unlike the menu content
+/// which is torn down when the menu closes), `@Environment(\.openWindow)` is
+/// reliable here.
+private struct MenuBarLabelView: View {
+    @Environment(\.openWindow) private var openWindow
+
+    var body: some View {
+        Image(systemName: "lock.shield")
+            .onReceive(NotificationCenter.default.publisher(for: .openProfileManager)) { _ in
+                NSApp.activate(ignoringOtherApps: true)
+                openWindow(id: "profile-manager")
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .openImportProfile)) { _ in
+                NSApp.activate(ignoringOtherApps: true)
+                openWindow(id: "import-profile")
+            }
     }
 }

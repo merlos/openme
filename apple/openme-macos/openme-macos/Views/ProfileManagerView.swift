@@ -43,12 +43,22 @@ struct ProfileManagerView: View {
             if let name = selection, let profile = store.profile(named: name) {
                 ProfileDetailView(profile: profile, onSave: { updated in
                     do {
+                        // If the user edited the profile name, remove the old
+                        // entry before inserting the new one to avoid orphans.
+                        if updated.name != name {
+                            try store.delete(name: name)
+                            selection = updated.name
+                        }
                         try store.update(updated)
                         errorMessage = nil
                     } catch {
                         errorMessage = error.localizedDescription
                     }
                 })
+                // .id forces SwiftUI to recreate the detail view (and reset its
+                // @State) whenever the selection changes, so the form always
+                // reflects the currently selected profile.
+                .id(name)
                 .frame(minWidth: 280)
             } else {
                 VStack {
@@ -62,6 +72,9 @@ struct ProfileManagerView: View {
             }
         }
         .frame(minWidth: 480, minHeight: 360)
+        .onChange(of: selection) {
+            errorMessage = nil
+        }
         .overlay(alignment: .bottom) {
             if let msg = errorMessage {
                 Text(msg)
@@ -77,6 +90,7 @@ struct ProfileManagerView: View {
         do {
             try store.delete(name: name)
             selection = nil
+            errorMessage = nil
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -90,56 +104,57 @@ private struct ProfileDetailView: View {
     let onSave: (Profile) -> Void
 
     var body: some View {
-        Form {
-            Section("Server") {
-                LabeledContent("Profile name") {
-                    TextField("default", text: $profile.name)
-                        .textFieldStyle(.roundedBorder)
+        VStack(spacing: 0) {
+            Form {
+                Section("Server") {
+                    LabeledContent("Profile name") {
+                        TextField("default", text: $profile.name)
+                            .textFieldStyle(.roundedBorder)
+                    }
+                    LabeledContent("Host") {
+                        TextField("server.example.com", text: $profile.serverHost)
+                            .textFieldStyle(.roundedBorder)
+                    }
+                    LabeledContent("UDP Port") {
+                        TextField("7777", value: $profile.serverUDPPort, format: .number)
+                            .textFieldStyle(.roundedBorder)
+                    }
+                    LabeledContent("Server public key") {
+                        TextField("base64…", text: $profile.serverPubKey)
+                            .textFieldStyle(.roundedBorder)
+                            .font(.system(.caption, design: .monospaced))
+                    }
                 }
-                LabeledContent("Host") {
-                    TextField("server.example.com", text: $profile.serverHost)
-                        .textFieldStyle(.roundedBorder)
-                }
-                LabeledContent("UDP Port") {
-                    TextField("7777", value: $profile.serverUDPPort, format: .number)
-                        .textFieldStyle(.roundedBorder)
-                }
-                LabeledContent("Server public key") {
-                    TextField("base64…", text: $profile.serverPubKey)
-                        .textFieldStyle(.roundedBorder)
-                        .font(.system(.caption, design: .monospaced))
-                }
-            }
 
-            Section("Client Keys") {
-                LabeledContent("Private key") {
-                    SecureField("base64…", text: $profile.privateKey)
-                        .textFieldStyle(.roundedBorder)
-                        .font(.system(.caption, design: .monospaced))
+                Section("Client Keys") {
+                    LabeledContent("Private key") {
+                        SecureField("base64…", text: $profile.privateKey)
+                            .textFieldStyle(.roundedBorder)
+                            .font(.system(.caption, design: .monospaced))
+                    }
+                    LabeledContent("Public key") {
+                        TextField("base64…", text: $profile.publicKey)
+                            .textFieldStyle(.roundedBorder)
+                            .font(.system(.caption, design: .monospaced))
+                    }
                 }
-                LabeledContent("Public key") {
-                    TextField("base64…", text: $profile.publicKey)
-                        .textFieldStyle(.roundedBorder)
-                        .font(.system(.caption, design: .monospaced))
-                }
-            }
 
-            Section("Post-knock command (optional)") {
-                TextField("ssh user@server.example.com", text: $profile.postKnock)
-                    .textFieldStyle(.roundedBorder)
-                    .font(.system(.caption, design: .monospaced))
+                Section("Post-knock command (optional)") {
+                    TextField("ssh user@server.example.com", text: $profile.postKnock)
+                        .textFieldStyle(.roundedBorder)
+                        .font(.system(.caption, design: .monospaced))
+                }
             }
+            .formStyle(.grouped)
+
+            HStack {
+                Spacer()
+                Button("Save") { onSave(profile) }
+                    .keyboardShortcut("s", modifiers: .command)
+                    .buttonStyle(.borderedProminent)
+            }
+            .padding(.horizontal)
+            .padding(.bottom, 12)
         }
-        .formStyle(.grouped)
-        .padding()
-
-        HStack {
-            Spacer()
-            Button("Save") { onSave(profile) }
-                .keyboardShortcut("s", modifiers: .command)
-                .buttonStyle(.borderedProminent)
-        }
-        .padding(.horizontal)
-        .padding(.bottom, 12)
     }
 }
