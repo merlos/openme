@@ -121,10 +121,19 @@ public enum ClientConfigParser {
     /// The parser auto-detects the indentation width used by the YAML emitter
     /// so it works with both go-yaml v2 (2-space) and go-yaml v3 (4-space) output.
     ///
+    /// Robustness features:
+    /// - Tabs expanded to 4 spaces when measuring indentation.
+    /// - Properly extracts quoted string values (double or single).
+    /// - Strips inline comments (`# …`) from unquoted values.
+    /// - Skips YAML document-marker lines (`---`, `...`) and directives (`%`).
+    /// - Ignores a `profiles:` key that is itself indented (wrong nesting).
+    /// - Validates required fields; silently skips malformed profiles instead of
+    ///   storing them with empty key material.
+    ///
     /// - Parameter yaml: Full contents of the `config.yaml` file.
     /// - Returns: A dictionary mapping profile names to ``Profile`` values.
     /// - Throws: ``ParserError/noProfilesFound`` if the YAML contains no
-    ///   `profiles:` section or all profiles fail to parse.
+    ///   `profiles:` section or all profiles fail to parse / fail validation.
     public static func parse(yaml: String) throws -> [String: Profile] {
         var profiles: [String: Profile] = [:]
 
@@ -137,6 +146,8 @@ public enum ClientConfigParser {
         // Detected once we see the first profile-name line.
         var profileIndent: Int? = nil
         var kvIndent:      Int? = nil
+
+        // MARK: Helpers
 
         /// Returns the leading-whitespace depth of a raw YAML line.
         /// Each space counts as 1; each tab is expanded to 4 spaces so that
@@ -152,26 +163,77 @@ public enum ClientConfigParser {
             return count
         }
 
+        /// Extracts the scalar value from the raw text after the `:` separator.
+        ///
+        /// Rules (in priority order):
+        /// 1. Quoted string (`"…"` or `'…'`): returns content between the first
+        ///    matching pair of quotes; anything after the closing quote is ignored.
+        /// 2. Unquoted string: strips an inline comment (` #` preceded by a space)
+        ///    then trims surrounding whitespace.
+        func parseValue(_ raw: String) -> String {
+            let trimmed = raw.trimmingCharacters(in: .whitespaces)
+            guard !trimmed.isEmpty else { return "" }
+
+            // Quoted value — single or double quotes.
+            let quoteChars: [Character] = ["\"", "'"]
+            if let openQuote = trimmed.first, quoteChars.contains(openQuote) {
+                let afterOpen = trimmed.index(after: trimmed.startIndex)
+                // Find the matching closing quote (first occurrence after the open).
+                if let closeIdx = trimmed[afterOpen...].firstIndex(of: openQuote) {
+                    return String(trimmed[afterOpen..<closeIdx])
+                }
+                // Unmatched opening quote — fall through to unquoted handling.
+            }
+
+            // Unquoted value: strip inline comment and trailing whitespace.
+            // A comment starts with " #" (space then hash) to avoid breaking
+            // base64 values that theoretically could contain '#' (they can't,
+            // but the space guard makes the rule explicit).
+            if let commentRange = trimmed.range(of: " #") {
+                return String(trimmed[trimmed.startIndex..<commentRange.lowerBound])
+                    .trimmingCharacters(in: .whitespaces)
+            }
+            return trimmed
+        }
+
+        /// Validates required fields and adds the completed profile to `profiles`.
+        /// Silently discards entries that are missing key material so a partially
+        /// hand-typed block does not produce a broken profile.
         func flushCurrent() {
-            guard let name = currentName else { return }
+            guard let name = currentName, !name.isEmpty else { return }
+            let host       = currentDict["server_host"] ?? ""
+            let serverKey  = currentDict["server_pubkey"] ?? ""
+            let privateKey = currentDict["private_key"] ?? ""
+            let publicKey  = currentDict["public_key"] ?? ""
+            // Require at minimum a server host and the three key fields.
+            guard !host.isEmpty, !serverKey.isEmpty,
+                  !privateKey.isEmpty, !publicKey.isEmpty else { return }
             profiles[name] = Profile(
                 name: name,
-                serverHost:    currentDict["server_host"] ?? "",
+                serverHost:    host,
                 serverUDPPort: UInt16(currentDict["server_udp_port"] ?? "7777") ?? 7777,
-                serverPubKey:  currentDict["server_pubkey"] ?? "",
-                privateKey:    currentDict["private_key"] ?? "",
-                publicKey:     currentDict["public_key"] ?? "",
+                serverPubKey:  serverKey,
+                privateKey:    privateKey,
+                publicKey:     publicKey,
                 postKnock:     currentDict["post_knock"] ?? ""
             )
         }
+
+        // MARK: Parse loop
 
         for rawLine in rawLines {
             let indent = leadingSpaces(rawLine)
             let line   = rawLine.trimmingCharacters(in: .init(charactersIn: " \t\r"))
 
-            if line.isEmpty || line.hasPrefix("#") { continue }
+            // Skip blank lines, full-line comments, YAML document markers and directives.
+            if line.isEmpty
+                || line.hasPrefix("#")
+                || line == "---"
+                || line == "..."
+                || line.hasPrefix("%") { continue }
 
-            if line == "profiles:" {
+            // `profiles:` must be at the root level (indent == 0).
+            if line == "profiles:" && indent == 0 {
                 inProfiles = true
                 continue
             }
@@ -185,29 +247,27 @@ public enum ClientConfigParser {
 
             let pIndent = profileIndent ?? 2
 
-            // Profile name: indented exactly one level, ends with ":", no spaces in name.
+            // Profile name line: indented exactly one level, ends with ":",
+            // and the name portion contains no spaces (quoted keys not supported).
             if indent == pIndent && line.hasSuffix(":") && !line.dropLast().contains(" ") {
                 flushCurrent()
                 currentName = String(line.dropLast())
                 currentDict = [:]
-                // Learn key-value indent from the next deeper line.
-                kvIndent = nil
+                kvIndent = nil  // Re-detect kv indent for this profile.
                 continue
             }
 
             // Key-value pair: deeper than profile indent.
             if indent > pIndent {
-                // Learn kv indent on first encounter.
                 if kvIndent == nil { kvIndent = indent }
                 guard indent == kvIndent else { continue }
 
                 if let colonIdx = line.firstIndex(of: ":") {
                     let key = String(line[line.startIndex..<colonIdx])
                         .trimmingCharacters(in: .whitespaces)
-                    let value = String(line[line.index(after: colonIdx)...])
-                        .trimmingCharacters(in: .whitespaces)
-                        .trimmingCharacters(in: CharacterSet(charactersIn: "\"'"))
-                    currentDict[key] = value
+                        .lowercased()   // Normalise key case for leniency.
+                    let rawValue = String(line[line.index(after: colonIdx)...])
+                    currentDict[key] = parseValue(rawValue)
                 }
             }
         }
