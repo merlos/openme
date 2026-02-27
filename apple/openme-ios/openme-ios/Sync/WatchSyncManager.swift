@@ -36,12 +36,20 @@ final class WatchSyncManager: NSObject, WCSessionDelegate, ObservableObject {
     private func push() {
         guard
             WCSession.default.activationState == .activated,
+            WCSession.default.isWatchAppInstalled,
             let dict = store?.profilesDictionary,
             let data = try? JSONEncoder().encode(dict)
         else { return }
-        // transferUserInfo queues delivery; it does not require the watch to be
-        // reachable right now.
-        WCSession.default.transferUserInfo(["profiles_json": data])
+
+        let payload: [String: Any] = ["profiles_json": data]
+
+        if WCSession.default.isReachable {
+            // Watch is in the foreground — deliver immediately.
+            WCSession.default.sendMessage(payload, replyHandler: nil)
+        } else {
+            // Watch is not reachable — queue for guaranteed background delivery.
+            WCSession.default.transferUserInfo(payload)
+        }
     }
 
     // MARK: - WCSessionDelegate (required stubs)

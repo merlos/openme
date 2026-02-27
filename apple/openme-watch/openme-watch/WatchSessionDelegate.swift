@@ -38,8 +38,17 @@ final class WatchSessionDelegate: NSObject, WCSessionDelegate, ObservableObject 
 
     /// Called for every `transferUserInfo` payload queued by the iPhone.
     func session(_ session: WCSession, didReceiveUserInfo userInfo: [String: Any] = [:]) {
+        handle(userInfo)
+    }
+
+    /// Called when the iPhone sends a direct message (watch is reachable/foreground).
+    func session(_ session: WCSession, didReceiveMessage message: [String: Any]) {
+        handle(message)
+    }
+
+    private func handle(_ payload: [String: Any]) {
         guard
-            let data = userInfo["profiles_json"] as? Data,
+            let data = payload["profiles_json"] as? Data,
             let profiles = try? JSONDecoder().decode([String: Profile].self, from: data),
             let store
         else { return }
