@@ -68,6 +68,7 @@ to securely and stealthily open firewall ports.`,
 		newRevokeCmd(),
 		newConnectCmd(),
 		newStatusCmd(),
+		newProfilesCmd(),
 	)
 
 	if err := root.Execute(); err != nil {
@@ -645,6 +646,88 @@ func runRevoke(name string) error {
 	}
 	fmt.Printf("Client %q revoked. Changes take effect immediately on next knock attempt.\n", name)
 	return nil
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// openme profiles [name]
+// ────────────────────────────────────────────────────────────────────────────
+
+func newProfilesCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:     "profiles [name]",
+		GroupID: "client",
+		Short:   "List client profiles",
+		Long: `List all profiles in the client config file, or show details for a named profile.
+
+Sensitive fields (private keys) are always redacted from the output.
+
+Examples:
+  openme profiles               # list all profiles
+  openme profiles home          # show details for the 'home' profile`,
+		Args: cobra.MaximumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			name := ""
+			if len(args) > 0 {
+				name = args[0]
+			}
+			return runProfiles(name)
+		},
+	}
+}
+
+func runProfiles(name string) error {
+	cfg, err := config.LoadClientConfig(clientConfigPath)
+	if err != nil {
+		return err
+	}
+	if len(cfg.Profiles) == 0 {
+		fmt.Println("No profiles found.")
+		return nil
+	}
+
+	// Show a single profile in detail.
+	if name != "" {
+		p, err := config.GetProfile(cfg, name)
+		if err != nil {
+			return err
+		}
+		printProfileDetail(name, p)
+		return nil
+	}
+
+	// List all profiles.
+	fmt.Printf("%-20s %-30s %-8s %s\n", "NAME", "SERVER", "PORT", "POST-KNOCK")
+	fmt.Println("──────────────────────────────────────────────────────────────────")
+	for n, p := range cfg.Profiles {
+		postKnock := p.PostKnock
+		if len(postKnock) > 24 {
+			postKnock = postKnock[:21] + "..."
+		}
+		fmt.Printf("%-20s %-30s %-8d %s\n", n, p.ServerHost, p.ServerUDPPort, postKnock)
+	}
+	return nil
+}
+
+func printProfileDetail(name string, p *config.Profile) {
+	pubKey := p.PublicKey
+	if pubKey == "" {
+		pubKey = "(none)"
+	}
+	serverPubKey := p.ServerPubKey
+	if serverPubKey == "" {
+		serverPubKey = "(none)"
+	}
+	postKnock := p.PostKnock
+	if postKnock == "" {
+		postKnock = "(none)"
+	}
+	fmt.Printf("Profile:       %s\n", name)
+	fmt.Printf("Server:        %s\n", p.ServerHost)
+	fmt.Printf("UDP port:      %d\n", p.ServerUDPPort)
+	fmt.Printf("Server pubkey: %s\n", serverPubKey)
+	fmt.Printf("Client pubkey: %s\n", pubKey)
+	fmt.Printf("Private key:   (redacted)\n")
+	fmt.Printf("Post-knock:    %s\n", postKnock)
 }
 
 // ────────────────────────────────────────────────────────────────────────────
