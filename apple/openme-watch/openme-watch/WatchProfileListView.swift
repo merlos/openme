@@ -5,6 +5,7 @@ import SwiftUI
 struct WatchProfileListView: View {
     @EnvironmentObject var store: ProfileStore
     @EnvironmentObject var knockManager: KnockManager
+    @EnvironmentObject var sessionDelegate: WatchSessionDelegate
 
     @State private var selectedProfile: String?
 
@@ -35,6 +36,11 @@ struct WatchProfileListView: View {
                                 }
                             }
                         }
+                    }
+                    .refreshable {
+                        sessionDelegate.requestSync()
+                        // Give the phone a moment to respond
+                        try? await Task.sleep(nanoseconds: 1_500_000_000)
                     }
                 }
             }

@@ -142,9 +142,16 @@ private struct QRImportTab: View {
         }
     }
 
-    private func processScanned(_ yaml: String) {
+    private func processScanned(_ string: String) {
         do {
-            let profiles = try ClientConfigParser.parse(yaml: yaml)
+            // QR codes produced by `openme qr` contain JSON; fall back to YAML
+            // for any hand-crafted or legacy QR codes that embed raw YAML.
+            let profiles: [String: Profile]
+            if string.trimmingCharacters(in: .whitespaces).hasPrefix("{") {
+                profiles = try ClientConfigParser.parseQRPayload(json: string)
+            } else {
+                profiles = try ClientConfigParser.parse(yaml: string)
+            }
             try store.merge(profiles)
             imported = true
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { onDone() }

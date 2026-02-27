@@ -60,4 +60,9 @@ final class WatchSyncManager: NSObject, WCSessionDelegate, ObservableObject {
         // Re-activate after a watch switch.
         WCSession.default.activate()
     }
+
+    /// Watch-initiated sync request: re-push the current profile list.
+    func session(_ session: WCSession, didReceiveMessage message: [String: Any]) {
+        if message["request"] as? String == "sync" { push() }
+    }
 }

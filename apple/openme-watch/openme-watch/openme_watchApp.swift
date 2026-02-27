@@ -3,8 +3,8 @@ import SwiftUI
 
 @main
 struct openme_watchApp: App {
-    @StateObject private var store        = ProfileStore()
-    @StateObject private var knockManager = KnockManager()
+    @StateObject private var store           = ProfileStore()
+    @StateObject private var knockManager    = KnockManager()
     /// Receives profile updates pushed from the paired iPhone.
     @StateObject private var sessionDelegate = WatchSessionDelegate()
 
@@ -13,6 +13,7 @@ struct openme_watchApp: App {
             WatchProfileListView()
                 .environmentObject(store)
                 .environmentObject(knockManager)
+                .environmentObject(sessionDelegate)
                 .onAppear {
                     knockManager.store = store
                     sessionDelegate.bind(store: store)

@@ -121,7 +121,7 @@ struct ProfileListView: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
-                Button("Import Profile") { showImport = true }
+                Button("Import Profile") { showAddMenu = true }
                     .buttonStyle(.borderedProminent)
             }
             .padding()

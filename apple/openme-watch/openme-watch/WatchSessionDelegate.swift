@@ -21,6 +21,13 @@ final class WatchSessionDelegate: NSObject, WCSessionDelegate, ObservableObject 
         self.store = store
     }
 
+    /// Asks the paired iPhone to re-push the full profile list.
+    /// Returns immediately if the watch is not currently reachable.
+    func requestSync() {
+        guard WCSession.default.isReachable else { return }
+        WCSession.default.sendMessage(["request": "sync"], replyHandler: nil)
+    }
+
     // MARK: - WCSessionDelegate
 
     func session(
