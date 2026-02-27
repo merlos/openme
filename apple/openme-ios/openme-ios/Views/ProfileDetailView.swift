@@ -1,3 +1,4 @@
+import Combine
 import OpenMeKit
 import SwiftUI
 
@@ -12,11 +13,22 @@ struct ProfileDetailView: View {
     @State private var isContinuous = false
     @State private var knockStatus  = ""
     @State private var isSaving     = false
+    @State private var showPrivateKey = false
+    @State private var countdown: Int = 20
 
     var body: some View {
         Group {
             if var p = draft {
                 Form {
+                    // ── Profile ────────────────────────────────────────
+                    Section("Profile") {
+                        TextField("Profile name", text: Binding(
+                            get: { p.name },
+                            set: { p.name = $0; draft = p }
+                        ))
+                        .autocapitalization(.none)
+                    }
+
                     // ── Status ─────────────────────────────────────────
                     Section {
                         knockControls
@@ -36,25 +48,47 @@ struct ProfileDetailView: View {
                             TextField("7777", value: Binding(
                                 get: { Int(p.serverUDPPort) },
                                 set: { p.serverUDPPort = UInt16($0); draft = p }
-                            ), format: .number)
+                            ), format: .number.grouping(.never))
                             .keyboardType(.numberPad)
                         }
                     }
 
-                    // ── Keys (read-only) ───────────────────────────────
+                    // ── Keys ──────────────────────────────────────────
                     Section("Keys") {
                         LabeledContent("Public key") {
-                            Text(p.publicKey.isEmpty ? "—" : String(p.publicKey.prefix(20)) + "…")
-                                .font(.caption.monospaced())
-                                .foregroundStyle(.secondary)
+                            TextField("base64 public key", text: Binding(
+                                get: { p.publicKey },
+                                set: { p.publicKey = $0; draft = p }
+                            ))
+                            .font(.caption.monospaced())
+                            .autocapitalization(.none)
+                            .autocorrectionDisabled()
                         }
                         LabeledContent("Private key") {
-                            Text(p.privateKey.isEmpty ? "—" : "••••••••")
-                                .font(.caption.monospaced())
-                                .foregroundStyle(.secondary)
-                        }
-                        NavigationLink("Regenerate Keys") {
-                            KeyGenerationView(store: store, prefilledName: profileName)
+                            HStack {
+                                if showPrivateKey {
+                                    TextField("base64 private key", text: Binding(
+                                        get: { p.privateKey },
+                                        set: { p.privateKey = $0; draft = p }
+                                    ))
+                                    .font(.caption.monospaced())
+                                    .autocapitalization(.none)
+                                    .autocorrectionDisabled()
+                                } else {
+                                    SecureField("private key", text: Binding(
+                                        get: { p.privateKey },
+                                        set: { p.privateKey = $0; draft = p }
+                                    ))
+                                    .font(.caption.monospaced())
+                                }
+                                Button {
+                                    showPrivateKey.toggle()
+                                } label: {
+                                    Image(systemName: showPrivateKey ? "eye.slash" : "eye")
+                                        .foregroundStyle(.secondary)
+                                }
+                                .buttonStyle(.borderless)
+                            }
                         }
                     }
 
@@ -75,17 +109,29 @@ struct ProfileDetailView: View {
                         }
                     }
                 }
-                .navigationTitle(profileName)
+                .scrollContentBackground(.hidden)
+                .background { AnimatedGradientBackground() }
+                .navigationTitle(draft?.name ?? profileName)
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .confirmationAction) {
                         Button("Save") {
+                            guard let p = draft else { return }
                             isSaving = true
+                            if p.name != profileName {
+                                try? store.delete(name: profileName)
+                            }
                             try? store.update(p)
                             isSaving = false
+                            if p.name != profileName { dismiss() }
                         }
                         .disabled(isSaving)
                     }
+                }
+                .onReceive(Timer.publish(every: 1, on: .main, in: .common).autoconnect()) { _ in
+                    guard isContinuous else { return }
+                    countdown -= 1
+                    if countdown <= 0 { countdown = 20 }
                 }
             } else {
                 ContentUnavailableView("Profile not found", systemImage: "questionmark.folder")
@@ -118,6 +164,7 @@ struct ProfileDetailView: View {
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
+            .controlSize(.large)
 
             Toggle(isOn: $isContinuous) {
                 Label("Continuous knock (every 20 s)", systemImage: "repeat")
@@ -125,12 +172,22 @@ struct ProfileDetailView: View {
             }
             .onChange(of: isContinuous) { _, on in
                 if on {
+                    countdown = 20
                     knockManager.startContinuousKnock(profile: profileName)
                 } else {
+                    countdown = 20
                     knockManager.stopContinuousKnock()
                 }
             }
             .onAppear { isContinuous = knockManager.continuousKnockProfile == profileName }
+
+            if isContinuous {
+                Text("Next knock in \(countdown)s")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
+                    .frame(maxWidth: .infinity, alignment: .center)
+            }
         }
         .padding(.vertical, 4)
     }

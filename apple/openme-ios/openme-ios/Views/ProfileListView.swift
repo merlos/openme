@@ -1,15 +1,18 @@
 import OpenMeKit
 import SwiftUI
+import UniformTypeIdentifiers
 
 /// Main screen: list of configured profiles with knock buttons.
 struct ProfileListView: View {
     @EnvironmentObject var store: ProfileStore
     @EnvironmentObject var knockManager: KnockManager
 
-    @State private var showImport     = false
-    @State private var showKeyGen     = false
+    @State private var showImport         = false
+    @State private var importInitialTab: ImportProfileView.Tab = .yaml
+    @State private var showAddMenu          = false
+    @State private var showFileImporter     = false
     @State private var lastResult: KnockResult?
-    @State private var resultProfile  = ""
+    @State private var resultProfile        = ""
 
     var body: some View {
         Group {
@@ -22,23 +25,36 @@ struct ProfileListView: View {
         .navigationTitle("openme")
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
-                Button { showKeyGen = true } label: {
-                    Label("Generate Keys", systemImage: "key.fill")
+                Button { showAddMenu = true } label: {
+                    Label("Add Profile", systemImage: "plus")
                 }
-                Button { showImport = true } label: {
-                    Label("Import Profile", systemImage: "qrcode.viewfinder")
-                }
+            }
+        }
+        .confirmationDialog("Add Profile", isPresented: $showAddMenu, titleVisibility: .visible) {
+            Button("Scan QR Code") {
+                importInitialTab = .qr
+                showImport = true
+            }
+            Button("Load Config File") {
+                showFileImporter = true
+            }
+        }
+        .fileImporter(
+            isPresented: $showFileImporter,
+            allowedContentTypes: [.yaml, UTType(filenameExtension: "yaml") ?? .data]
+        ) { result in
+            guard let url = try? result.get(),
+                  url.startAccessingSecurityScopedResource() else { return }
+            defer { url.stopAccessingSecurityScopedResource() }
+            if let yaml = try? String(contentsOf: url),
+               let profiles = try? ClientConfigParser.parse(yaml: yaml) {
+                try? store.merge(profiles)
             }
         }
         .sheet(isPresented: $showImport) {
             NavigationStack {
-                ImportProfileView()
+                ImportProfileView(initialTab: importInitialTab)
                     .environmentObject(store)
-            }
-        }
-        .sheet(isPresented: $showKeyGen) {
-            NavigationStack {
-                KeyGenerationView(store: store)
             }
         }
         .alert(resultTitle, isPresented: .constant(lastResult != nil), actions: {
@@ -60,10 +76,25 @@ struct ProfileListView: View {
                         .environmentObject(store)
                         .environmentObject(knockManager)
                 } label: {
-                    ProfileRowView(entry: entry, knockManager: knockManager) { result in
-                        resultProfile = entry.name
-                        lastResult = result
+                    ProfileRowView(entry: entry, knockManager: knockManager)
+                }
+                .swipeActions(edge: .leading, allowsFullSwipe: true) {
+                    Button(role: .destructive) {
+                        try? store.delete(name: entry.name)
+                    } label: {
+                        Label("Delete", systemImage: "trash")
                     }
+                }
+                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                    Button {
+                        knockManager.knock(profile: entry.name) { result in
+                            resultProfile = entry.name
+                            lastResult = result
+                        }
+                    } label: {
+                        Label("Knock", systemImage: "lock.open.fill")
+                    }
+                    .tint(.green)
                 }
             }
             .onDelete { idx in
@@ -73,23 +104,28 @@ struct ProfileListView: View {
             }
         }
         .refreshable { store.reload() }
+        .scrollContentBackground(.hidden)
+        .background { AnimatedGradientBackground() }
     }
 
     private var emptyState: some View {
-        VStack(spacing: 20) {
-            Image(systemName: "lock.open.fill")
-                .font(.system(size: 56))
-                .foregroundStyle(.secondary)
-            Text("No profiles yet")
-                .font(.title2)
-            Text("Import a profile from a YAML file or QR code.")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-            Button("Import Profile") { showImport = true }
-                .buttonStyle(.borderedProminent)
+        ZStack {
+            AnimatedGradientBackground()
+            VStack(spacing: 20) {
+                Image(systemName: "lock.open.fill")
+                    .font(.system(size: 56))
+                    .foregroundStyle(.secondary)
+                Text("No profiles yet")
+                    .font(.title2)
+                Text("Import a profile from a YAML file or QR code.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                Button("Import Profile") { showImport = true }
+                    .buttonStyle(.borderedProminent)
+            }
+            .padding()
         }
-        .padding()
     }
 
     private var resultTitle: String {
@@ -106,9 +142,6 @@ struct ProfileListView: View {
 private struct ProfileRowView: View {
     let entry: ProfileEntry
     @ObservedObject var knockManager: KnockManager
-    let onResult: (KnockResult) -> Void
-
-    @State private var isKnocking = false
 
     var body: some View {
         HStack {
@@ -127,18 +160,6 @@ private struct ProfileRowView: View {
                     .foregroundStyle(.green)
                     .symbolEffect(.variableColor.iterative)
             }
-
-            Button {
-                isKnocking = true
-                knockManager.knock(profile: entry.name) { result in
-                    isKnocking = false
-                    onResult(result)
-                }
-            } label: {
-                Image(systemName: isKnocking ? "circle.dotted" : "lock.open.fill")
-                    .symbolEffect(.bounce, value: isKnocking)
-            }
-            .buttonStyle(.borderless)
         }
     }
 }

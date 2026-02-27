@@ -6,7 +6,19 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		892CDA1B2F50E97800A84433 /* OpenMeKit in Frameworks */ = {isa = PBXBuildFile; productRef = A500000200000000000CA3 /* OpenMeKit */; };
+		892CDA1C2F50E97800A84433 /* OpenMeKit in Frameworks */ = {isa = PBXBuildFile; productRef = A500000200000000001CA3 /* OpenMeKit */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
+		892CDA6B2F50E97800A84433 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A4000014000000000001CA3 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A421331B000000000002CA3;
+			remoteInfo = "openme-widget";
+		};
 		A423332C000000000001CA3 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = A4000014000000000001CA3 /* Project object */;
@@ -36,7 +48,7 @@
 			path = "openme-ios";
 			sourceTree = "<group>";
 		};
-		A421331E000000000002CA3 /* openme-widget */ = {
+		A421331E000000000002CA3 /* ../openme-widget */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = "../openme-widget";
 			sourceTree = "<group>";
@@ -58,6 +70,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				892CDA1B2F50E97800A84433 /* OpenMeKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -65,6 +78,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				892CDA1C2F50E97800A84433 /* OpenMeKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -89,7 +103,7 @@
 			isa = PBXGroup;
 			children = (
 				A421331E000000000001CA3 /* openme-ios */,
-				A421331E000000000002CA3 /* openme-widget */,
+				A421331E000000000002CA3 /* ../openme-widget */,
 				A422332E000000000001CA3 /* openme-iosTests */,
 				A422333800000000000CA3 /* openme-iosUITests */,
 				A4000015000000000001CA3 /* Products */,
@@ -121,7 +135,7 @@
 			buildRules = (
 			);
 			dependencies = (
-				A421334A000000000001CA3 /* PBXTargetDependency widget */,
+				A421334A000000000001CA3 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				A421331E000000000001CA3 /* openme-ios */,
@@ -147,11 +161,11 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				A421331E000000000002CA3 /* openme-widget */,
+				A421331E000000000002CA3 /* ../openme-widget */,
 			);
 			name = "openme-widget";
 			packageProductDependencies = (
-				A500000200000000001CA3 /* OpenMeKit (widget) */,
+				A500000200000000001CA3 /* OpenMeKit */,
 			);
 			productName = "openme-widget";
 			productReference = A421331C000000000002CA3 /* openme-widget.appex */;
@@ -317,6 +331,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		A421334A000000000001CA3 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A421331B000000000002CA3 /* openme-widget */;
+			targetProxy = 892CDA6B2F50E97800A84433 /* PBXContainerItemProxy */;
+		};
 		A422332D000000000001CA3 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = A421331B000000000001CA3 /* openme-ios */;
@@ -327,31 +346,7 @@
 			target = A421331B000000000001CA3 /* openme-ios */;
 			targetProxy = A423332C000000000002CA3 /* PBXContainerItemProxy */;
 		};
-		A421334A000000000001CA3 /* PBXTargetDependency widget */ = {
-			isa = PBXTargetDependency;
-			target = A421331B000000000002CA3 /* openme-widget */;
-		};
 /* End PBXTargetDependency section */
-
-/* Begin XCLocalSwiftPackageReference section */
-		A500000100000000000CA3 /* XCLocalSwiftPackageReference "../OpenMeKit" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = "../OpenMeKit";
-		};
-/* End XCLocalSwiftPackageReference section */
-
-/* Begin XCSwiftPackageProductDependency section */
-		A500000200000000000CA3 /* OpenMeKit */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = A500000100000000000CA3 /* XCLocalSwiftPackageReference "../OpenMeKit" */;
-			productName = OpenMeKit;
-		};
-		A500000200000000001CA3 /* OpenMeKit (widget) */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = A500000100000000000CA3 /* XCLocalSwiftPackageReference "../OpenMeKit" */;
-			productName = OpenMeKit;
-		};
-/* End XCSwiftPackageProductDependency section */
 
 /* Begin XCBuildConfiguration section */
 		A422333D000000000001CA3 /* Debug */ = {
@@ -473,7 +468,7 @@
 			};
 			name = Release;
 		};
-		A422334000000000001CA3 /* Debug (ios app) */ = {
+		A422334000000000001CA3 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -488,8 +483,8 @@
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -507,41 +502,7 @@
 			};
 			name = Debug;
 		};
-		A422334100000000001CA3 /* Release (ios app) */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_ENTITLEMENTS = "openme-ios/openme-ios.entitlements";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = SU64RGPDF2;
-				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_NSCameraUsageDescription = "Used to scan QR codes for profile import.";
-				INFOPLIST_KEY_NSFaceIDUsageDescription = "Used to protect access to your server keys.";
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "org.merlos.openme-ios";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-			};
-			name = Release;
-		};
-		A422334000000000002CA3 /* Debug (widget) */ = {
+		A422334000000000002CA3 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = "../openme-widget/openme-widget.entitlements";
@@ -568,7 +529,41 @@
 			};
 			name = Debug;
 		};
-		A422334100000000002CA3 /* Release (widget) */ = {
+		A422334100000000001CA3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = "openme-ios/openme-ios.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = SU64RGPDF2;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Used to scan QR codes for profile import.";
+				INFOPLIST_KEY_NSFaceIDUsageDescription = "Used to protect access to your server keys.";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "org.merlos.openme-ios";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		A422334100000000002CA3 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = "../openme-widget/openme-widget.entitlements";
@@ -595,7 +590,7 @@
 			};
 			name = Release;
 		};
-		A422334300000000000CA3 /* Debug (tests) */ = {
+		A422334300000000000CA3 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
@@ -615,7 +610,7 @@
 			};
 			name = Debug;
 		};
-		A422334400000000000CA3 /* Release (tests) */ = {
+		A422334400000000000CA3 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
@@ -635,7 +630,7 @@
 			};
 			name = Release;
 		};
-		A422334600000000000CA3 /* Debug (uitests) */ = {
+		A422334600000000000CA3 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
@@ -654,7 +649,7 @@
 			};
 			name = Debug;
 		};
-		A422334700000000000CA3 /* Release (uitests) */ = {
+		A422334700000000000CA3 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
@@ -722,6 +717,26 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		A500000100000000000CA3 /* XCLocalSwiftPackageReference "../OpenMeKit" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../OpenMeKit;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		A500000200000000000CA3 /* OpenMeKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A500000100000000000CA3 /* XCLocalSwiftPackageReference "../OpenMeKit" */;
+			productName = OpenMeKit;
+		};
+		A500000200000000001CA3 /* OpenMeKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A500000100000000000CA3 /* XCLocalSwiftPackageReference "../OpenMeKit" */;
+			productName = OpenMeKit;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = A4000014000000000001CA3 /* Project object */;
 }

@@ -8,7 +8,13 @@ struct ImportProfileView: View {
     @Environment(\.dismiss) private var dismiss
 
     enum Tab { case yaml, qr }
-    @State private var tab: Tab = .yaml
+    private let initialTab: Tab
+    @State private var tab: Tab
+
+    init(initialTab: Tab = .yaml) {
+        self.initialTab = initialTab
+        self._tab = State(initialValue: initialTab)
+    }
 
     var body: some View {
         Group {
