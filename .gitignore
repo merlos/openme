@@ -77,3 +77,4 @@ android/build/
 # ── openme runtime — NEVER commit keys ──────────────────────
 *.key
 /etc/openme/
+cli/*.yaml
