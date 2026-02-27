@@ -21,9 +21,16 @@ Client                              Server (port always CLOSED to scanners)
 openme/
 ├── cli/          Go server daemon + cross-platform CLI
 ├── apple/
-│   └── OpenMeKit/  Swift package — shared SPA client library (macOS, iOS, watchOS)
+│   ├── OpenMeKit/      Swift package — shared SPA client library (iOS, macOS, watchOS)
+│   ├── openme-ios/     iOS app (SwiftUI, Profiles, QR/YAML import, knock widget)
+│   ├── openme-macos/   macOS app (SwiftUI menu-bar, Profiles, AppleScript post-knock)
+│   ├── openme-watch/   watchOS app (WatchConnectivity sync from iPhone)
+│   ├── openme-widget/  iOS/macOS WidgetKit widget (one-tap knock from home screen)
+│   └── openme.xcworkspace/
+├── android/
+│   ├── openmekit/      Kotlin library — SPA protocol, profile storage, YAML/QR import
+│   └── app/            Android app (Jetpack Compose, Material 3)
 ├── windows/      Windows GUI client          (planned)
-├── android/      Android app                 (planned)
 ├── docs/         Quarto documentation site   → openme.merlos.org/docs/
 └── website/      Marketing landing page      → openme.merlos.org
 ```
@@ -93,6 +100,7 @@ The full documentation is published at **[openme.merlos.org/docs](https://openme
 | [FAQ](docs/faq/) | Common questions |
 | [API Reference](docs/api/) | Auto-generated from Go source via pkgsite |
 | [OpenMeKit SDK Reference](docs/openmekit/) | Swift API reference for the Apple client library |
+| [Android SDK](docs/android-sdk/) | Kotlin/Android library reference (KDoc via Dokka) |
 
 ### Build the Quarto docs locally
 
@@ -107,19 +115,31 @@ quarto preview
 
 | Platform | Status | Notes |
 |----------|--------|-------|
-| Linux (CLI + server) | ✅ Active | iptables & nftables |
-| macOS (CLI client) | ✅ Active | Cross-compiled from Go |
-| Windows (CLI client) | ✅ Active | Cross-compiled from Go |
-| Windows GUI | 🔜 Planned | WinUI 3 / C# |
-| macOS GUI | 🔜 Planned | SwiftUI menu bar |
-| Android | 🔜 Planned | Jetpack Compose |
-| iOS | 🔜 Planned | SwiftUI + Secure Enclave |
+| **Linux** (server + CLI) | ✅ Active | iptables & nftables backends |
+| **macOS** (CLI client) | ✅ Active | Cross-compiled from Go |
+| **Windows** (CLI client) | ✅ Active | Cross-compiled from Go |
+| **iOS** app | ✅ Active | SwiftUI · QR + YAML import · swipe-to-knock · inline feedback · countdown timer |
+| **macOS** app | ✅ Active | SwiftUI · menu-bar style · post-knock AppleScript |
+| **watchOS** app | ✅ Active | WatchConnectivity sync from iPhone · pull-to-refresh |
+| **iOS/macOS Widget** | ✅ Active | WidgetKit one-tap knock from home/lock screen |
+| **Android** app | ✅ Active | Jetpack Compose · Material 3 · swipe-to-knock / swipe-to-delete |
+| **Android** library (openmekit) | ✅ Active | Kotlin · Ed25519 + X25519 + ChaCha20-Poly1305 · DataStore profiles |
+| **Windows** GUI | 🔜 Planned | WinUI 3 / C# |
 
 ---
 
 ## Contributing
 
-Each platform has its own subdirectory, build toolchain and README. Start with the directory most relevant to what you want to work on. All cryptographic protocol changes should be discussed in an issue first.
+Each platform has its own subdirectory, build toolchain and README:
+
+| Directory | README |
+|-----------|--------|
+| Go CLI + server | [cli/README.md](cli/README.md) |
+| Swift library (iOS / macOS / watchOS) | [apple/OpenMeKit/README.md](apple/OpenMeKit/README.md) |
+| iOS, macOS, watchOS, widget apps | [apple/openme-ios/README.md](apple/openme-ios/README.md) · [apple/openme-macos/README.md](apple/openme-macos/README.md) |
+| Android app + Kotlin library | [android/README.md](android/README.md) |
+
+All cryptographic protocol changes should be discussed in an issue first.
 
 ## License
 
