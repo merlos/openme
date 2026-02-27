@@ -8,7 +8,7 @@ struct WatchKnockView: View {
 
     @State private var status: KnockStatus = .idle
 
-    enum KnockStatus {
+    enum KnockStatus: Equatable {
         case idle, sending, success, failure(String)
 
         var label: String {
