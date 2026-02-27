@@ -75,41 +75,6 @@ systemd unit, then enables the service.
 
 ---
 
-### OpenWrt
-
-openme is distributed as an OpenWrt feed package.  Place the contents of
-[`packaging/openwrt/`](packaging/openwrt/) inside your OpenWrt feed directory:
-
-```
-<feed>/net/openme/Makefile
-<feed>/net/openme/files/openme.init
-```
-
-Then build and install:
-
-```bash
-# From the OpenWrt build system root:
-./scripts/feeds update <feed>
-./scripts/feeds install openme
-make package/openme/compile
-# Install on the router:
-scp bin/packages/*/openme*.ipk root@<router>:/tmp/
-ssh root@<router> opkg install /tmp/openme_*.ipk
-```
-
-After installation, initialise the server config and start:
-
-```bash
-openme init --server <hostname-or-ip>
-/etc/init.d/openme enable
-/etc/init.d/openme start
-```
-
-The procd init script in `/etc/init.d/openme` manages restarts and
-automatically reloads when `/etc/openme/config.yaml` changes.
-
----
-
 ## Build from Source
 
 Requires **Go 1.21+**.
