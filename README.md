@@ -34,6 +34,8 @@ openme/
 │   ├── OpenMeKit/      .NET client library (Kotlin-equivalent)
 │   ├── openme-windows/ WPF system-tray application
 │   └── OpenMeKit.Tests/
+├── c/
+│   └── openmelib/  Pure C99 SPA client library (ESP32, Arduino, Linux, macOS, Windows)
 ├── docs/         Quarto documentation site   → openme.merlos.org/docs/
 └── website/      Marketing landing page      → openme.merlos.org
 ```
@@ -128,6 +130,7 @@ quarto preview
 | **Android** app | ✅ Active | Jetpack Compose · Material 3 · swipe-to-knock / swipe-to-delete |
 | **Android** library (openmekit) | ✅ Active | Kotlin · Ed25519 + X25519 + ChaCha20-Poly1305 · DataStore profiles |
 | **Windows** GUI | ✅ Active | WPF (.NET 8), system tray, profile manager, YAML import, continuous knock |
+| **C library** (openmelib) | ✅ Active | Pure C99 · ESP32 / Arduino / Linux / macOS / Windows · Monocypher crypto |
 
 ---
 
@@ -142,6 +145,7 @@ Each platform has its own subdirectory, build toolchain and README:
 | iOS, macOS, watchOS, widget apps | [apple/openme-ios/README.md](apple/openme-ios/README.md) · [apple/openme-macos/README.md](apple/openme-macos/README.md) |
 | Android app + Kotlin library | [android/README.md](android/README.md) |
 | Windows app + .NET library | [windows/README.md](windows/README.md) |
+| C library (openmelib) | [c/openmelib/README.md](c/openmelib/README.md) |
 
 All cryptographic protocol changes should be discussed in an issue first.
 
