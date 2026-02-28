@@ -3,8 +3,8 @@
 
 version: "1.0.0"
 description: "openme SPA knock protocol client library — C implementation"
-url: "https://github.com/openme/openme"
-repository: "https://github.com/openme/openme"
+url: "https://github.com/merlos/openme"
+repository: "https://github.com/merlos/openme"
 documentation: "https://openme.merlos.org/"
 
 targets:
