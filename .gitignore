@@ -115,7 +115,7 @@ windows/**/*.user
 windows/**/*.suo
 windows/.vs/
 
-# ── openme runtime — NEVER commit keys ──────────────────────
+
 *.key
 /etc/openme/
 cli/*.yaml
