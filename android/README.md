@@ -1,5 +1,7 @@
 # openme Android
 
+[![Android CI](https://github.com/merlos/openme/actions/workflows/android.yml/badge.svg)](https://github.com/merlos/openme/actions/workflows/android.yml)
+
 Android app + client library for the [openme](https://github.com/merlos/openme) Single Packet Authentication (SPA) protocol.
 
 ## Project structure
@@ -48,6 +50,51 @@ gradle wrapper --gradle-version 8.9
 ./gradlew app:installDebug
 ```
 
+## Build a release APK locally
+
+### 1. Create a signing keystore (first time only)
+
+```bash
+keytool -genkeypair -v \
+  -keystore app/release.keystore \
+  -alias openme \
+  -keyalg RSA -keysize 2048 \
+  -validity 10000
+```
+
+Keep `release.keystore` **out of version control** — it is already listed in `.gitignore`.
+
+### 2. Set signing credentials as environment variables
+
+```bash
+export KEYSTORE_PATH="$PWD/app/release.keystore"
+export KEYSTORE_PASSWORD="your-store-password"
+export KEY_ALIAS="openme"
+export KEY_PASSWORD="your-key-password"
+```
+
+Or create a local `keystore.properties` file in `android/` (also `.gitignore`d):
+
+```properties
+storeFile=release.keystore
+storePassword=your-store-password
+keyAlias=openme
+keyPassword=your-key-password
+```
+
+### 3. Build the signed release APK
+
+```bash
+cd android
+./gradlew :app:assembleRelease \
+  -Pandroid.injected.signing.store.file="$KEYSTORE_PATH" \
+  -Pandroid.injected.signing.store.password="$KEYSTORE_PASSWORD" \
+  -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
+  -Pandroid.injected.signing.key.password="$KEY_PASSWORD"
+```
+
+Output: `app/build/outputs/apk/release/app-release.apk`
+
 ## Run tests
 
 ```bash
@@ -75,6 +122,42 @@ available from API 29.
 
 - [Android SDK documentation](../docs/android-sdk/index.qmd)
 - [Protocol specification](../docs/protocol/index.qmd)
+
+## CI — GitHub Actions setup
+
+The workflow at [`.github/workflows/android.yml`](../.github/workflows/android.yml) runs on every push or PR that touches `android/**`.
+
+| Job | What it does |
+|-----|--------------|
+| `test` | Runs openmekit JVM unit tests |
+| `build` | Assembles the release AAR (`openmekit-release.aar`) |
+| `apk` | Builds `openme-debug.apk`; builds signed `openme-release.apk` when signing secrets are present |
+
+### Enabling signed release APK builds
+
+Add the following four **repository secrets** (Settings → Secrets and variables → Actions):
+
+| Secret | Value |
+|--------|-------|
+| `ANDROID_KEYSTORE_BASE64` | Base64-encoded `.keystore` file (see below) |
+| `ANDROID_KEYSTORE_PASSWORD` | Keystore password (`storePassword`) |
+| `ANDROID_KEY_ALIAS` | Key alias (e.g. `openme`) |
+| `ANDROID_KEY_PASSWORD` | Key password (`keyPassword`) |
+
+To encode the keystore:
+
+```bash
+# macOS — copies the base64 string to the clipboard
+base64 -i app/release.keystore | pbcopy
+
+# Linux
+base64 app/release.keystore
+```
+
+Paste the output as the value of `ANDROID_KEYSTORE_BASE64`.
+
+When `ANDROID_KEYSTORE_BASE64` is absent the release signing steps are skipped and only the debug APK is uploaded.
+
 ## QR Onboarding
 
 ```
