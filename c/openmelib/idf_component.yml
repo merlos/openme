@@ -1,0 +1,22 @@
+## IDF Component Manager manifest for openmelib
+## https://docs.espressif.com/projects/idf-component-manager/
+
+version: "1.0.0"
+description: "openme SPA knock protocol client library — C implementation"
+url: "https://github.com/openme/openme"
+repository: "https://github.com/openme/openme"
+documentation: "https://openme.merlos.org/"
+
+targets:
+  - esp32
+  - esp32s2
+  - esp32s3
+  - esp32c3
+  - esp32c6
+  - esp32h2
+  - esp32p4
+
+dependencies:
+  ## Monocypher is not yet on the IDF component registry; vendor it locally.
+  ## Run vendor/monocypher/get_monocypher.sh before the first build.
+  idf: ">=5.0"

@@ -1,0 +1,329 @@
+name: openmelib CI
+
+on:
+  push:
+    paths:
+      - 'c/openmelib/**'
+      - '.github/workflows/openmelib.yml'
+  pull_request:
+    paths:
+      - 'c/openmelib/**'
+      - '.github/workflows/openmelib.yml'
+
+# ─── Shared environment ────────────────────────────────────────────────────────
+env:
+  OPENME_LIB: c/openmelib
+  MONO_VER: "4.0.2"
+
+# ==============================================================================
+jobs:
+
+# ─── 1. CMake matrix: Linux, macOS, Windows ───────────────────────────────────
+  cmake:
+    name: cmake / ${{ matrix.os }} / ${{ matrix.compiler }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Linux — GCC
+          - os: ubuntu-24.04
+            compiler: gcc
+            cc: gcc
+            cxx: g++
+          # Linux — Clang
+          - os: ubuntu-24.04
+            compiler: clang
+            cc: clang
+            cxx: clang++
+          # macOS — Apple Clang
+          - os: macos-14
+            compiler: apple-clang
+            cc: clang
+            cxx: clang++
+          # macOS — GCC (via Homebrew)
+          - os: macos-14
+            compiler: gcc-14
+            cc: gcc-14
+            cxx: g++-14
+          # Windows — MSVC
+          - os: windows-2022
+            compiler: msvc
+            cc: cl
+            cxx: cl
+          # Windows — MinGW (MSYS2)
+          - os: windows-2022
+            compiler: mingw
+            cc: gcc
+            cxx: g++
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Install MinGW on Windows
+      - name: Install MSYS2 / MinGW
+        if: matrix.compiler == 'mingw'
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-cmake
+            mingw-w64-x86_64-ninja
+
+      - name: Install macOS GCC
+        if: matrix.compiler == 'gcc-14'
+        run: brew install gcc@14
+
+      - name: Configure (Unix)
+        if: matrix.compiler != 'mingw' && matrix.compiler != 'msvc'
+        env:
+          CC:  ${{ matrix.cc }}
+          CXX: ${{ matrix.cxx }}
+        run: |
+          cmake -S ${{ env.OPENME_LIB }} -B build \
+            -DOPENME_FETCH_MONOCYPHER=ON \
+            -DOPENME_BUILD_EXAMPLES=ON \
+            -DCMAKE_BUILD_TYPE=Release
+
+      - name: Configure (MSVC)
+        if: matrix.compiler == 'msvc'
+        run: |
+          cmake -S ${{ env.OPENME_LIB }} -B build `
+            -DOPENME_FETCH_MONOCYPHER=ON `
+            -DOPENME_BUILD_EXAMPLES=ON `
+            -DCMAKE_BUILD_TYPE=Release
+
+      - name: Configure (MinGW)
+        if: matrix.compiler == 'mingw'
+        shell: msys2 {0}
+        run: |
+          cmake -S ${{ env.OPENME_LIB }} -B build \
+            -G Ninja \
+            -DOPENME_FETCH_MONOCYPHER=ON \
+            -DOPENME_BUILD_EXAMPLES=ON \
+            -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build (Unix / MSVC)
+        if: matrix.compiler != 'mingw'
+        run: cmake --build build --config Release
+
+      - name: Build (MinGW)
+        if: matrix.compiler == 'mingw'
+        shell: msys2 {0}
+        run: cmake --build build
+
+      - name: Smoke test (Unix)
+        if: runner.os == 'Linux' || runner.os == 'macOS'
+        run: |
+          build/openme_knock_example --help 2>&1 || true
+          echo "Exit code check: binary exists"
+          test -f build/openme_knock_example
+
+      - name: Smoke test (Windows MSVC)
+        if: matrix.compiler == 'msvc'
+        run: |
+          Test-Path build\Release\openme_knock_example.exe
+
+# ─── 2. Linux ARM cross-compilation ──────────────────────────────────────────
+  arm-cross:
+    name: cross / ${{ matrix.arch }}
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # 32-bit ARM (Raspberry Pi, STM32 with Linux, etc.)
+          - arch: armhf
+            triplet: arm-linux-gnueabihf
+            pkg: gcc-arm-linux-gnueabihf
+          # 64-bit ARM (Raspberry Pi 4 / 5, Jetson, etc.)
+          - arch: aarch64
+            triplet: aarch64-linux-gnu
+            pkg: gcc-aarch64-linux-gnu
+          # RISC-V 64-bit (generic Linux)
+          - arch: riscv64
+            triplet: riscv64-linux-gnu
+            pkg: gcc-riscv64-linux-gnu
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install cross-compiler
+        run: sudo apt-get install -y ${{ matrix.pkg }}
+
+      - name: Fetch Monocypher
+        run: bash ${{ env.OPENME_LIB }}/vendor/monocypher/get_monocypher.sh
+
+      - name: CMake configure
+        run: |
+          cmake -S ${{ env.OPENME_LIB }} -B build \
+            -DOPENME_FETCH_MONOCYPHER=OFF \
+            -DOPENME_BUILD_EXAMPLES=ON \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_C_COMPILER=${{ matrix.triplet }}-gcc \
+            -DCMAKE_SYSTEM_NAME=Linux \
+            -DCMAKE_SYSTEM_PROCESSOR=${{ matrix.arch }}
+
+      - name: Build
+        run: cmake --build build
+
+# ─── 3. Bare-metal ARM (arm-none-eabi, as for Cortex-M / Arduino Due) ─────────
+  bare-metal:
+    name: bare-metal / arm-none-eabi
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install toolchain
+        run: sudo apt-get install -y gcc-arm-none-eabi
+
+      - name: Fetch Monocypher
+        run: bash ${{ env.OPENME_LIB }}/vendor/monocypher/get_monocypher.sh
+
+      - name: Compile library objects (no OS, no sockets)
+        # Use -ffreestanding; skip the networking example
+        run: |
+          INC="-I${{ env.OPENME_LIB }}/include \
+               -I${{ env.OPENME_LIB }}/src \
+               -I${{ env.OPENME_LIB }}/vendor/monocypher"
+          FLAGS="-std=c99 -ffreestanding -Os -Wall -Wextra \
+                 -DOPENME_CUSTOM_RNG -DOPENME_CUSTOM_TIME \
+                 -c"
+          arm-none-eabi-gcc $FLAGS $INC \
+            ${{ env.OPENME_LIB }}/src/openme_sha256.c   -o sha256.o
+          arm-none-eabi-gcc $FLAGS $INC \
+            ${{ env.OPENME_LIB }}/vendor/monocypher/monocypher.c -o monocypher.o
+          arm-none-eabi-gcc $FLAGS $INC \
+            -DOPENME_PLATFORM_ARDUINO=1 \
+            ${{ env.OPENME_LIB }}/src/openmelib.c        -o openmelib.o
+          arm-none-eabi-ar rcs libopenmelib.a sha256.o monocypher.o openmelib.o
+          echo "Archive built:"
+          arm-none-eabi-size libopenmelib.a
+
+# ─── 4. Arduino boards (arduino-cli) ─────────────────────────────────────────
+  arduino:
+    name: arduino / ${{ matrix.board }}
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - board: esp32:esp32:esp32
+            core: esp32:esp32
+            core_url: "https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json"
+          - board: esp32:esp32:esp32s3
+            core: esp32:esp32
+            core_url: "https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json"
+          - board: esp32:esp32:esp32c3
+            core: esp32:esp32
+            core_url: "https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json"
+          - board: arduino:samd:mkrwifi1010
+            core: arduino:samd
+            core_url: ""
+          - board: arduino:mbed_rp2040:pico
+            core: arduino:mbed_rp2040
+            core_url: ""
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install arduino-cli
+        uses: arduino/setup-arduino-cli@v2
+
+      - name: Fetch Monocypher
+        run: bash ${{ env.OPENME_LIB }}/vendor/monocypher/get_monocypher.sh
+
+      - name: Symlink monocypher into src/ (Arduino looks for sources there)
+        run: |
+          ln -sf "$(pwd)/${{ env.OPENME_LIB }}/vendor/monocypher/monocypher.h" \
+                 "$(pwd)/${{ env.OPENME_LIB }}/src/monocypher.h"
+          ln -sf "$(pwd)/${{ env.OPENME_LIB }}/vendor/monocypher/monocypher.c" \
+                 "$(pwd)/${{ env.OPENME_LIB }}/src/monocypher.c"
+
+      - name: Init arduino-cli config
+        run: |
+          arduino-cli config init
+          if [ -n "${{ matrix.core_url }}" ]; then
+            arduino-cli config add board_manager.additional_urls "${{ matrix.core_url }}"
+          fi
+          arduino-cli core update-index
+
+      - name: Install board core
+        run: arduino-cli core install ${{ matrix.core }}
+
+      - name: Install library into Arduino libraries path
+        run: |
+          mkdir -p ~/Arduino/libraries
+          cp -r ${{ env.OPENME_LIB }} ~/Arduino/libraries/openmelib
+
+      - name: Compile example sketch
+        run: |
+          arduino-cli compile \
+            --fqbn "${{ matrix.board }}" \
+            --libraries ~/Arduino/libraries \
+            ${{ env.OPENME_LIB }}/examples/arduino/openme_knock/
+
+# ─── 5. ESP-IDF firmware build ────────────────────────────────────────────────
+  esp_idf:
+    name: esp-idf / ${{ matrix.target }}
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [esp32, esp32s3, esp32c3, esp32c6]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch Monocypher
+        run: bash ${{ env.OPENME_LIB }}/vendor/monocypher/get_monocypher.sh
+
+      - name: Copy IDF CMakeLists into place
+        run: |
+          cp ${{ env.OPENME_LIB }}/CMakeLists_idf.txt \
+             ${{ env.OPENME_LIB }}/CMakeLists.txt.idf_bak
+          # The esp32_idf example uses EXTRA_COMPONENT_DIRS pointing to openmelib
+          # so no copy needed — just make sure the idf CMakeLists is named correctly
+          cp ${{ env.OPENME_LIB }}/CMakeLists_idf.txt \
+             ${{ env.OPENME_LIB }}/CMakeLists.txt
+
+      - name: Build with ESP-IDF Docker image
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: v5.3
+          target: ${{ matrix.target }}
+          path: c/openmelib/examples/esp32_idf
+
+      - name: Restore original CMakeLists.txt
+        if: always()
+        run: mv ${{ env.OPENME_LIB }}/CMakeLists.txt.idf_bak \
+                ${{ env.OPENME_LIB }}/CMakeLists.txt || true
+
+# ─── 6. Static analysis (cppcheck) ───────────────────────────────────────────
+  static-analysis:
+    name: static analysis / cppcheck
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch Monocypher
+        run: bash ${{ env.OPENME_LIB }}/vendor/monocypher/get_monocypher.sh
+
+      - name: Install cppcheck
+        run: sudo apt-get install -y cppcheck
+
+      - name: Run cppcheck
+        run: |
+          cppcheck \
+            --enable=all \
+            --std=c99 \
+            --suppress=missingInclude \
+            --suppress=unusedFunction \
+            --error-exitcode=1 \
+            -I ${{ env.OPENME_LIB }}/include \
+            -I ${{ env.OPENME_LIB }}/src \
+            -I ${{ env.OPENME_LIB }}/vendor/monocypher \
+            ${{ env.OPENME_LIB }}/src/openmelib.c \
+            ${{ env.OPENME_LIB }}/src/openme_sha256.c

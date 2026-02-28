@@ -1,0 +1,18 @@
+# ESP-IDF component CMakeLists.txt
+# Place MONOCYPHER sources are expected in vendor/monocypher/ (run get_monocypher.sh first)
+
+set(MONOCYPHER_DIR "${CMAKE_CURRENT_SOURCE_DIR}/vendor/monocypher")
+
+idf_component_register(
+    SRCS
+        "src/openmelib.c"
+        "src/openme_sha256.c"
+        "${MONOCYPHER_DIR}/monocypher.c"
+    INCLUDE_DIRS
+        "include"
+        "src"
+        "${MONOCYPHER_DIR}"
+    REQUIRES
+        esp_wifi
+        newlib
+)

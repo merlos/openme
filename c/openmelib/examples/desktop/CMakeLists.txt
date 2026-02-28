@@ -1,0 +1,6 @@
+cmake_minimum_required(VERSION 3.14)
+add_executable(openme_knock_example knock_example.c)
+target_link_libraries(openme_knock_example PRIVATE openmelib)
+if (WIN32)
+    target_link_libraries(openme_knock_example PRIVATE ws2_32 bcrypt)
+endif()
