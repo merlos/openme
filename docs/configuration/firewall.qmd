@@ -75,3 +75,55 @@ Use `iptables` on older systems or if your existing ruleset is iptables-based.
 The firewall backend is a no-op on macOS and Windows — the `openme` binary can
 send knock packets from these platforms, but it cannot act as a server
 (no firewall integration). Server deployments require Linux.
+
+## Server Behind a NAT Router
+
+When the openme server runs on a machine inside a home or office network (i.e.
+behind a NAT router), two types of **port forwarding** rules must be configured
+on the router before the server is reachable from the internet.
+
+### 1 — Forward the knock port (UDP)
+
+The client sends knock packets to the server's **public IP** on the configured
+UDP port (default `54154`). The router must forward that port to the server's
+private IP:
+
+| Direction | Protocol | External port | Internal IP | Internal port |
+|-----------|----------|--------------|-------------|--------------|
+| Inbound | UDP | 54154 | `<server-LAN-IP>` | 54154 |
+
+Without this rule the knock packet never reaches the openme daemon and no
+firewall rule is ever created.
+
+### 2 — Forward each protected service port (TCP/UDP)
+
+Even after a successful knock, the openme firewall rule allows traffic from the
+client to the server's private IP. The router still needs to forward the
+individual service port(s) to the server:
+
+| Direction | Protocol | External port | Internal IP | Internal port |
+|-----------|----------|--------------|-------------|--------------|
+| Inbound | TCP | 22 | `<server-LAN-IP>` | 22 |
+
+Repeat for every port listed under `defaults.ports` (or client-specific ports)
+in the server config.
+
+::: {.callout-note}
+**The service ports remain protected.** The router forwarding rule does *not*
+expose the port publicly on its own — the openme firewall on the server still
+blocks the port by default and only opens it for the specific client IP after a
+valid knock.
+:::
+
+### Limitations
+
+* **Double NAT** — if the router is itself behind another NAT (common with
+  some ISPs using CGNAT), port forwarding on the home router is not enough.
+  You may need to request a public static IP from your ISP or use a VPS/relay
+  as the openme server instead.
+* **Dynamic public IP** — most home connections have a changing public IP.
+  Pair the server hostname (`defaults.server`) with a dynamic DNS (DDNS)
+  service so clients always resolve the correct address.
+* **Health-check port** — `openme status` uses a TCP connection to
+  `health_port` (defaults to the same value as `udp_port`). If you use the
+  health-check remotely, add a TCP forwarding rule for that port as well.
