@@ -43,6 +43,7 @@ jobs:
         run: dotnet build OpenMeKit.Tests/OpenMeKit.Tests.csproj --no-restore --configuration Release
 
       - name: Run tests
+        shell: bash
         run: |
           dotnet test OpenMeKit.Tests/OpenMeKit.Tests.csproj \
             --no-build \
