@@ -14,12 +14,6 @@ public partial class ProfileManagerWindow : Window
 
     public ProfileManagerWindow(ProfileStore store, KnockManager knockManager)
     {
-        // Resources MUST be populated before InitializeComponent() so that
-        // StaticResource lookups during BAML parsing can find the converters.
-        Resources.Add("BoolToVisibility",        new BoolToVisibilityConverter());
-        Resources.Add("BoolToVisibilityInverter", new BoolToVisibilityConverter(invert: true));
-        Resources.Add("NullToVisibility",         new NullToVisibilityConverter());
-
         InitializeComponent();
 
         _vm = new ProfileManagerViewModel(store, knockManager);
@@ -75,24 +69,4 @@ public partial class ProfileManagerWindow : Window
     }
 }
 
-// ── Value converters ──────────────────────────────────────────────────────────
 
-internal sealed class BoolToVisibilityConverter(bool invert = false) : IValueConverter
-{
-    public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
-    {
-        bool boolVal = value is bool b && b;
-        if (invert) boolVal = !boolVal;
-        return boolVal ? Visibility.Visible : Visibility.Collapsed;
-    }
-    public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
-        => throw new NotImplementedException();
-}
-
-internal sealed class NullToVisibilityConverter : IValueConverter
-{
-    public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
-        => value is not null ? Visibility.Visible : Visibility.Collapsed;
-    public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
-        => throw new NotImplementedException();
-}

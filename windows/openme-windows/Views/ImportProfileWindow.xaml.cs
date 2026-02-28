@@ -12,11 +12,6 @@ public partial class ImportProfileWindow : Window
 
     public ImportProfileWindow(ProfileStore store)
     {
-        // Resources MUST be populated before InitializeComponent() so that
-        // StaticResource lookups during BAML parsing can find the converters.
-        Resources.Add("BoolToVisibility", new BoolToVisibilityConverter());
-        Resources.Add("NullToVisibility", new NullToVisibilityConverter());
-
         InitializeComponent();
 
         _vm = new ImportProfileViewModel(store);
