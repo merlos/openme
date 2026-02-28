@@ -21,7 +21,7 @@
                     BorderBrush="#DDDDDD" BorderThickness="0,1,0,0"
                     Background="#F8F8F8" Padding="6">
                 <StackPanel Orientation="Horizontal">
-                    <Button Content="–" Width="28" Height="24"
+                    <Button Content="✕" Width="52" Height="24"
                             ToolTip="Remove selected profile"
                             IsEnabled="{Binding HasSelection}"
                             Click="DeleteButton_Click"
