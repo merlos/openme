@@ -166,7 +166,7 @@ public static class KnockService
         var plaintext = new byte[40];
         BinaryPrimitives.WriteInt64BigEndian(plaintext, (DateTimeOffset.UtcNow.Ticks - DateTimeOffset.UnixEpoch.Ticks) * 100L);
 
-        RandomNumberGenerator.GetBytes(plaintext.AsSpan(8, 16));  // random nonce
+        RandomNumberGenerator.GetBytes(16).CopyTo(plaintext, 8);  // random nonce
         // bytes 24-39 remain zero (target IP = source IP)
 
         // 6. ChaCha20-Poly1305 encrypt → ciphertext (40 B) + tag (16 B) = 56 B
