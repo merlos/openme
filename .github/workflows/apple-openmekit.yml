@@ -1,0 +1,44 @@
+name: OpenMeKit (Swift)
+
+on:
+  push:
+    paths:
+      - 'apple/OpenMeKit/**'
+      - '.github/workflows/apple-openmekit.yml'
+  pull_request:
+    paths:
+      - 'apple/OpenMeKit/**'
+      - '.github/workflows/apple-openmekit.yml'
+
+defaults:
+  run:
+    working-directory: apple/OpenMeKit
+
+jobs:
+  test:
+    name: swift test / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-15, macos-14]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Cache resolved SPM packages to avoid re-downloading every run.
+      - name: Cache Swift packages
+        uses: actions/cache@v4
+        with:
+          path: apple/OpenMeKit/.build
+          key: spm-${{ matrix.os }}-${{ hashFiles('apple/OpenMeKit/Package.resolved') }}
+          restore-keys: spm-${{ matrix.os }}-
+
+      - name: Resolve Swift packages
+        run: swift package resolve
+
+      - name: Build
+        run: swift build -c release
+
+      - name: Test
+        run: swift test

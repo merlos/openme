@@ -236,7 +236,7 @@ object KnockService {
      * @param outputLen Number of output bytes.
      */
     private fun hkdfSha256(ikm: ByteArray, salt: ByteArray, info: ByteArray, outputLen: Int): ByteArray {
-        val effectiveSalt = salt.ifEmpty { ByteArray(32) }
+        val effectiveSalt = if (salt.isEmpty()) ByteArray(32) else salt
 
         // Extract
         val extractMac = Mac.getInstance("HmacSHA256")

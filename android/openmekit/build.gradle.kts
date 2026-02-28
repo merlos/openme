@@ -52,6 +52,9 @@ dependencies {
 
     // Tests
     testImplementation(libs.junit)
+    // org.json is an Android SDK class stubbed in local JVM unit tests; supply the
+    // real implementation so JSONObject / JSONArray work without Android stubs.
+    testImplementation("org.json:json:20231013")
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 }

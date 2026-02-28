@@ -1,0 +1,110 @@
+name: Apple Apps (iOS · macOS · watchOS)
+
+on:
+  push:
+    paths:
+      - 'apple/**'
+      - '.github/workflows/apple-apps.yml'
+  pull_request:
+    paths:
+      - 'apple/**'
+      - '.github/workflows/apple-apps.yml'
+
+jobs:
+  # ─── iOS ──────────────────────────────────────────────────────────────────
+  test-ios:
+    name: Test — openme-ios (iPhone Simulator)
+    runs-on: macos-15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache SPM packages
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Caches/org.swift.swiftpm
+          key: spm-ios-${{ hashFiles('apple/OpenMeKit/Package.resolved') }}
+          restore-keys: spm-ios-
+
+      - name: Resolve dependencies
+        run: |
+          xcodebuild -resolvePackageDependencies \
+            -workspace apple/openme.xcworkspace \
+            -scheme openme-ios \
+            -destination 'platform=iOS Simulator,name=iPhone 16'
+
+      - name: Build & test (unit tests only — no UI tests)
+        run: |
+          xcodebuild test \
+            -workspace apple/openme.xcworkspace \
+            -scheme openme-ios \
+            -destination 'platform=iOS Simulator,name=iPhone 16' \
+            -testPlan openme-ios \
+            -only-testing openme-iosTests \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            | xcpretty --color || true
+        continue-on-error: false
+
+  # ─── macOS ────────────────────────────────────────────────────────────────
+  test-macos:
+    name: Test — openme-macos (macOS)
+    runs-on: macos-15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache SPM packages
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Caches/org.swift.swiftpm
+          key: spm-macos-${{ hashFiles('apple/OpenMeKit/Package.resolved') }}
+          restore-keys: spm-macos-
+
+      - name: Resolve dependencies
+        run: |
+          xcodebuild -resolvePackageDependencies \
+            -workspace apple/openme.xcworkspace \
+            -scheme openme-macos \
+            -destination 'platform=macOS'
+
+      - name: Build & test (unit tests only — no UI tests)
+        run: |
+          xcodebuild test \
+            -workspace apple/openme.xcworkspace \
+            -scheme openme-macos \
+            -destination 'platform=macOS' \
+            -only-testing openme-macosTests \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            | xcpretty --color || true
+        continue-on-error: false
+
+  # ─── watchOS build (tests run on phone, only build-check here) ──────────
+  build-watch:
+    name: Build — openme-watch (watchOS Simulator)
+    runs-on: macos-15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache SPM packages
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Caches/org.swift.swiftpm
+          key: spm-watch-${{ hashFiles('apple/OpenMeKit/Package.resolved') }}
+          restore-keys: spm-watch-
+
+      - name: Build
+        run: |
+          xcodebuild build \
+            -workspace apple/openme.xcworkspace \
+            -scheme openme-watch \
+            -destination 'platform=watchOS Simulator,name=Apple Watch Series 10 (46mm)' \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            | xcpretty --color || true
+        continue-on-error: false

@@ -58,12 +58,12 @@
     </Style>
 
     <!-- Section label -->
+    <!-- Note: WPF TextBlock has no TextTransform property; uppercase is handled in each TextBlock. -->
     <Style x:Key="SectionLabel" TargetType="TextBlock">
-        <Setter Property="FontWeight"    Value="SemiBold"/>
-        <Setter Property="FontSize"      Value="11"/>
-        <Setter Property="Foreground"    Value="#555555"/>
-        <Setter Property="TextTransform" Value="Uppercase"/>
-        <Setter Property="Margin"        Value="0,0,0,4"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="FontSize"   Value="11"/>
+        <Setter Property="Foreground" Value="#555555"/>
+        <Setter Property="Margin"     Value="0,0,0,4"/>
     </Style>
 
     <!-- Field label -->
