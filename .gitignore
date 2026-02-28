@@ -69,10 +69,44 @@ apple/**/*.dSYM.zip
 apple/**/*.dSYM
 
 # ── Android ─────────────────────────────────────────────────
+# Gradle build outputs & caches
 android/.gradle/
+android/**/build/
+android/**/.gradle/
+
+# Local config — machine-specific, never commit
 android/local.properties
-android/app/build/
-android/build/
+
+# Android Studio / IntelliJ project files (covered globally by .idea/ above,
+# but keep explicit paths for safety)
+android/.idea/
+android/**/*.iml
+
+# Compiled outputs & release artefacts
+*.apk
+*.aab
+*.ap_
+android/captures/
+
+# Signing keystores — NEVER commit key material
+*.jks
+*.keystore
+android/keystore/
+
+# ProGuard / R8 mapping (generated per build)
+android/**/mapping.txt
+android/**/missing_rules.txt
+
+# Navigation / lint generated files
+android/**/lint/
+android/**/lint-results*
+android/**/lint_*.xml
+
+# Gradle wrapper JAR (download-on-demand; not needed in VCS)
+android/gradle/wrapper/gradle-wrapper.jar
+
+# Flavour / test coverage reports
+android/**/reports/
 
 # ── openme runtime — NEVER commit keys ──────────────────────
 *.key
