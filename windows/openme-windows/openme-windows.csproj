@@ -25,7 +25,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Resource Include="Resources\openme.ico" Condition="Exists('Resources\openme.ico')" />
+    <Resource Include="Resources\openme.ico" />
   </ItemGroup>
 
 </Project>

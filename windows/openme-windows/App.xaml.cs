@@ -41,7 +41,8 @@ public partial class App : Application
             // Fall back to a built-in application icon if the file is absent.
             IconSource = TryLoadIcon(),
         };
-        _taskbarIcon.TrayMouseDoubleClick += (_, _) => OpenProfileManager();
+        // Double-click: open Manage Profiles when profiles exist, otherwise Import.
+        _taskbarIcon.TrayMouseDoubleClick += (_, _) => OpenDefaultWindow();
 
         RebuildContextMenu();
     }
@@ -150,6 +151,14 @@ public partial class App : Application
     }
 
     // ── Window helpers ────────────────────────────────────────────────────────
+
+    private void OpenDefaultWindow()
+    {
+        if (_store!.Entries.Count > 0)
+            OpenProfileManager();
+        else
+            OpenImportProfile();
+    }
 
     private void OpenProfileManager()
     {

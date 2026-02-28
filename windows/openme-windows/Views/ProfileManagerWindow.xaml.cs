@@ -14,15 +14,16 @@ public partial class ProfileManagerWindow : Window
 
     public ProfileManagerWindow(ProfileStore store, KnockManager knockManager)
     {
+        // Resources MUST be populated before InitializeComponent() so that
+        // StaticResource lookups during BAML parsing can find the converters.
+        Resources.Add("BoolToVisibility",        new BoolToVisibilityConverter());
+        Resources.Add("BoolToVisibilityInverter", new BoolToVisibilityConverter(invert: true));
+        Resources.Add("NullToVisibility",         new NullToVisibilityConverter());
+
         InitializeComponent();
 
         _vm = new ProfileManagerViewModel(store, knockManager);
         DataContext = _vm;
-
-        // Register converters that are referenced in the XAML.
-        Resources.Add("BoolToVisibility", new BoolToVisibilityConverter());
-        Resources.Add("BoolToVisibilityInverter", new BoolToVisibilityConverter(invert: true));
-        Resources.Add("NullToVisibility", new NullToVisibilityConverter());
     }
 
     // ── Private key show/hide ─────────────────────────────────────────────────
