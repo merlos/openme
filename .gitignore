@@ -108,7 +108,14 @@ android/gradle/wrapper/gradle-wrapper.jar
 # Flavour / test coverage reports
 android/**/reports/
 
-# ── openme runtime — NEVER commit keys ──────────────────────
+# ── .NET / C# build outputs ─────────────────────────────────
+windows/**/obj/
+windows/**/bin/
+windows/**/*.user
+windows/**/*.suo
+windows/.vs/
+
+
 *.key
 /etc/openme/
 cli/*.yaml
