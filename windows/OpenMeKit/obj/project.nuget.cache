@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "dgSpecHash": "SBR0q4jJAqk=",
+  "success": true,
+  "projectFilePath": "/home/runner/work/openme/openme/windows/OpenMeKit/OpenMeKit.csproj",
+  "expectedPackageFiles": [
+    "/tmp/codeql-scratch-7d92cf8992c7a379/dbs/csharp/working/packages/bouncycastle.cryptography/2.4.0/bouncycastle.cryptography.2.4.0.nupkg.sha512",
+    "/tmp/codeql-scratch-7d92cf8992c7a379/dbs/csharp/working/packages/microsoft.netcore.app.ref/8.0.23/microsoft.netcore.app.ref.8.0.23.nupkg.sha512",
+    "/tmp/codeql-scratch-7d92cf8992c7a379/dbs/csharp/working/packages/microsoft.windowsdesktop.app.ref/8.0.23/microsoft.windowsdesktop.app.ref.8.0.23.nupkg.sha512",
+    "/tmp/codeql-scratch-7d92cf8992c7a379/dbs/csharp/working/packages/microsoft.aspnetcore.app.ref/8.0.23/microsoft.aspnetcore.app.ref.8.0.23.nupkg.sha512"
+  ],
+  "logs": []
+}
