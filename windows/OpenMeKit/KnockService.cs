@@ -164,9 +164,9 @@ public static class KnockService
         //    [8..23] = 16-byte random nonce (replay protection)
         //    [24..39]= 16-byte target IP (zeros → use packet source IP)
         var plaintext = new byte[40];
-        BinaryPrimitives.WriteInt64BigEndian(plaintext, DateTimeOffset.UtcNow.ToUnixTimeNanoseconds());
+        BinaryPrimitives.WriteInt64BigEndian(plaintext, (DateTimeOffset.UtcNow.Ticks - DateTimeOffset.UnixEpoch.Ticks) * 100L);
 
-        RandomNumberGenerator.GetBytes(plaintext, 8, 16);  // random nonce
+        RandomNumberGenerator.GetBytes(plaintext.AsSpan(8, 16));  // random nonce
         // bytes 24-39 remain zero (target IP = source IP)
 
         // 6. ChaCha20-Poly1305 encrypt → ciphertext (40 B) + tag (16 B) = 56 B
