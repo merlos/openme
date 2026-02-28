@@ -154,7 +154,7 @@ public static class KnockService
         var chachaKey = HKDF.DeriveKey(HashAlgorithmName.SHA256,
             ikm:          sharedSecret,
             outputLength: 32,
-            salt:         ReadOnlySpan<byte>.Empty,
+            salt:         null,
             info:         HkdfInfo);
 
         // 4. 12-byte ChaCha20 nonce (random)
