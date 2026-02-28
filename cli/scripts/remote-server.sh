@@ -45,9 +45,9 @@ block_all() {
         -j ACCEPT
 
     # Open the UDP knock port so clients can reach the openme server.
-    iptables -A "${CHAIN_INPUT}" -p udp --dport 7777 -j ACCEPT
+    iptables -A "${CHAIN_INPUT}" -p udp --dport 54154 -j ACCEPT
 
-    echo "    Default policy → DROP; loopback + established + UDP 7777 → ACCEPT"
+    echo "    Default policy → DROP; loopback + established + UDP 54154 → ACCEPT"
 }
 
 # ── Remove the block rules ────────────────────────────────────────────────────
