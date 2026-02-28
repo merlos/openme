@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text;
@@ -133,11 +134,9 @@ public static class KnockService
 
     private static byte[] BuildPacketInternal(byte[] serverPubKeyBytes, byte[] seed)
     {
-        var rng = new SecureRandom();
-
         // 1. Ephemeral X25519 key pair
         var ephemeralGen = new X25519KeyPairGenerator();
-        ephemeralGen.Init(new X25519KeyGenerationParameters(rng));
+        ephemeralGen.Init(new X25519KeyGenerationParameters(new SecureRandom()));
         var ephemeralKp   = ephemeralGen.GenerateKeyPair();
         var ephemeralPriv = (X25519PrivateKeyParameters)ephemeralKp.Private;
         var ephemeralPub  = (X25519PublicKeyParameters)ephemeralKp.Public;
@@ -158,21 +157,16 @@ public static class KnockService
             info:         HkdfInfo);
 
         // 4. 12-byte ChaCha20 nonce (random)
-        var nonce = new byte[12];
-        rng.NextBytes(nonce);
+        var nonce = RandomNumberGenerator.GetBytes(12);
 
         // 5. Plaintext: 40 bytes
         //    [0..7]  = nanosecond Unix timestamp, big-endian int64
-        //    [8..23] = 16-byte random padding
+        //    [8..23] = 16-byte random nonce (replay protection)
         //    [24..39]= 16-byte target IP (zeros → use packet source IP)
         var plaintext = new byte[40];
-        long nanos = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() * 1_000_000L;
-        for (int i = 0; i < 8; i++)
-            plaintext[7 - i] = (byte)(nanos >> (8 * i));
+        BinaryPrimitives.WriteInt64BigEndian(plaintext, DateTimeOffset.UtcNow.ToUnixTimeNanoseconds());
 
-        var randomPad = new byte[16];
-        rng.NextBytes(randomPad);
-        randomPad.CopyTo(plaintext, 8);
+        RandomNumberGenerator.GetBytes(plaintext, 8, 16);  // random nonce
         // bytes 24-39 remain zero (target IP = source IP)
 
         // 6. ChaCha20-Poly1305 encrypt → ciphertext (40 B) + tag (16 B) = 56 B
