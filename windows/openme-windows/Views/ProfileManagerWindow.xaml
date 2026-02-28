@@ -37,11 +37,11 @@
                 <ListBox.ItemTemplate>
                     <DataTemplate>
                         <StackPanel Margin="0,2">
-                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold"/>
+                            <TextBlock Text="{Binding Name, Mode=OneWay}" FontWeight="SemiBold"/>
                             <TextBlock FontSize="11" Foreground="#777777">
-                                <Run Text="{Binding ServerHost}"/>
+                                <Run Text="{Binding ServerHost, Mode=OneWay}"/>
                                 <Run Text=":"/>
-                                <Run Text="{Binding ServerUdpPort}"/>
+                                <Run Text="{Binding ServerUdpPort, Mode=OneWay}"/>
                             </TextBlock>
                         </StackPanel>
                     </DataTemplate>
