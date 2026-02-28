@@ -68,7 +68,7 @@
                 <ItemsControl ItemsSource="{Binding ParsedNames}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <TextBlock Text="{Binding}" FontSize="12"
+                            <TextBlock FontSize="12"
                                        Foreground="#2A5A2A" Margin="8,1,0,1">
                                 <TextBlock.Text>
                                     <Binding StringFormat="🔒 {0}"/>
