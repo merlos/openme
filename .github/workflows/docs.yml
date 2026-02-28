@@ -49,6 +49,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Resolve SPM dependencies so the swift-docc-plugin command plug-in is
+      # compiled and available before invoking generate-documentation.
+      # Without this step the runner sees "Unknown subcommand or plugin name
+      # 'generate-documentation'" because the binary plugin hasn't been built yet.
+      - name: Resolve Swift packages
+        run: swift package resolve
+        working-directory: apple/OpenMeKit
+
       - name: Generate DocC static site
         run: |
           swift package \

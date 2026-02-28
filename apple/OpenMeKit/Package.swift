@@ -24,5 +24,10 @@ let package = Package(
             name: "OpenMeKit",
             path: "Sources/OpenMeKit"
         ),
+        .testTarget(
+            name: "OpenMeKitTests",
+            dependencies: ["OpenMeKit"],
+            path: "Tests/OpenMeKitTests"
+        ),
     ]
 )

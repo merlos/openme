@@ -2,16 +2,30 @@
 //  openme_macosTests.swift
 //  openme-macosTests
 //
-//  Created by Merlos on 2/26/26.
-//
 
 import Testing
 @testable import openme_macos
 
-struct openme_macosTests {
+/// Unit tests for the openme macOS application.
+///
+/// These tests cover app-level behaviour that is not already tested by the
+/// OpenMeKit SPM package tests (see apple/OpenMeKit/Tests/).
 
-    @Test func example() async throws {
-        // Write your test here and use APIs like `#expect(...)` to check expected conditions.
-    }
+// MARK: - KnockIntent smoke tests
 
+@Test("KnockIntent does not open app when run")
+func knockIntentDoesNotOpenApp() {
+    // The intent should silently deliver the knock without bringing the app foregrounded.
+    #expect(KnockIntent.openAppWhenRun == false)
 }
+
+@Test("StartContinuousKnockIntent does not open app when run")
+func continuousKnockIntentDoesNotOpenApp() {
+    #expect(StartContinuousKnockIntent.openAppWhenRun == false)
+}
+
+@Test("StopContinuousKnockIntent does not open app when run")
+func stopContinuousKnockIntentDoesNotOpenApp() {
+    #expect(StopContinuousKnockIntent.openAppWhenRun == false)
+}
+

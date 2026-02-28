@@ -1,0 +1,80 @@
+name: Windows (.NET)
+
+on:
+  push:
+    paths:
+      - 'windows/**'
+      - '.github/workflows/windows.yml'
+  pull_request:
+    paths:
+      - 'windows/**'
+      - '.github/workflows/windows.yml'
+
+defaults:
+  run:
+    working-directory: windows
+
+jobs:
+  # ─── xUnit tests for OpenMeKit library ────────────────────────────────────
+  test:
+    name: OpenMeKit.Tests (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      # Restore only the library + test projects (the WPF GUI targets net8.0-windows
+      # which requires Windows; restoring the full solution on Linux would fail).
+      - name: Restore NuGet packages (library + tests)
+        run: |
+          dotnet restore OpenMeKit/OpenMeKit.csproj
+          dotnet restore OpenMeKit.Tests/OpenMeKit.Tests.csproj
+
+      - name: Build
+        run: dotnet build OpenMeKit.Tests/OpenMeKit.Tests.csproj --no-restore --configuration Release
+
+      - name: Run tests
+        run: |
+          dotnet test OpenMeKit.Tests/OpenMeKit.Tests.csproj \
+            --no-build \
+            --configuration Release \
+            --logger "trx;LogFileName=test-results.trx" \
+            --results-directory ./TestResults
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-test-results-${{ matrix.os }}
+          path: windows/TestResults/*.trx
+
+  # ─── Build Windows GUI app (WPF — Windows-only) ───────────────────────────
+  build-gui:
+    name: Build openme-windows GUI (WPF)
+    runs-on: windows-latest
+    needs: test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore full solution
+        run: dotnet restore openme.sln
+        working-directory: windows
+
+      - name: Build (Release)
+        run: dotnet build openme.sln --no-restore --configuration Release
+        working-directory: windows
