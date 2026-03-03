@@ -1,0 +1,41 @@
+name: Release — Swift OpenMeKit
+
+on:
+  push:
+    tags: ['lib/swift/v*']
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    name: swift test / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-15, macos-14]
+    defaults:
+      run:
+        working-directory: apple/OpenMeKit
+    steps:
+      - uses: actions/checkout@v4
+      - run: swift test
+
+  release:
+    name: Publish GitHub Release
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Get version
+        id: ver
+        run: echo "VERSION=${GITHUB_REF_NAME##*/}" >> "$GITHUB_OUTPUT"
+      - uses: softprops/action-gh-release@v2
+        with:
+          name: "OpenMeKit (Swift) ${{ github.ref_name }}"
+          generate_release_notes: true
+          body: |
+            Swift Package Manager release.
+            Add to your `Package.swift`:
+            ```swift
+            .package(url: "https://github.com/${{ github.repository }}", from: "${{ steps.ver.outputs.VERSION }}")
+            ```
