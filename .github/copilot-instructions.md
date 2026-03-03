@@ -10,6 +10,13 @@ relevant section(s) here.
 
 ---
 
+## AI Assistant Rules
+
+- **Never run `git commit` or `git push` on the user's behalf.** Show the
+  commands and let the user run them. File edits are fine; committing is not.
+
+---
+
 ## Table of Contents
 
 1. [What openme does](#1-what-openme-does)
