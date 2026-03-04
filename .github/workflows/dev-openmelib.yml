@@ -120,14 +120,14 @@ jobs:
       - name: Smoke test (Unix)
         if: runner.os == 'Linux' || runner.os == 'macOS'
         run: |
-          build/openme_knock_example --help 2>&1 || true
+          build/examples/desktop/openme_knock_example --help 2>&1 || true
           echo "Exit code check: binary exists"
-          test -f build/openme_knock_example
+          test -f build/examples/desktop/openme_knock_example
 
       - name: Smoke test (Windows MSVC)
         if: matrix.compiler == 'msvc'
         run: |
-          Test-Path build\Release\openme_knock_example.exe
+          Test-Path build\examples\desktop\Release\openme_knock_example.exe
 
 # ─── 2. Linux ARM cross-compilation ──────────────────────────────────────────
   arm-cross:
@@ -225,7 +225,8 @@ jobs:
           - board: arduino:samd:mkrwifi1010
             core: arduino:samd
             core_url: ""
-          - board: arduino:mbed_rp2040:pico
+          # Arduino Nano RP2040 Connect (has WiFi + NTP support)
+          - board: arduino:mbed_rp2040:nanorp2040connect
             core: arduino:mbed_rp2040
             core_url: ""
 
