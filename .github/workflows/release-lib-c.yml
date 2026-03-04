@@ -183,8 +183,8 @@ jobs:
         run: |
           VERSION="${{ steps.ver.outputs.VERSION }}"
           cd _mirror
-          git config user.name  "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name  "merlos"
+          git config user.email "merlos@users.noreply.github.com"
           git add -A
           git commit -m "Release ${VERSION}" || echo "Nothing to commit"
           # Plain vX.Y.Z tag — required by Arduino Library Manager
