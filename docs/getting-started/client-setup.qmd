@@ -119,7 +119,7 @@ via YAML paste or QR scan from the server.
 
 ### Install
 
-Download from the [App Store](#) *(link pending release)* or build from
+Download from the [App Store](https://apps.apple.com/app/openme) or build from
 source via Xcode:
 
 ```bash

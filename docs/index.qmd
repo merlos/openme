@@ -9,6 +9,9 @@ Welcome to the openme documentation. openme lets an authenticated client send
 a **single encrypted UDP packet** to temporarily open a firewall port. To any
 port scanner, the port is always closed — only valid clients can trigger a rule.
 
+Clients are available for every major platform: **Linux**, **macOS**, **Windows**,
+**iOS**, **watchOS**, and **Android** — all sharing the same YAML profile format. Mobile apps support the QR-code provisioning flow.
+
 ## Where to Start
 
 ::: {.grid}
