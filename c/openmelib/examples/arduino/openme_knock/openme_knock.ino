@@ -58,6 +58,19 @@ const char *CLIENT_SEED_B64 = "REPLACE_WITH_32_BYTE_BASE64_CLIENT_SEED=";
 
 #include <openmelib.h>       /* or #include "openmelib.h" */
 
+// ─── Portable Serial printf ───────────────────────────────────────────────────
+// ESP32 HardwareSerial has printf() built-in; SAMD / mbed use Serial_ which
+// only provides print()/println(). Use a common snprintf buffer instead.
+#if defined(ESP32) || defined(ARDUINO_ARCH_ESP32)
+#  define SERIAL_PRINTF(fmt, ...) Serial.printf(fmt, ##__VA_ARGS__)
+#else
+#  define SERIAL_PRINTF(fmt, ...) do { \
+       char _sp_buf[128]; \
+       snprintf(_sp_buf, sizeof(_sp_buf), fmt, ##__VA_ARGS__); \
+       Serial.print(_sp_buf); \
+   } while (0)
+#endif
+
 // ─── Globals ──────────────────────────────────────────────────────────────────
 static uint8_t g_server_pubkey[32];
 static uint8_t g_client_seed[32];
@@ -134,13 +147,13 @@ void loop() {
 
 // ─── sendKnock() ──────────────────────────────────────────────────────────────
 void sendKnock() {
-    Serial.printf("[openme] Sending knock to %s:%u …\n", SERVER_HOST, SERVER_PORT);
+    SERIAL_PRINTF("[openme] Sending knock to %s:%u ...\n", SERVER_HOST, SERVER_PORT);
 
     // Build the 165-byte packet
     uint8_t packet[OPENME_PACKET_SIZE];
     int rc = openme_knock_packet(packet, g_server_pubkey, g_client_seed, NULL);
     if (rc != OPENME_OK) {
-        Serial.printf("[openme] ERROR: openme_knock_packet returned %d\n", rc);
+        SERIAL_PRINTF("[openme] ERROR: openme_knock_packet returned %d\n", rc);
         return;
     }
 

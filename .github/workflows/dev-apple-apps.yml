@@ -10,6 +10,9 @@ on:
       - 'apple/**'
       - '.github/workflows/dev-apple-apps.yml'
 
+permissions:
+  contents: read
+
 jobs:
   # ─── iOS ──────────────────────────────────────────────────────────────────
   test-ios:

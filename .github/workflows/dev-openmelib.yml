@@ -10,6 +10,9 @@ on:
       - 'c/openmelib/**'
       - '.github/workflows/dev-openmelib.yml'
 
+permissions:
+  contents: read
+
 # ─── Shared environment ────────────────────────────────────────────────────────
 env:
   OPENME_LIB: c/openmelib
@@ -117,14 +120,14 @@ jobs:
       - name: Smoke test (Unix)
         if: runner.os == 'Linux' || runner.os == 'macOS'
         run: |
-          build/openme_knock_example --help 2>&1 || true
+          build/examples/desktop/openme_knock_example --help 2>&1 || true
           echo "Exit code check: binary exists"
-          test -f build/openme_knock_example
+          test -f build/examples/desktop/openme_knock_example
 
       - name: Smoke test (Windows MSVC)
         if: matrix.compiler == 'msvc'
         run: |
-          Test-Path build\Release\openme_knock_example.exe
+          Test-Path build\examples\desktop\Release\openme_knock_example.exe
 
 # ─── 2. Linux ARM cross-compilation ──────────────────────────────────────────
   arm-cross:
@@ -213,18 +216,24 @@ jobs:
           - board: esp32:esp32:esp32
             core: esp32:esp32
             core_url: "https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json"
+            extra_libs: ""
           - board: esp32:esp32:esp32s3
             core: esp32:esp32
             core_url: "https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json"
+            extra_libs: ""
           - board: esp32:esp32:esp32c3
             core: esp32:esp32
             core_url: "https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json"
+            extra_libs: ""
           - board: arduino:samd:mkrwifi1010
             core: arduino:samd
             core_url: ""
-          - board: arduino:mbed_rp2040:pico
-            core: arduino:mbed_rp2040
+            extra_libs: "WiFiNINA NTPClient"
+          # Arduino Nano RP2040 Connect (has WiFi + NTP support)
+          - board: arduino:mbed_nano:nanorp2040connect
+            core: arduino:mbed_nano
             core_url: ""
+            extra_libs: "WiFiNINA NTPClient"
 
     steps:
       - uses: actions/checkout@v4
@@ -252,6 +261,10 @@ jobs:
 
       - name: Install board core
         run: arduino-cli core install ${{ matrix.core }}
+
+      - name: Install extra Arduino libraries
+        if: matrix.extra_libs != ''
+        run: arduino-cli lib install ${{ matrix.extra_libs }}
 
       - name: Install library into Arduino libraries path
         run: |
@@ -320,7 +333,9 @@ jobs:
             --enable=all \
             --std=c99 \
             --suppress=missingInclude \
+            --suppress=missingIncludeSystem \
             --suppress=unusedFunction \
+            --suppress=syntaxError:${{ env.OPENME_LIB }}/vendor/monocypher/monocypher.h \
             --error-exitcode=1 \
             -I ${{ env.OPENME_LIB }}/include \
             -I ${{ env.OPENME_LIB }}/src \

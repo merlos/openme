@@ -45,6 +45,11 @@ package() {
     # Binary
     install -Dm755 cli/openme              "$pkgdir/usr/bin/openme"
 
+    # man page
+    gzip -k -9 -f cli/packaging/openme.1
+    install -Dm644 cli/packaging/openme.1.gz \
+                                           "$pkgdir/usr/share/man/man1/openme.1.gz"
+
     # systemd unit
     install -Dm644 cli/packaging/systemd/openme.service \
                                            "$pkgdir/usr/lib/systemd/system/openme.service"

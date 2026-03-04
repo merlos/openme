@@ -26,16 +26,36 @@ jobs:
     runs-on: ubuntu-latest
     needs: test
     steps:
-      - name: Get version
+      - uses: actions/checkout@v4
+
+      - name: Extract semver and push SPM tag
         id: ver
-        run: echo "VERSION=${GITHUB_REF_NAME##*/}" >> "$GITHUB_OUTPUT"
+        run: |
+          # lib/swift/v1.2.3  →  1.2.3
+          SEMVER=${GITHUB_REF_NAME##*/v}
+          echo "SEMVER=$SEMVER" >> "$GITHUB_OUTPUT"
+
+          # Push a plain vX.Y.Z tag that SPM recognises for version resolution.
+          # This tag points to the same commit as the trigger tag.
+          git config user.name  "merlos"
+          git config user.email "merlos@users.noreply.github.com"
+          git tag "v${SEMVER}" "$GITHUB_SHA"
+          git push origin "v${SEMVER}"
+
       - uses: softprops/action-gh-release@v2
         with:
-          name: "OpenMeKit (Swift) ${{ github.ref_name }}"
+          name: "OpenMeKit (Swift) ${{ steps.ver.outputs.SEMVER }}"
           generate_release_notes: true
           body: |
             Swift Package Manager release.
+
             Add to your `Package.swift`:
             ```swift
-            .package(url: "https://github.com/${{ github.repository }}", from: "${{ steps.ver.outputs.VERSION }}")
+            .package(url: "https://github.com/${{ github.repository }}", from: "${{ steps.ver.outputs.SEMVER }}")
+            ```
+            Then add `"OpenMeKit"` to your target's `dependencies`.
+
+            For an exact version:
+            ```swift
+            .package(url: "https://github.com/${{ github.repository }}", exact: "${{ steps.ver.outputs.SEMVER }}")
             ```

@@ -108,8 +108,16 @@ int openme_build_packet(
     uint8_t mac[16];
     /* ciphertext goes directly to out + 45; mac goes to out + 45 + 40 = 85 */
     uint8_t ciphertext[OPENME_PLAINTEXT_SIZE]; /* 40 bytes */
-    crypto_aead_lock(ciphertext, mac, sym_key, aead_nonce,
-                     NULL, 0, plaintext, OPENME_PLAINTEXT_SIZE);
+    /*
+     * Use the IETF ChaCha20-Poly1305 (RFC 8439) incremental API which takes
+     * the 12-byte nonce specified by the openme protocol.
+     * crypto_aead_lock() uses XChaCha20 (24-byte nonce) and must NOT be used.
+     */
+    crypto_aead_ctx aead_ctx;
+    crypto_aead_init_ietf(&aead_ctx, sym_key, aead_nonce);
+    crypto_aead_write(&aead_ctx, ciphertext, mac,
+                      NULL, 0, plaintext, OPENME_PLAINTEXT_SIZE);
+    crypto_wipe(&aead_ctx, sizeof(aead_ctx));
 
     /* wipe symmetric key */
     crypto_wipe(sym_key, sizeof(sym_key));
@@ -159,6 +167,9 @@ int openme_build_packet(
 
 #if defined(OPENME_PLATFORM_WINDOWS)
 
+#ifndef WIN32_LEAN_AND_MEAN
+#  define WIN32_LEAN_AND_MEAN
+#endif
 #include <windows.h>
 #include <bcrypt.h>
 #pragma comment(lib, "bcrypt.lib")
@@ -228,6 +239,9 @@ void openme_random_bytes(uint8_t *buf, size_t len) {
 
 #if defined(OPENME_PLATFORM_WINDOWS)
 
+#ifndef WIN32_LEAN_AND_MEAN
+#  define WIN32_LEAN_AND_MEAN
+#endif
 #include <windows.h>
 /* Windows FILETIME epoch: Jan 1 1601 → Unix epoch difference = 116444736000000000 100ns intervals */
 #define OPENME_FILETIME_EPOCH_DIFF 116444736000000000ULL
@@ -365,7 +379,6 @@ int openme_send_knock(
     if (getaddrinfo(server_host, port_str, &hints, &res) != 0)
         return OPENME_ERR_SEND;
 
-    int sock = -1;
     int sent = OPENME_ERR_SEND;
 
     for (rp = res; rp != NULL; rp = rp->ai_next) {

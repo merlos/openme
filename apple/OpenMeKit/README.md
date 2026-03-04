@@ -42,21 +42,37 @@ A single knock is a **165-byte UDP datagram** that is computationally indistingu
 
 ## Adding OpenMeKit to your Swift project
 
-### Swift Package Manager (local path)
+### Swift Package Manager
 
 ```swift
-// Package.swift
+// Package.swift  (swift-tools-version: 5.9)
 dependencies: [
-    .package(path: "../OpenMeKit"),   // adjust relative path as needed
+    .package(url: "https://github.com/merlos/openme", from: "0.1.0"),
 ],
 targets: [
     .target(name: "MyApp", dependencies: ["OpenMeKit"]),
 ]
 ```
 
-### Xcode
+#### Via Xcode
 
-**File → Add Package Dependencies…** → choose the local `apple/OpenMeKit` folder, or add the repository URL and select a version tag once published to GitHub.
+**File → Add Package Dependencies…** → enter `https://github.com/merlos/openme`,
+choose **Up to Next Major Version** starting from `0.1.0`, then add `OpenMeKit`
+to your target.
+
+---
+
+### Local path (for development / contributing)
+
+```swift
+// Package.swift
+dependencies: [
+    .package(path: "/path/to/openme"),   // root of the monorepo
+],
+targets: [
+    .target(name: "MyApp", dependencies: ["OpenMeKit"]),
+]
+```
 
 ---
 
