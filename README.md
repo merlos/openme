@@ -104,10 +104,8 @@ The full documentation is published at **[openme.merlos.org/docs](https://openme
 | [Security Model](docs/security/) | Threat model, what is and isn't protected |
 | [FAQ](docs/faq/) | Common questions |
 | [API Reference](docs/api/) | Auto-generated from Go source via pkgsite |
-| [OpenMeKit SDK Reference](docs/openmekit/) | Swift API reference for the Apple client library |
-| [Android SDK](docs/android-sdk/) | Kotlin/Android library reference (KDoc via Dokka) |
 
-### Build the Quarto docs locally
+To build and preview the docs locally:
 
 ```bash
 cd docs
@@ -120,34 +118,19 @@ quarto preview
 
 | Platform | Status | Notes |
 |----------|--------|-------|
-| **Linux** (server + CLI) | ✅ Active | iptables & nftables backends |
-| **macOS** (CLI client) | ✅ Active | Cross-compiled from Go |
-| **Windows** (CLI client) | ✅ Active | Cross-compiled from Go |
-| **iOS** app | ✅ Active | SwiftUI · QR + YAML import · swipe-to-knock · inline feedback · countdown timer |
-| **macOS** app | ✅ Active | SwiftUI · menu-bar style · post-knock AppleScript |
-| **watchOS** app | ✅ Active | WatchConnectivity sync from iPhone · pull-to-refresh |
-| **iOS/macOS Widget** | ✅ Active | WidgetKit one-tap knock from home/lock screen |
-| **Android** app | ✅ Active | Jetpack Compose · Material 3 · swipe-to-knock / swipe-to-delete |
-| **Android** library (openmekit) | ✅ Active | Kotlin · Ed25519 + X25519 + ChaCha20-Poly1305 · DataStore profiles |
-| **Windows** GUI | ✅ Active | WPF (.NET 8), system tray, profile manager, YAML import, continuous knock |
-| **C library** (openmelib) | ✅ Active | Pure C99 · ESP32 / Arduino / Linux / macOS / Windows · Monocypher crypto |
+| Linux (CLI + server) | ✅ Active | iptables & nftables |
+| macOS (CLI client) | ✅ Active | Cross-compiled from Go |
+| Windows (CLI client) | ✅ Active | Cross-compiled from Go |
+| Windows GUI | ✅ Active | WPF system-tray app (.NET 8) |
+| macOS GUI | ✅ Active | SwiftUI menu bar app |
+| Android | ✅ Active | Jetpack Compose app |
+| iOS | ✅ Active | SwiftUI app (iPhone/iPad) |
 
 ---
 
 ## Contributing
 
-Each platform has its own subdirectory, build toolchain and README:
-
-| Directory | README |
-|-----------|--------|
-| Go CLI + server | [cli/README.md](cli/README.md) |
-| Swift library (iOS / macOS / watchOS) | [apple/OpenMeKit/README.md](apple/OpenMeKit/README.md) |
-| iOS, macOS, watchOS, widget apps | [apple/openme-ios/README.md](apple/openme-ios/README.md) · [apple/openme-macos/README.md](apple/openme-macos/README.md) |
-| Android app + Kotlin library | [android/README.md](android/README.md) |
-| Windows app + .NET library | [windows/README.md](windows/README.md) |
-| C library (openmelib) | [c/openmelib/README.md](c/openmelib/README.md) |
-
-All cryptographic protocol changes should be discussed in an issue first.
+Each platform has its own subdirectory, build toolchain and README. Start with the directory most relevant to what you want to work on. All cryptographic protocol changes should be discussed in an issue first.
 
 ## License
 
