@@ -324,7 +324,9 @@ jobs:
             --enable=all \
             --std=c99 \
             --suppress=missingInclude \
+            --suppress=missingIncludeSystem \
             --suppress=unusedFunction \
+            --suppress=syntaxError:${{ env.OPENME_LIB }}/vendor/monocypher/monocypher.h \
             --error-exitcode=1 \
             -I ${{ env.OPENME_LIB }}/include \
             -I ${{ env.OPENME_LIB }}/src \
