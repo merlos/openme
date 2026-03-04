@@ -16,7 +16,7 @@ TARGETS = \
 	windows/amd64
 
 .PHONY: all build test lint clean docs build-all release \
-        package-deb package-deb-amd64 package-deb-arm64
+        package-deb package-deb-amd64 package-deb-arm64 man
 
 all: build
 
@@ -60,9 +60,15 @@ release: build-all
 	@echo "Release artifacts in $(DIST)/"
 	@ls -lh $(DIST)/
 
+## Build and gzip the man page
+man:
+	gzip -k -9 -f packaging/openme.1
+	cp packaging/openme.1.gz $(DIST)/openme.1.gz
+	@echo "Man page: $(DIST)/openme.1.gz"
+
 ## Remove build artifacts
 clean:
-	rm -rf $(DIST) $(BINARY) coverage.out
+	rm -rf $(DIST) $(BINARY) coverage.out packaging/openme.1.gz
 
 # ─── Packaging ────────────────────────────────────────────────────────────────
 
@@ -87,6 +93,7 @@ package-deb-amd64 package-deb-arm64:
 	@rm -rf  $(DEB_STAGING)
 	@mkdir -p $(DEB_STAGING)/DEBIAN \
 	           $(DEB_STAGING)/usr/bin \
+	           $(DEB_STAGING)/usr/share/man/man1 \
 	           $(DEB_STAGING)/lib/systemd/system \
 	           $(DEB_STAGING)/etc/openme
 
@@ -100,6 +107,9 @@ package-deb-amd64 package-deb-arm64:
 
 	install -m 0755 $(DIST)/$(BINARY)-linux-$(_GOARCH) \
 	                $(DEB_STAGING)/usr/bin/$(BINARY)
+	gzip -k -9 -f packaging/openme.1
+	install -m 0644 packaging/openme.1.gz \
+	                $(DEB_STAGING)/usr/share/man/man1/openme.1.gz
 	install -m 0644 packaging/systemd/openme.service \
 	                $(DEB_STAGING)/lib/systemd/system/openme.service
 
