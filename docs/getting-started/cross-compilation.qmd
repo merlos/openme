@@ -40,7 +40,7 @@ make release      # builds + checksums for GitHub Releases
 
 ## CI
 
-The GitHub Actions workflow at `.github/workflows/cli.yml` builds all targets
+The GitHub Actions workflow at `.github/workflows/dev-cli.yml` builds all targets
 on every push and uploads the binaries as artifacts. See that file for the
 exact build matrix.
 
