@@ -37,8 +37,8 @@ jobs:
 
           # Push a plain vX.Y.Z tag that SPM recognises for version resolution.
           # This tag points to the same commit as the trigger tag.
-          git config user.name  "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name  "merlos"
+          git config user.email "merlos@users.noreply.github.com"
           git tag "v${SEMVER}" "$GITHUB_SHA"
           git push origin "v${SEMVER}"
 
