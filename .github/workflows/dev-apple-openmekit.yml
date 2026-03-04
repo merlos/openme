@@ -1,4 +1,4 @@
-name: dev: OpenMeKit (Swift)
+name: dev - OpenMeKit (Swift)
 
 on:
   push:

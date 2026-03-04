@@ -1,4 +1,4 @@
-name: dev: openmelib CI
+name: dev - openmelib CI
 
 on:
   push:

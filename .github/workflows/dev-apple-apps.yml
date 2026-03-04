@@ -1,4 +1,4 @@
-name: dev: Apple Apps (iOS · macOS · watchOS)
+name: dev - Apple (iOS · macOS · watchOS)
 
 on:
   push:

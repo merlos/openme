@@ -1,4 +1,4 @@
-name: dev: Windows (.NET)
+name: dev - Windows (.NET)
 
 on:
   push:
