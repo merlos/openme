@@ -1,5 +1,7 @@
 ---
 title: "Client Configuration"
+description: "Full reference for the openme client YAML configuration — profiles, server_host, server_pubkey, private_key, and post_knock command."
+keywords: [openme client config, openme profiles, post_knock, server_pubkey, private_key, client YAML openme]
 ---
 
 Default location: `~/.openme/config.yaml`
@@ -67,4 +69,13 @@ openme connect           # uses 'default' profile
 openme connect home      # uses 'home' profile
 openme connect work      # uses 'work' profile
 openme status work       # health-checks the 'work' server
+```
+
+::: {.callout-note}
+Mobile and desktop apps (iOS, Android, macOS, Windows) use the same YAML
+profile format. Import via paste or QR scan — see
+[Client Setup](../getting-started/client-setup.qmd) for platform-specific
+installation and usage instructions.
+:::
+
 ```

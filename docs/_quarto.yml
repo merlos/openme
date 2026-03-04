@@ -25,10 +25,24 @@ website:
             href: security/index.qmd
           - text: "FAQ"
             href: faq/index.qmd
-          - text: "Android SDK"
+      - text: "Developer"
+        menu:
+          - text: "SDKs & APIs Overview"
+            href: developer/index.qmd
+          - text: "---"
+          - text: "Go API Reference"
+            href: developer/go-api.qmd
+          - text: "Swift — OpenMeKit (iOS/macOS/watchOS)"
+            href: developer/swift-openmekit.qmd
+          - text: "Kotlin — OpenMeKit (Android)"
+            href: developer/android.qmd
+          - text: "C# — OpenMeKit (.NET/Windows)"
+            href: developer/csharp-openmekit.qmd
+          - text: "C — openmelib (Embedded)"
+            href: developer/c-library.qmd
+          - text: "---"
+          - text: "Android KDoc Reference"
             href: android-sdk/index.qmd
-      - text: "API Reference"
-        href: api/index.qmd
     right:
       - icon: github
         href: https://github.com/merlos/openme
@@ -63,16 +77,22 @@ website:
     - title: "Security"
       contents:
         - security/index.qmd
-        - security/threat-model.qmd
         - security/key-management.qmd
 
     - title: "FAQ"
       contents:
         - faq/index.qmd
 
-    - title: "Android SDK"
+    - title: "Developer"
       contents:
-        - android-sdk/index.qmd
+        - developer/index.qmd
+        - developer/go-api.qmd
+        - developer/swift-openmekit.qmd
+        - developer/android.qmd
+        - developer/csharp-openmekit.qmd
+        - developer/c-library.qmd
+        - text: "Android KDoc Reference"
+          href: android-sdk/index.qmd
 
   page-footer:
     left: "© 2026 merlos.org — MIT License"
@@ -83,8 +103,8 @@ website:
 format:
   html:
     theme:
-      light: flatly
-      dark: darkly
+      light: [flatly, custom.scss]
+      dark: [darkly, custom.scss]
     highlight-style: github
     code-copy: true
     code-overflow: wrap

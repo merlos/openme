@@ -1,0 +1,80 @@
+---
+title: "OpenMeKit — C# / .NET"
+description: "C#/.NET 8 library for integrating openme Single Packet Authentication into Windows applications. Includes the WPF system-tray app and a NuGet-compatible library."
+keywords: [openme Windows, OpenMeKit C#, .NET SPA library, single packet authentication Windows, KnockService C#, WPF knock protocol, openme dotnet]
+---
+
+**OpenMeKit** is the official .NET 8 client library for the openme
+[Single Packet Authentication](../protocol/index.qmd) protocol.
+
+- **Source:** `windows/OpenMeKit/` in the [openme repository](https://github.com/merlos/openme)
+- **Language:** C# 12 / .NET 8
+- **Platforms:** Windows, Linux, macOS (.NET runtime)
+
+## Features
+
+| Capability | Details |
+|------------|---------|
+| SPA knock | Ed25519 + X25519 ECDH + HKDF-SHA256 + ChaCha20-Poly1305 over UDP via `UdpClient` |
+| Profile management | `Profile` (serializable) + `ProfileStore` (app-local JSON persistence) |
+| YAML import | Parses `openme add` output via `ClientConfigParser` |
+| QR import | Parses the JSON payload from `openme qr` |
+| XML docs | Full `<summary>` documentation on all public symbols |
+
+## Installation
+
+The library is included as a project reference. To add it to your solution:
+
+```xml
+<!-- In your .csproj -->
+<ItemGroup>
+  <ProjectReference Include="..\OpenMeKit\OpenMeKit.csproj" />
+</ItemGroup>
+```
+
+Or build and reference the NuGet package locally:
+
+```bash
+cd windows/OpenMeKit
+dotnet pack -c Release
+# Output: bin/Release/OpenMeKit.1.0.0.nupkg
+```
+
+## Quick Start
+
+```csharp
+using OpenMeKit;
+
+var profile = new Profile
+{
+    ServerHost    = "myserver.example.com",
+    ServerUdpPort = 54154,
+    ServerPubKey  = Convert.FromBase64String("..."),
+    PrivateKey    = Convert.FromBase64String("...")
+};
+
+await KnockService.KnockAsync(profile);
+Console.WriteLine("Knocked successfully");
+```
+
+## Running Tests
+
+```bash
+cd windows
+dotnet test OpenMeKit.Tests/OpenMeKit.Tests.csproj
+```
+
+Tests use xUnit and include known-answer tests against the Go reference
+implementation's test vectors.
+
+## Windows App
+
+The `openme-windows` project is a WPF system-tray application built on top of
+the `OpenMeKit` library. It appears as a system-tray icon and lets users
+knock from the Windows taskbar.
+
+## See Also
+
+- [Protocol Specification](../protocol/index.qmd)
+- [Client Configuration](../configuration/client.qmd)
+- [Windows README](https://github.com/merlos/openme/blob/main/windows/README.md)

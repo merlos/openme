@@ -1,0 +1,121 @@
+---
+title: "openmelib — C Library"
+description: "Pure C99 library implementing the openme SPA knock protocol for embedded targets including Arduino, ESP32/ESP-IDF, and POSIX desktops."
+keywords: [openme C library, openmelib, Arduino SPA, ESP32 knock protocol, single packet authentication C, embedded openme, POSIX openme C99]
+---
+
+**openmelib** is the official C99 implementation of the openme
+[Single Packet Authentication](../protocol/index.qmd) protocol.
+
+- **Source:** `c/openmelib/` in the [openme repository](https://github.com/merlos/openme)
+- **Standard:** C99 (no VLAs, no dynamic allocation in the core path)
+- **Targets:** POSIX desktop, Arduino, ESP32/ESP-IDF, any bare-metal MCU with a CSPRNG
+
+## Features
+
+| Capability | Details |
+|------------|---------|
+| SPA packet builder | `openme_build_packet()` — fully deterministic, no OS calls |
+| Entropy abstraction | Caller supplies all random bytes — portable across targets |
+| Crypto | Monocypher 4 (bundled) — Curve25519, ChaCha20-Poly1305, Ed25519 |
+| HKDF-SHA256 | Bundled `openme_sha256.h/c` — no external crypto dep |
+| Build systems | CMake (desktop/cross-compile), Arduino Library Manager, ESP-IDF component |
+
+## Installation
+
+### CMake (desktop / cross-compile)
+
+```bash
+cmake -S c/openmelib -B build \
+    -DOPENME_FETCH_MONOCYPHER=ON \
+    -DOPENME_BUILD_EXAMPLES=ON \
+    -DCMAKE_BUILD_TYPE=Release
+cmake --build build
+```
+
+### Arduino
+
+Install via the Arduino Library Manager — search for **openmelib** — or add
+the `c/openmelib` folder to your `libraries/` directory.
+
+```cpp
+#include <openmelib.h>
+
+uint8_t packet[OPENME_PACKET_SIZE];
+openme_build_packet(
+    packet,
+    server_pubkey,  // 32-byte X25519
+    client_seed,    // 32-byte Ed25519 seed
+    timestamp_ns,
+    ephem_secret,   // 32-byte CSPRNG
+    aead_nonce,     // 12-byte CSPRNG
+    random_nonce,   // 16-byte CSPRNG
+    NULL            // target IP — NULL = use source IP
+);
+```
+
+### ESP-IDF (ESP32)
+
+Add the component dependency to your `idf_component.yml`:
+
+```yaml
+dependencies:
+  openmelib:
+    path: path/to/c/openmelib
+```
+
+Or use the IDF Component Manager (registry entry pending).
+
+## API Reference
+
+The public API is documented in [`include/openmelib.h`](https://github.com/merlos/openme/blob/main/c/openmelib/include/openmelib.h).
+
+### Core Function
+
+```c
+/**
+ * @brief Build a 165-byte SPA knock packet.
+ * @return OPENME_OK (0) on success, negative error code on failure.
+ * @see https://openme.merlos.org/docs/protocol/packet-format.html
+ */
+int openme_build_packet(
+    uint8_t out[OPENME_PACKET_SIZE],
+    const uint8_t server_pubkey[32],
+    const uint8_t client_seed[32],
+    int64_t        timestamp_ns,
+    const uint8_t ephem_secret[32],
+    const uint8_t aead_nonce[12],
+    const uint8_t random_nonce[16],
+    const uint8_t *target_ip          /* 16 bytes or NULL */
+);
+```
+
+### Constants
+
+| Constant | Value | Description |
+|----------|-------|-------------|
+| `OPENME_PACKET_SIZE` | 165 | Total UDP datagram size |
+| `OPENME_SIGNED_SIZE` | 101 | Bytes covered by Ed25519 signature |
+| `OPENME_VERSION` | 1 | Protocol version byte |
+| `OPENME_DEFAULT_PORT` | 54154 | Default UDP port |
+
+## Running Tests
+
+```bash
+cmake --build build --target test
+# or
+ctest --test-dir build -V
+```
+
+## Examples
+
+| Example | Path |
+|---------|------|
+| POSIX CLI | `c/openmelib/examples/desktop/` |
+| Arduino sketch | `c/openmelib/examples/arduino/` |
+| ESP32 ESP-IDF | `c/openmelib/examples/esp32_idf/` |
+
+## See Also
+
+- [Protocol Specification](../protocol/index.qmd)
+- [openmelib README](https://github.com/merlos/openme/blob/main/c/openmelib/README.md)

@@ -1,5 +1,7 @@
 ---
 title: "Server Setup"
+description: "Install and configure the openme server daemon on Linux — binary install, openme init, openme serve, and systemd service setup."
+keywords: [openme server setup, SPA server Linux, openme daemon, openme init, openme serve, nftables SPA, iptables SPA]
 ---
 
 ## Install {#install}

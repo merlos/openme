@@ -1,0 +1,81 @@
+---
+title: "OpenMeKit — Kotlin (Android)"
+description: "Kotlin/Android library for integrating openme Single Packet Authentication into Android apps. Includes profile management, YAML/QR import, and the full crypto knock stack."
+keywords: [openme Android, OpenMeKit Kotlin, Android SPA library, single packet authentication Android, KnockService Android, Android knock protocol]
+---
+
+**OpenMeKit** is the official Android client library for the openme
+[Single Packet Authentication](../protocol/index.qmd) protocol.
+
+- **Source:** `android/openmekit/` in the [openme repository](https://github.com/merlos/openme)
+- **Language:** Kotlin 2.0
+- **Min SDK:** Android 10 (API 29)
+
+## Features
+
+| Capability | Details |
+|------------|---------|
+| SPA knock | Ed25519 + X25519 ECDH + HKDF-SHA256 + ChaCha20-Poly1305 over UDP |
+| Profile storage | Jetpack DataStore Preferences (app-private, no cloud sync) |
+| YAML import | Parses `openme add` output |
+| QR import | Parses the JSON payload from `openme qr` |
+| Coroutine support | `KnockManager` is suspend-friendly |
+
+## Installation
+
+The library is distributed as a Gradle module. Add it to your project:
+
+**`settings.gradle.kts`**
+```kotlin
+include(":openmekit")
+project(":openmekit").projectDir = file("path/to/openmekit")
+```
+
+**`app/build.gradle.kts`**
+```kotlin
+dependencies {
+    implementation(project(":openmekit"))
+}
+```
+
+> Alternatively, publish to a local Maven repository with
+> `./gradlew openmekit:publishToMavenLocal` and depend on it as
+> `implementation("org.merlos:openmekit:1.0.0")`.
+
+## Quick Start
+
+```kotlin
+import org.merlos.openmekit.KnockManager
+import org.merlos.openmekit.Profile
+
+val profile = Profile(
+    serverHost    = "myserver.example.com",
+    serverUdpPort = 54154,
+    serverPubKey  = Base64.decode("...", Base64.DEFAULT),
+    privateKey    = Base64.decode("...", Base64.DEFAULT)
+)
+
+lifecycleScope.launch {
+    val result = KnockManager.knock(profile)
+    result.onSuccess { /* knocked */ }.onFailure { /* error */ }
+}
+```
+
+## KDoc Reference
+
+Generate the full KDoc HTML reference locally:
+
+```bash
+cd android
+./gradlew openmekit:dokkaHtml
+# Output: docs/android-sdk/openmekit/
+```
+
+The generated docs are published as part of the Quarto documentation site.
+See [Android SDK KDoc →](../android-sdk/index.qmd)
+
+## See Also
+
+- [Protocol Specification](../protocol/index.qmd)
+- [Client Configuration](../configuration/client.qmd)
+- [Android README](https://github.com/merlos/openme/blob/main/android/README.md)

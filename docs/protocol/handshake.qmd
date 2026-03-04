@@ -1,5 +1,7 @@
 ---
 title: "Handshake"
+description: "Step-by-step walkthrough of the openme one-sided knock handshake — client packet construction, server verification, and firewall rule insertion."
+keywords: [openme handshake, SPA knock flow, client server knock, firewall rule insert, UDP knock verification, one-sided handshake]
 ---
 
 The openme "handshake" is deliberately one-sided: the client sends one packet

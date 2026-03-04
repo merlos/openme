@@ -1,13 +1,27 @@
 ---
 title: "Client Setup"
+description: "Configure and use openme clients — CLI on Linux/macOS/Windows, iOS app, Android app, macOS menu-bar app, and Windows system-tray app."
+keywords: [openme client, openme connect, SPA client setup, openme iOS, openme Android, openme Windows, openme macOS, knock command]
 ---
 
-## Config File
+openme is available on every major platform. Choose your client below.
 
-The client config lives at `~/.openme/config.yaml` (created with `0600`
-permissions — it contains your private key).
+| Platform | Client | Type |
+|----------|--------|------|
+| Linux / macOS / Windows | [CLI](#cli) | Command-line binary |
+| iOS 16+ | [openme for iOS](#ios) | Native SwiftUI app |
+| macOS 13+ | [openme for macOS](#macos-app) | Menu-bar app |
+| watchOS 9+ | [openme for watchOS](#watchos) | Complication + glance |
+| Android 10+ | [openme for Android](#android) | Jetpack Compose app |
+| Windows 10+ | [openme for Windows](#windows-app) | WPF system-tray app |
 
-Paste the block printed by `openme add` on the server, or write it manually:
+---
+
+## Profile Config File {#profile-config}
+
+All clients share the same YAML profile format, generated on the server with
+`openme add`. The CLI reads `~/.openme/config.yaml`; mobile and desktop apps
+import the same YAML via paste or QR scan.
 
 ```yaml
 profiles:
@@ -17,7 +31,7 @@ profiles:
     server_pubkey: "base64..."              # server's Curve25519 public key
     private_key:   "base64..."             # your Ed25519 private key
     public_key:    "base64..."             # your Ed25519 public key
-    post_knock:    "ssh user@myserver.example.com"  # optional
+    post_knock:    "ssh user@myserver.example.com"  # optional (CLI only)
 
   home:                                     # used by `openme connect home`
     server_host: "home.example.com"
@@ -27,15 +41,37 @@ profiles:
     public_key:    "base64..."
 ```
 
-The profile named `default` is used when no profile name is given. You can
-have as many named profiles as you like — one per server.
+The profile named `default` is used when no profile name is given.  
+See [Client Configuration reference](../configuration/client.qmd) for all fields.
 
 ---
 
-## Connect {#connect}
+## CLI — Linux, macOS, Windows {#cli}
+
+### Install
+
+**From a pre-built binary** (Linux and macOS):
 
 ```bash
-# Health check — confirm server is reachable before knocking
+# Latest release — replace VERSION and ARCH as needed
+curl -L https://github.com/merlos/openme/releases/latest/download/openme-linux-amd64 \
+     -o /usr/local/bin/openme
+chmod +x /usr/local/bin/openme
+```
+
+**Windows**: download `openme-windows-amd64.exe` from
+[GitHub Releases](https://github.com/merlos/openme/releases) and add it to
+your `PATH`.
+
+**From source**:
+```bash
+go install github.com/merlos/openme/cli/cmd/openme@latest
+```
+
+### Connect
+
+```bash
+# Health check — confirm server is reachable
 openme status
 
 # Knock using the default profile
@@ -46,46 +82,189 @@ openme connect home
 
 # Open the firewall to a specific IP instead of your source IP
 openme connect --ip 10.0.0.5
-
-# Open the firewall to a specific IPv6 address
 openme connect --ip 2001:db8::42
 ```
 
-If `post_knock` is set in the profile, it is run automatically after a
-successful knock — useful to make `openme connect` feel like a transparent
-wrapper around `ssh`.
+If `post_knock` is set in the profile it runs automatically after a successful
+knock — making `openme connect` a transparent wrapper around `ssh`:
 
----
-
-## Status Check
-
-```bash
-# Check health port only — requires a prior knock within knock_timeout
-openme status
-openme status home      # named profile
-
-# Knock first, then check — validates the full authentication round trip
-openme status --knock
-openme status home --knock
+```yaml
+post_knock: "ssh -p 2222 user@myserver.example.com"
 ```
 
-The health port is **never permanently open**. It is a firewall rule opened
-automatically alongside your other ports after a successful knock, for the
-`knock_timeout` duration (default 30 seconds). This means:
+### Status Check
 
-- `openme status` with no flag confirms the port is currently open (i.e. you
-  knocked recently and the window hasn't expired)
-- `openme status --knock` is the end-to-end test: knock → wait → check, confirming
-  the full crypto + firewall round trip works
+```bash
+openme status             # check current rule (requires prior knock)
+openme status home        # named profile
+openme status --knock     # knock then check — full end-to-end test
+```
+
+### Scripting
+
+```bash
+# Inline without post_knock
+openme connect home && ssh user@home.example.com
+
+# Custom config file
+openme --client-config /etc/myapp/openme.yaml connect
+```
 
 ---
 
-## Scripting
+## iOS App {#ios}
+
+**openme for iOS** is a native SwiftUI app for iPhone. Profiles are imported
+via YAML paste or QR scan from the server.
+
+### Install
+
+Download from the [App Store](#) *(link pending release)* or build from
+source via Xcode:
 
 ```bash
-# Knock then connect — inline without post_knock in config
-openme connect home && ssh user@home.example.com
+open apple/openme.xcworkspace
+# Select the openme-ios scheme and run on your device
+```
 
-# Use a specific config file
-openme --client-config /etc/myapp/openme.yaml connect
+### Getting started
+
+1. Tap **＋** to add a new profile
+2. Choose **Paste YAML** and paste the block from `openme add`, or tap
+   **Scan QR** to scan the QR code shown by `openme add --qr`
+3. Tap the profile row to send a knock
+
+::: {.screenshot-placeholder}
+Screenshot: iOS profile list — swipe left to knock, swipe right to delete
+:::
+
+::: {.screenshot-placeholder}
+Screenshot: iOS QR scanner import screen
+:::
+
+---
+
+## macOS Menu-Bar App {#macos-app}
+
+**openme for macOS** lives in the menu bar. One click sends the knock without
+leaving your current app.
+
+### Install
+
+Download from [GitHub Releases](https://github.com/merlos/openme/releases) or
+build from source:
+
+```bash
+open apple/openme.xcworkspace
+# Select the openme-macos scheme and archive
+```
+
+### Getting started
+
+1. Launch the app — an openme icon appears in the menu bar
+2. Click the icon → **Add Profile** → paste YAML or scan QR
+3. Click a profile name to knock instantly
+
+::: {.screenshot-placeholder}
+Screenshot: macOS menu-bar dropdown showing profile list and knock button
+:::
+
+::: {.screenshot-placeholder}
+Screenshot: macOS profile import sheet (YAML paste tab)
+:::
+
+---
+
+## watchOS App {#watchos}
+
+**openme for watchOS** lets you knock directly from your wrist via a
+complication or the app glance.
+
+### Install
+
+The watchOS app is distributed alongside the iOS app. Once the iOS app is
+installed, open the Watch app on iPhone and install openme on your watch from
+**My Watch → General → Available Apps**.
+
+Profiles sync automatically from the paired iPhone.
+
+::: {.screenshot-placeholder}
+Screenshot: watchOS app showing profile list on Apple Watch
+:::
+
+::: {.screenshot-placeholder}
+Screenshot: watchOS complication on watch face
+:::
+
+---
+
+## Android App {#android}
+
+**openme for Android** is a Jetpack Compose app for Android 10+. It uses the
+openmekit library internally.
+
+### Install
+
+Download the APK from [GitHub Releases](https://github.com/merlos/openme/releases)
+or build from source:
+
+```bash
+cd android
+./gradlew :app:assembleDebug
+adb install app/build/outputs/apk/debug/openme-debug.apk
+```
+
+### Getting started
+
+1. Tap **＋** to add a profile
+2. Choose **Paste YAML** or **Scan QR** to import from `openme add` output
+3. Tap a profile → **Knock** to send the SPA packet
+
+::: {.screenshot-placeholder}
+Screenshot: Android profile list screen (Material 3, Jetpack Compose)
+:::
+
+::: {.screenshot-placeholder}
+Screenshot: Android import screen — YAML paste and QR scan tabs
+:::
+
+::: {.screenshot-placeholder}
+Screenshot: Android knock confirmation — "Knocked successfully" toast
+:::
+
+---
+
+## Windows System-Tray App {#windows-app}
+
+**openme for Windows** is a WPF application that runs as a system-tray icon
+on Windows 10 and 11.
+
+### Install
+
+Download `openme-windows-x64.zip` from
+[GitHub Releases](https://github.com/merlos/openme/releases), extract, and
+run `openme-windows.exe`. No installer is required.
+
+### Getting started
+
+1. The app starts minimised to the system tray — look for the openme icon
+2. Right-click the tray icon → **Add Profile** → paste the YAML block
+3. Right-click the tray icon → select a profile → **Knock**
+
+::: {.screenshot-placeholder}
+Screenshot: Windows system-tray context menu with profile list and knock options
+:::
+
+::: {.screenshot-placeholder}
+Screenshot: Windows profile import dialog (YAML paste)
+:::
+
+---
+
+## Next Steps
+
+- [Adding more clients](adding-clients.qmd) — `openme add` on the server
+- [Client Configuration reference](../configuration/client.qmd) — all YAML fields
+- [Protocol Specification](../protocol/index.qmd) — what's inside the knock packet
+
 ```

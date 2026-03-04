@@ -1,5 +1,7 @@
 ---
 title: "Getting Started"
+description: "Set up openme Single Packet Authentication in five minutes — server daemon, client config, and your first successful knock."
+keywords: [openme getting started, SPA quickstart, firewall knock setup, openme install, openme server setup]
 ---
 
 This guide gets you from zero to a working openme setup in about five minutes.

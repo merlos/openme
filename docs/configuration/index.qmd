@@ -1,5 +1,7 @@
 ---
 title: "Configuration Reference"
+description: "YAML configuration reference for openme — server config at /etc/openme/config.yaml and client config at ~/.openme/config.yaml."
+keywords: [openme configuration, openme YAML config, server config, client config, openme config reference]
 ---
 
 openme uses YAML configuration files for both the server and the client.

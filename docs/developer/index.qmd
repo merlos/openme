@@ -1,0 +1,62 @@
+---
+title: "Developer SDKs & API Reference"
+description: "Official openme client libraries, SDKs, and API references for Go, Swift, Kotlin/Android, C#/.NET, and C."
+keywords: [openme SDK, openme API, SPA library, Single Packet Authentication library, Go API, Swift OpenMeKit, Kotlin OpenMeKit, Android SDK, C# OpenMeKit, C library openmelib]
+---
+
+openme ships official client libraries for every major platform. Each library
+implements the full [165-byte SPA knock protocol](../protocol/packet-format.qmd)
+and produces byte-identical packets to the Go reference implementation.
+
+## Libraries at a Glance
+
+| Platform | Library | Language | Distribution |
+|----------|---------|----------|-------------|
+| Linux / macOS / Windows | [Go CLI & package](go-api.qmd) | Go | GitHub Releases / `go install` |
+| iOS · macOS · watchOS | [OpenMeKit (Swift)](swift-openmekit.qmd) | Swift | Swift Package Manager |
+| Android | [OpenMeKit (Kotlin)](android.qmd) | Kotlin | Gradle module / AAR |
+| Windows | [OpenMeKit (.NET)](csharp-openmekit.qmd) | C# / .NET 8 | NuGet / DLL |
+| Embedded / Arduino / ESP32 | [openmelib (C)](c-library.qmd) | C99 | CMake / Arduino Library |
+
+## Shared Protocol
+
+All libraries:
+
+- Produce a **165-byte** UDP packet with the same byte layout
+- Use the same crypto stack — Curve25519 ECDH → HKDF-SHA256 → ChaCha20-Poly1305 → Ed25519
+- Are validated against the same known-answer test vectors from the Go reference implementation
+- Follow the [naming conventions](https://openme.merlos.org/docs/protocol/packet-format.html) defined in the protocol spec
+
+See [Protocol Specification](../protocol/index.qmd) for the full wire-format definition.
+
+## Choosing a Library
+
+```{=html}
+<div class="dev-card-grid">
+  <a class="dev-card" href="go-api.qmd">
+    <span class="dev-card__icon">🐹</span>
+    <strong>Go</strong>
+    <span>CLI daemon, server, and reference crypto implementation</span>
+  </a>
+  <a class="dev-card" href="swift-openmekit.qmd">
+    <span class="dev-card__icon">🍎</span>
+    <strong>Swift (Apple)</strong>
+    <span>iOS, macOS, watchOS — native SwiftUI apps and SPM package</span>
+  </a>
+  <a class="dev-card" href="android.qmd">
+    <span class="dev-card__icon">🤖</span>
+    <strong>Kotlin (Android)</strong>
+    <span>Android 10+ Jetpack Compose app and Gradle library</span>
+  </a>
+  <a class="dev-card" href="csharp-openmekit.qmd">
+    <span class="dev-card__icon">🪟</span>
+    <strong>C# / .NET</strong>
+    <span>Windows WPF system-tray app and .NET 8 library</span>
+  </a>
+  <a class="dev-card" href="c-library.qmd">
+    <span class="dev-card__icon">⚙️</span>
+    <strong>C (openmelib)</strong>
+    <span>Bare-metal C99 — Arduino, ESP32, POSIX desktop</span>
+  </a>
+</div>
+```

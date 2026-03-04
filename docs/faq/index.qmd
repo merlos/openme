@@ -1,5 +1,7 @@
 ---
 title: "FAQ"
+description: "Frequently asked questions about openme — how SPA works, differences from fwknop, supported distros, troubleshooting common issues."
+keywords: [openme FAQ, single packet authentication questions, fwknop alternative, openme troubleshooting, SPA explained, openme Linux]
 ---
 
 ## General

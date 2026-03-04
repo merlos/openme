@@ -1,5 +1,7 @@
 ---
 title: "Firewall Backends"
+description: "Configure openme's nftables and iptables firewall backends — rule tables, chain setup, NAT traversal, and automatic rule cleanup."
+keywords: [openme nftables, openme iptables, SPA firewall backend, nft openme, iptables SPA rules, firewall rule expiry]
 ---
 
 openme supports two firewall backends on Linux: **nftables** (`nft`) and

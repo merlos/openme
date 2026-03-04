@@ -1,5 +1,7 @@
 ---
 title: "Replay Protection"
+description: "How openme prevents replay attacks — nanosecond timestamp window (±60 s) and 128-bit random nonce seen-cache with automatic expiry."
+keywords: [openme replay protection, SPA anti-replay, timestamp window, nonce cache, knock replay attack, replay window 60s]
 ---
 
 openme uses two complementary mechanisms to prevent replay attacks — where an

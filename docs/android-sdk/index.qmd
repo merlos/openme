@@ -1,6 +1,7 @@
 ---
 title: "Android SDK"
-description: "OpenMeKit Android — integrate the openme SPA knock protocol into your Android app."
+description: "OpenMeKit Android — integrate the openme SPA knock protocol into your Android app. KDoc reference for KnockService, KnockManager, ProfileStore."
+keywords: [OpenMeKit Android, openme Android SDK, KnockService Kotlin, Android SPA library, KDoc reference, openme Kotlin API]
 ---
 
 # OpenMeKit Android

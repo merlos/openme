@@ -1,0 +1,95 @@
+---
+title: "OpenMeKit — Swift (Apple Platforms)"
+description: "Swift Package Manager library for integrating openme Single Packet Authentication into iOS, macOS, and watchOS apps."
+keywords: [openme iOS, openme macOS, openme watchOS, Swift SPA, OpenMeKit Swift, single packet authentication Swift, knockService Swift]
+---
+
+**OpenMeKit** is the official Swift package for integrating the openme
+[Single Packet Authentication](../protocol/index.qmd) protocol into Apple
+platform apps.
+
+- **Source:** `apple/OpenMeKit/` in the [openme repository](https://github.com/merlos/openme)
+- **Distribution:** Swift Package Manager (SPM)
+- **Platforms:** iOS 16+, macOS 13+, watchOS 9+
+
+## Features
+
+| Capability | Details |
+|------------|---------|
+| SPA knock | Ed25519 + X25519 ECDH + HKDF-SHA256 + ChaCha20-Poly1305 over UDP via `NWConnection` |
+| Profile management | `ClientConfig` (Codable) + `ProfileStore` (app-local persistence) |
+| YAML import | Parses `openme add` output |
+| QR import | Parses the JSON payload from `openme qr` |
+| DocC documentation | Full symbol documentation generated with DocC |
+
+## Installation
+
+Add the package via Swift Package Manager. In Xcode:
+
+1. **File → Add Package Dependencies…**
+2. Enter the repository URL: `https://github.com/merlos/openme`
+3. Set the dependency rule to **Up to Next Major Version** from `1.0.0`
+4. Select the **OpenMeKit** library target
+
+Or add it to your `Package.swift`:
+
+```swift
+dependencies: [
+    .package(url: "https://github.com/merlos/openme", from: "1.0.0")
+],
+targets: [
+    .target(name: "MyApp", dependencies: [
+        .product(name: "OpenMeKit", package: "openme")
+    ])
+]
+```
+
+## Quick Start
+
+```swift
+import OpenMeKit
+
+// Load a profile (from your app's ProfileStore)
+let config = ClientConfig(
+    serverHost: "myserver.example.com",
+    serverUDPPort: 54154,
+    serverPubKey: Data(base64Encoded: "...")!,
+    privateKey:   Data(base64Encoded: "...")!
+)
+
+// Send a knock
+Task {
+    do {
+        try await KnockService.knock(config: config)
+        print("Knocked successfully")
+    } catch {
+        print("Knock failed: \(error)")
+    }
+}
+```
+
+## Apps Using OpenMeKit
+
+| App | Platform | Description |
+|-----|----------|-------------|
+| openme for iOS | iOS 16+ | Native SwiftUI app — profile list, QR scan, knock button |
+| openme for macOS | macOS 13+ | Menu-bar app — one-click knock from the status bar |
+| openme for watchOS | watchOS 9+ | Complication + glance — knock from your wrist |
+| openme Widget | iOS / macOS | WidgetKit home-screen widget |
+
+## DocC Reference
+
+Generate the full API reference locally:
+
+```bash
+cd apple/OpenMeKit
+swift package generate-documentation --target OpenMeKit
+```
+
+Or open directly in Xcode:
+**Product → Build Documentation** while `OpenMeKit` is selected as the scheme.
+
+## See Also
+
+- [Protocol Specification](../protocol/index.qmd)
+- [Client Configuration](../configuration/client.qmd)

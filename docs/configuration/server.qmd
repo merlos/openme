@@ -1,5 +1,7 @@
 ---
 title: "Server Configuration"
+description: "Full reference for the openme server YAML configuration — listen address, ports, clients, firewall backend, knock timeout, and replay window."
+keywords: [openme server config, openme server YAML, SPA server configuration, knock timeout, replay window, firewall config]
 ---
 
 Default location: `/etc/openme/config.yaml`

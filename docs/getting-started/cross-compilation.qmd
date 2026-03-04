@@ -1,5 +1,7 @@
 ---
 title: "Cross-Compilation"
+description: "Cross-compile the openme CLI for Linux ARM, macOS, Windows, and other platforms using Go's built-in cross-compilation support."
+keywords: [openme cross-compile, Go cross-compilation, openme ARM, openme Windows binary, openme macOS binary, GOARCH GOOS]
 ---
 
 The openme CLI is pure Go with no CGo dependencies, making cross-compilation
