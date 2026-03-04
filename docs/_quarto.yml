@@ -13,36 +13,14 @@ website:
     logo: img/logo.svg
     logo-alt: "openme"
     left:
-      - text: "Docs"
-        menu:
-          - text: "Getting Started"
-            href: getting-started/index.qmd
-          - text: "Configuration"
-            href: configuration/index.qmd
-          - text: "Protocol"
-            href: protocol/index.qmd
-          - text: "Security Model"
-            href: security/index.qmd
-          - text: "FAQ"
-            href: faq/index.qmd
-      - text: "Developer"
-        menu:
-          - text: "SDKs & APIs Overview"
-            href: developer/index.qmd
-          - text: "---"
-          - text: "Go API Reference"
-            href: developer/go-api.qmd
-          - text: "Swift — OpenMeKit (iOS/macOS/watchOS)"
-            href: developer/swift-openmekit.qmd
-          - text: "Kotlin — OpenMeKit (Android)"
-            href: developer/android.qmd
-          - text: "C# — OpenMeKit (.NET/Windows)"
-            href: developer/csharp-openmekit.qmd
-          - text: "C — openmelib (Embedded)"
-            href: developer/c-library.qmd
-          - text: "---"
-          - text: "Android KDoc Reference"
-            href: android-sdk/index.qmd
+      - text: "Documentation"
+        href: index.qmd
+      - text: "Getting Started"
+        href: getting-started/index.qmd
+      - text: "For Developers"
+        href: developer/index.qmd
+      - text: "Protocol"
+        href: protocol/index.qmd
     right:
       - icon: github
         href: https://github.com/merlos/openme
@@ -50,49 +28,41 @@ website:
         href: https://openme.merlos.org
 
   sidebar:
-    - title: "Getting Started"
-      style: docked
-      contents:
-        - getting-started/index.qmd
-        - getting-started/server-setup.qmd
-        - getting-started/client-setup.qmd
-        - getting-started/adding-clients.qmd
-        - getting-started/cross-compilation.qmd
-
-    - title: "Configuration"
-      contents:
-        - configuration/index.qmd
-        - configuration/server.qmd
-        - configuration/client.qmd
-        - configuration/firewall.qmd
-
-    - title: "Protocol"
-      contents:
-        - protocol/index.qmd
-        - protocol/packet-format.qmd
-        - protocol/cryptography.qmd
-        - protocol/handshake.qmd
-        - protocol/replay-protection.qmd
-
-    - title: "Security"
-      contents:
-        - security/index.qmd
-        - security/key-management.qmd
-
-    - title: "FAQ"
-      contents:
-        - faq/index.qmd
-
-    - title: "Developer"
-      contents:
-        - developer/index.qmd
-        - developer/go-api.qmd
-        - developer/swift-openmekit.qmd
-        - developer/android.qmd
-        - developer/csharp-openmekit.qmd
-        - developer/c-library.qmd
-        - text: "Android KDoc Reference"
-          href: android-sdk/index.qmd
+    style: docked
+    contents:
+      - section: "Getting Started"
+        contents:
+          - getting-started/index.qmd
+          - getting-started/server-setup.qmd
+          - getting-started/client-setup.qmd
+          - getting-started/adding-clients.qmd
+          - getting-started/cross-compilation.qmd
+      - section: "Configuration"
+        contents:
+          - configuration/index.qmd
+          - configuration/server.qmd
+          - configuration/client.qmd
+          - configuration/firewall.qmd
+      - section: "Security Model"
+        contents:
+          - security/index.qmd
+          - security/key-management.qmd
+      - section: "Protocol"
+        contents:
+          - protocol/index.qmd
+      - section: "For Developers"
+        contents:
+          - developer/index.qmd
+          - developer/go-api.qmd
+          - developer/swift-openmekit.qmd
+          - developer/android.qmd
+          - developer/csharp-openmekit.qmd
+          - developer/c-library.qmd
+          - text: "Android KDoc Reference"
+            href: android-sdk/index.qmd
+      - section: "FAQ"
+        contents:
+          - faq/index.qmd
 
   page-footer:
     left: "© 2026 merlos.org — MIT License"
