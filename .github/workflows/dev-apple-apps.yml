@@ -4,11 +4,11 @@ on:
   push:
     paths:
       - 'apple/**'
-      - '.github/workflows/apple-apps.yml'
+      - '.github/workflows/dev-apple-apps.yml'
   pull_request:
     paths:
       - 'apple/**'
-      - '.github/workflows/apple-apps.yml'
+      - '.github/workflows/dev-apple-apps.yml'
 
 jobs:
   # ─── iOS ──────────────────────────────────────────────────────────────────

@@ -1,6 +1,6 @@
 # openme Android
 
-[![Android CI](https://github.com/merlos/openme/actions/workflows/android.yml/badge.svg)](https://github.com/merlos/openme/actions/workflows/android.yml)
+[![Android CI](https://github.com/merlos/openme/actions/workflows/dev-android.yml/badge.svg)](https://github.com/merlos/openme/actions/workflows/dev-android.yml)
 
 Android app + client library for the [openme](https://github.com/merlos/openme) Single Packet Authentication (SPA) protocol.
 
@@ -125,7 +125,7 @@ available from API 29.
 
 ## CI — GitHub Actions setup
 
-The workflow at [`.github/workflows/android.yml`](../.github/workflows/android.yml) runs on every push or PR that touches `android/**`.
+The workflow at [`.github/workflows/dev-android.yml`](../.github/workflows/dev-android.yml) runs on every push or PR that touches `android/**`.
 
 | Job | What it does |
 |-----|--------------|

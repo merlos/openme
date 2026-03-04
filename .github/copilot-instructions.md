@@ -60,13 +60,13 @@ openme/
 ├── .github/
 │   ├── copilot-instructions.md   ← this file
 │   └── workflows/
-│       ├── cli.yml               Go test + cross-compile
-│       ├── docs.yml              Quarto site build + OpenMeKit DocC reference
-│       ├── openmelib.yml         C library multi-platform CI
-│       ├── apple-openmekit.yml   Swift SPM tests (macOS 14 + 15)
-│       ├── apple-apps.yml        Xcode build + unit tests (iOS, macOS, watchOS)
-│       ├── android.yml           Gradle JVM unit tests + AAR build
-│       └── windows.yml           .NET xUnit tests + WPF build
+│       ├── dev-cli.yml           Go test + cross-compile
+│       ├── dev-docs.yml          Quarto site build + OpenMeKit DocC reference
+│       ├── dev-openmelib.yml     C library multi-platform CI
+│       ├── dev-apple-openmekit.yml   Swift SPM tests (macOS 14 + 15)
+│       ├── dev-apple-apps.yml    Xcode build + unit tests (iOS, macOS, watchOS)
+│       ├── dev-android.yml       Gradle JVM unit tests + AAR build
+│       └── dev-windows.yml       .NET xUnit tests + WPF build
 │
 ├── cli/                          Go server daemon & cross-platform CLI
 │   ├── cmd/openme/               main() entry point
@@ -529,13 +529,13 @@ constants file, never inline in business logic:
 
 | File | Trigger | What it does |
 |------|---------|--------------|
-| `.github/workflows/cli.yml` | push/PR to `cli/**` | Go vet, `go test -race` on Linux/macOS/Windows, cross-compile for 5 targets |
-| `.github/workflows/docs.yml` | push/PR to `docs/**`, `apple/OpenMeKit/**` | `quarto render` + DocC reference, deploy to GitHub Pages |
-| `.github/workflows/openmelib.yml` | push/PR to `c/openmelib/**` | CMake matrix (6 jobs), ARM cross-compile, bare-metal arm-none-eabi, Arduino CLI (5 boards), ESP-IDF (4 targets), cppcheck |
-| `.github/workflows/apple-openmekit.yml` | push/PR to `apple/OpenMeKit/**` | `swift test` on macOS 14 + 15; SPM package cache |
-| `.github/workflows/apple-apps.yml` | push/PR to `apple/**` | `xcodebuild test` for openme-ios (iPhone Simulator) and openme-macos; `xcodebuild build` for openme-watch |
-| `.github/workflows/android.yml` | push/PR to `android/**` | Gradle JVM unit tests for openmekit; assemble release AAR |
-| `.github/workflows/windows.yml` | push/PR to `windows/**` | xUnit tests for OpenMeKit (.NET 8) on Linux + Windows; `dotnet build` for WPF GUI on Windows |
+| `.github/workflows/dev-cli.yml` | push/PR to `cli/**` | Go vet, `go test -race` on Linux/macOS/Windows, cross-compile for 5 targets |
+| `.github/workflows/dev-docs.yml` | push/PR to `docs/**`, `apple/OpenMeKit/**` | `quarto render` + DocC reference, deploy to GitHub Pages |
+| `.github/workflows/dev-openmelib.yml` | push/PR to `c/openmelib/**` | CMake matrix (6 jobs), ARM cross-compile, bare-metal arm-none-eabi, Arduino CLI (5 boards), ESP-IDF (4 targets), cppcheck |
+| `.github/workflows/dev-apple-openmekit.yml` | push/PR to `apple/OpenMeKit/**` | `swift test` on macOS 14 + 15; SPM package cache |
+| `.github/workflows/dev-apple-apps.yml` | push/PR to `apple/**` | `xcodebuild test` for openme-ios (iPhone Simulator) and openme-macos; `xcodebuild build` for openme-watch |
+| `.github/workflows/dev-android.yml` | push/PR to `android/**` | Gradle JVM unit tests for openmekit; assemble release AAR |
+| `.github/workflows/dev-windows.yml` | push/PR to `windows/**` | xUnit tests for OpenMeKit (.NET 8) on Linux + Windows; `dotnet build` for WPF GUI on Windows |
 
 ### Rules for new workflows
 

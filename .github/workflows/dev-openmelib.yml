@@ -1,14 +1,14 @@
-name: openmelib CI
+name: dev: openmelib CI
 
 on:
   push:
     paths:
       - 'c/openmelib/**'
-      - '.github/workflows/openmelib.yml'
+      - '.github/workflows/dev-openmelib.yml'
   pull_request:
     paths:
       - 'c/openmelib/**'
-      - '.github/workflows/openmelib.yml'
+      - '.github/workflows/dev-openmelib.yml'
 
 # ─── Shared environment ────────────────────────────────────────────────────────
 env:

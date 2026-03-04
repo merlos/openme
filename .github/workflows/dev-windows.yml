@@ -4,11 +4,11 @@ on:
   push:
     paths:
       - 'windows/**'
-      - '.github/workflows/windows.yml'
+      - '.github/workflows/dev-windows.yml'
   pull_request:
     paths:
       - 'windows/**'
-      - '.github/workflows/windows.yml'
+      - '.github/workflows/dev-windows.yml'
 
 defaults:
   run:

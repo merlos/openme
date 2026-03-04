@@ -4,11 +4,11 @@ on:
   push:
     paths:
       - 'cli/**'
-      - '.github/workflows/cli.yml'
+      - '.github/workflows/dev-cli.yml'
   pull_request:
     paths:
       - 'cli/**'
-      - '.github/workflows/cli.yml'
+      - '.github/workflows/dev-cli.yml'
 
 defaults:
   run:

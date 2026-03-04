@@ -7,7 +7,7 @@ on:
     paths:
       - 'docs/**'
       - 'website/**'
-      - '.github/workflows/docs.yml'
+      - '.github/workflows/dev-docs.yml'
   workflow_dispatch:
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages

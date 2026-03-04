@@ -4,11 +4,11 @@ on:
   push:
     paths:
       - 'android/**'
-      - '.github/workflows/android.yml'
+      - '.github/workflows/dev-android.yml'
   pull_request:
     paths:
       - 'android/**'
-      - '.github/workflows/android.yml'
+      - '.github/workflows/dev-android.yml'
 
 defaults:
   run:

@@ -4,11 +4,11 @@ on:
   push:
     paths:
       - 'apple/OpenMeKit/**'
-      - '.github/workflows/apple-openmekit.yml'
+      - '.github/workflows/dev-apple-openmekit.yml'
   pull_request:
     paths:
       - 'apple/OpenMeKit/**'
-      - '.github/workflows/apple-openmekit.yml'
+      - '.github/workflows/dev-apple-openmekit.yml'
 
 defaults:
   run:
