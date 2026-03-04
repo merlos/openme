@@ -10,6 +10,9 @@ on:
       - 'windows/**'
       - '.github/workflows/dev-windows.yml'
 
+permissions:
+  contents: read
+
 defaults:
   run:
     working-directory: windows

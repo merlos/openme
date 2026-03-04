@@ -10,6 +10,9 @@ on:
       - 'apple/OpenMeKit/**'
       - '.github/workflows/dev-apple-openmekit.yml'
 
+permissions:
+  contents: read
+
 defaults:
   run:
     working-directory: apple/OpenMeKit

@@ -10,6 +10,9 @@ on:
       - 'c/openmelib/**'
       - '.github/workflows/dev-openmelib.yml'
 
+permissions:
+  contents: read
+
 # ─── Shared environment ────────────────────────────────────────────────────────
 env:
   OPENME_LIB: c/openmelib

@@ -10,6 +10,9 @@ on:
       - 'cli/**'
       - '.github/workflows/dev-cli.yml'
 
+permissions:
+  contents: read
+
 defaults:
   run:
     working-directory: cli

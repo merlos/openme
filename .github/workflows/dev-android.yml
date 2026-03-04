@@ -10,6 +10,9 @@ on:
       - 'android/**'
       - '.github/workflows/dev-android.yml'
 
+permissions:
+  contents: read
+
 defaults:
   run:
     working-directory: android
