@@ -11,8 +11,8 @@ Override with: `openme --config /path/to/config.yaml serve`
 
 ```yaml
 server:
-  udp_port: 54154
-  health_port: 54154
+  udp_port: 54154 # udp knock port
+  health_port: 54154 # tcp
   firewall: nft
   knock_timeout: 30s
   replay_window: 60s
@@ -29,15 +29,24 @@ clients:
   alice:
     ed25519_pubkey: "base64-encoded-ed25519-public-key=="
     allowed_ports:
-      mode: default
+      mode: default # just the defaults (SSH in this case)
   bob:
     ed25519_pubkey: "base64-encoded-ed25519-public-key=="
-    allowed_ports:
-      mode: default_plus
+    allowed_ports: 
+      mode: default_plus # defaults plus these extra ports
       ports:
         - port: 2222
           proto: tcp
     expires: "2026-12-31T23:59:59Z"
+
+  joe:
+    ed25519_pubkey: "base64-encoded-ed25519-public-key=="
+    allowed_ports:
+      mode: only # only the specified ports below, not the defaults
+      ports:
+        - port: 443
+          proto: tcp
+  
 ```
 
 ---
