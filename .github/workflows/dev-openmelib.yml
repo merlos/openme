@@ -216,19 +216,24 @@ jobs:
           - board: esp32:esp32:esp32
             core: esp32:esp32
             core_url: "https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json"
+            extra_libs: ""
           - board: esp32:esp32:esp32s3
             core: esp32:esp32
             core_url: "https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json"
+            extra_libs: ""
           - board: esp32:esp32:esp32c3
             core: esp32:esp32
             core_url: "https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json"
+            extra_libs: ""
           - board: arduino:samd:mkrwifi1010
             core: arduino:samd
             core_url: ""
+            extra_libs: "WiFiNINA NTPClient"
           # Arduino Nano RP2040 Connect (has WiFi + NTP support)
-          - board: arduino:mbed_rp2040:nanorp2040connect
-            core: arduino:mbed_rp2040
+          - board: arduino:mbed_nano:nanorp2040connect
+            core: arduino:mbed_nano
             core_url: ""
+            extra_libs: "WiFiNINA NTPClient"
 
     steps:
       - uses: actions/checkout@v4
@@ -256,6 +261,10 @@ jobs:
 
       - name: Install board core
         run: arduino-cli core install ${{ matrix.core }}
+
+      - name: Install extra Arduino libraries
+        if: matrix.extra_libs != ''
+        run: arduino-cli lib install ${{ matrix.extra_libs }}
 
       - name: Install library into Arduino libraries path
         run: |
