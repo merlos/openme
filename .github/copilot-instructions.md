@@ -55,6 +55,8 @@ Reference documentation: <https://openme.merlos.org/docs/>
 
 ## 2. Repository layout
 
+https://github.com/merlos/openme is a **multi-platform monorepo**. The code for each platform lives in a separate folder, but they all share the same protocol specification and follow the same conventions.
+
 ```
 openme/
 ├── .github/
