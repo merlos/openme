@@ -1,7 +1,7 @@
 ---
 title: "Key Management"
-description: "Best practices for managing openme keys — server Curve25519 keypair, client Ed25519 keys, file permissions, rotation, and QR provisioning."
-keywords: [openme key management, Ed25519 key rotation, Curve25519 server key, openme key permissions, SPA key security, QR key provisioning]
+description-meta: "Best practices for managing openme keys — server Curve25519 keypair, client Ed25519 keys, file permissions, rotation, and QR provisioning."
+keywords-meta: [openme key management, Ed25519 key rotation, Curve25519 server key, openme key permissions, SPA key security, QR key provisioning]
 ---
 
 ## Server Keys

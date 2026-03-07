@@ -1,7 +1,7 @@
 ---
 title: "Security Model"
-description: "openme threat model — what attacks SPA protects against (port scanning, replay, spoofing) and known limitations (DoS, compromised keys)."
-keywords: [openme security model, SPA threat model, firewall stealth, replay attack prevention, port scan prevention, forward secrecy]
+description-meta: "openme threat model — what attacks SPA protects against (port scanning, replay, spoofing) and known limitations (DoS, compromised keys)."
+keywords-meta: [openme security model, SPA threat model, firewall stealth, replay attack prevention, port scan prevention, forward secrecy]
 ---
 
 ## What openme Protects Against

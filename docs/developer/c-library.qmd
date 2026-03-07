@@ -1,7 +1,7 @@
 ---
 title: "openmelib — C Library"
-description: "Pure C99 library implementing the openme SPA knock protocol for embedded targets including Arduino, ESP32/ESP-IDF, and POSIX desktops."
-keywords: [openme C library, openmelib, Arduino SPA, ESP32 knock protocol, single packet authentication C, embedded openme, POSIX openme C99]
+description-meta: "Pure C99 library implementing the openme SPA knock protocol for embedded targets including Arduino, ESP32/ESP-IDF, and POSIX desktops."
+keywords-meta: [openme C library, openmelib, Arduino SPA, ESP32 knock protocol, single packet authentication C, embedded openme, POSIX openme C99]
 ---
 
 **openmelib** is the official C99 implementation of the openme
