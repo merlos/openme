@@ -1,5 +1,8 @@
 ## IDF Component Manager manifest for openmelib
 ## https://docs.espressif.com/projects/idf-component-manager/
+##
+## NOTE: 'version' is overwritten automatically by the release workflow
+## (release-lib-c.yml) from the lib/c/vX.Y.Z git tag. Do not edit manually.
 
 version: "1.0.0"
 description: "openme SPA knock protocol client library — C implementation"
