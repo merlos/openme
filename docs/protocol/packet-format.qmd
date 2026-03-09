@@ -1,7 +1,7 @@
 ---
 title: "Packet Format"
-description: "Byte-level wire format of the openme 165-byte SPA knock packet — outer layout, inner plaintext, field offsets, and size constants."
-keywords: [openme packet format, SPA 165 bytes, knock packet wire format, ephemeral pubkey, ChaCha20 ciphertext, Ed25519 signature field]
+description-meta: "Byte-level wire format of the openme 165-byte SPA knock packet — outer layout, inner plaintext, field offsets, and size constants."
+keywords-meta: [openme packet format, SPA 165 bytes, knock packet wire format, ephemeral pubkey, ChaCha20 ciphertext, Ed25519 signature field]
 ---
 
 Every openme knock is a single UDP datagram of exactly **165 bytes**.

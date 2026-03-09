@@ -1,7 +1,7 @@
 ---
 title: "Client Configuration"
-description: "Full reference for the openme client YAML configuration — profiles, server_host, server_pubkey, private_key, and post_knock command."
-keywords: [openme client config, openme profiles, post_knock, server_pubkey, private_key, client YAML openme]
+description-meta: "Full reference for the openme client YAML configuration — profiles, server_host, server_pubkey, private_key, and post_knock command."
+keywords-meta: [openme client config, openme profiles, post_knock, server_pubkey, private_key, client YAML openme]
 ---
 
 Default location: `~/.openme/config.yaml`

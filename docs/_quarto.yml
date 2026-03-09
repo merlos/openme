@@ -4,6 +4,7 @@ project:
 
 website:
   title: "openme"
+  title-prefix: "openme SPA - "
   description: "Single Packet Authentication — open your firewall with one encrypted packet"
   favicon: img/favicon.ico
   repo-url: https://github.com/merlos/openme

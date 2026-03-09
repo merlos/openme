@@ -1,7 +1,7 @@
 ---
 title: "OpenMeKit — Swift (Apple Platforms)"
-description: "Swift Package Manager library for integrating openme Single Packet Authentication into iOS, macOS, and watchOS apps."
-keywords: [openme iOS, openme macOS, openme watchOS, Swift SPA, OpenMeKit Swift, single packet authentication Swift, knockService Swift]
+description-meta: "Swift Package Manager library for integrating openme Single Packet Authentication into iOS, macOS, and watchOS apps."
+keywords-meta: [openme iOS, openme macOS, openme watchOS, Swift SPA, OpenMeKit Swift, single packet authentication Swift, knockService Swift]
 ---
 
 **OpenMeKit** is the official Swift package for integrating the openme

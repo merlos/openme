@@ -1,7 +1,7 @@
 ---
 title: "Cryptography"
-description: "Cryptographic primitives used in openme — Curve25519 ECDH, HKDF-SHA256, ChaCha20-Poly1305 AEAD, and Ed25519 signatures, with algorithm rationale."
-keywords: [openme cryptography, Curve25519 ECDH, HKDF-SHA256, ChaCha20-Poly1305, Ed25519, SPA crypto, RFC 7748, RFC 8439, RFC 8032]
+description-meta: "Cryptographic primitives used in openme — Curve25519 ECDH, HKDF-SHA256, ChaCha20-Poly1305 AEAD, and Ed25519 signatures, with algorithm rationale."
+keywords-meta: [openme cryptography, Curve25519 ECDH, HKDF-SHA256, ChaCha20-Poly1305, Ed25519, SPA crypto, RFC 7748, RFC 8439, RFC 8032]
 ---
 
 openme uses a small, carefully chosen set of modern primitives. Every choice

@@ -46,6 +46,17 @@ extern "C" {
 #include <stdint.h>
 #include <stddef.h>
 
+/* ─── Library version ─────────────────────────────────────────────────────────
+ * Single source of truth for the library version, usable at compile time on
+ * all platforms (Arduino, ESP-IDF, CMake, bare-metal).
+ * These macros are patched automatically by the release workflow from the
+ * lib/c/vX.Y.Z git tag — do not edit manually.
+ */
+#define OPENMELIB_VERSION_MAJOR 1
+#define OPENMELIB_VERSION_MINOR 0
+#define OPENMELIB_VERSION_PATCH 0
+#define OPENMELIB_VERSION_STRING "1.0.0"
+
 /* ─── Constants ─────────────────────────────────────────────────────────────── */
 
 /** Protocol version byte embedded in every knock packet. */
