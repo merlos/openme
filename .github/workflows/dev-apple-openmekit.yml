@@ -29,11 +29,11 @@ jobs:
         os: [macos-15, macos-14]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       # Cache resolved SPM packages to avoid re-downloading every run.
       - name: Cache Swift packages
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: apple/OpenMeKit/.build
           key: spm-${{ matrix.os }}-${{ hashFiles('apple/OpenMeKit/Package.resolved') }}

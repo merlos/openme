@@ -15,7 +15,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Configure & build
         run: |
           cmake -S c/openmelib -B c/openmelib/_build \
@@ -37,7 +37,7 @@ jobs:
           - arch: aarch64
             extra_cmake: '-DCMAKE_C_COMPILER=aarch64-linux-gnu-gcc'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Install aarch64 toolchain
         if: matrix.arch == 'aarch64'
         run: sudo apt-get install -y gcc-aarch64-linux-gnu
@@ -62,7 +62,7 @@ jobs:
           cp _build/libopenmelib.a "${PKG}/lib/"
           cp c/openmelib/include/openmelib.h "${PKG}/include/"
           tar -czf "${PKG}.tar.gz" "${PKG}"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: c-lib-${{ matrix.arch }}
           path: openmelib-*.tar.gz
@@ -72,7 +72,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: test
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Get version
         id: ver
         run: echo "VERSION=${GITHUB_REF_NAME##*/}" >> "$GITHUB_OUTPUT"
@@ -108,7 +108,7 @@ jobs:
           tar -czf "openmelib-${VERSION}-src.tar.gz" \
             --transform "s|^c/openmelib|openmelib-${VERSION}|" \
             c/openmelib
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: c-src
           path: openmelib-*-src.tar.gz
@@ -118,7 +118,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build, source]
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v7
         with:
           pattern: c-*
           merge-multiple: true
@@ -142,7 +142,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: test   # run as soon as tests pass; no need to wait for binary builds
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Get version
         id: ver
