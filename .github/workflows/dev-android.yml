@@ -39,11 +39,11 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '8.9'
+          gradle-version: wrapper
           cache-read-only: false
 
       - name: Run openmekit unit tests
-        run: gradle :openmekit:testDebugUnitTest
+        run: ./gradlew :openmekit:testDebugUnitTest
 
       - name: Upload test results
         if: always()
@@ -70,10 +70,10 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '8.9'
+          gradle-version: wrapper
 
       - name: Assemble release AAR
-        run: gradle :openmekit:assembleRelease
+        run: ./gradlew :openmekit:assembleRelease
 
       - name: Upload AAR
         uses: actions/upload-artifact@v4
