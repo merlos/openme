@@ -2,6 +2,8 @@ name: dev - Apple (iOS · macOS · watchOS)
 
 on:
   push:
+    branches:
+      - main
     paths:
       - 'apple/**'
       - '.github/workflows/dev-apple-apps.yml'

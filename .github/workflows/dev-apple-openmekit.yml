@@ -2,6 +2,8 @@ name: dev - OpenMeKit (Swift)
 
 on:
   push:
+    branches:
+      - main
     paths:
       - 'apple/OpenMeKit/**'
       - '.github/workflows/dev-apple-openmekit.yml'
