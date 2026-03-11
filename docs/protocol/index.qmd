@@ -2,7 +2,7 @@
 title: "Protocol Specification"
 subtitle: "openme SPA Protocol v1"
 description-meta: "Authoritative specification of the openme Single Packet Authentication wire protocol v1 — 165-byte packet, Curve25519, Ed25519, ChaCha20-Poly1305."
-keywords-meta: [openme protocol, SPA wire format, single packet authentication spec, Curve25519 SPA, Ed25519 knock, ChaCha20-Poly1305 encryption, openme v1, packet format, cryptography, handshake, replay protection]
+keywords: [openme protocol, SPA wire format, single packet authentication spec, Curve25519 SPA, Ed25519 knock, ChaCha20-Poly1305 encryption, openme v1, packet format, cryptography, handshake, replay protection]
 ---
 
 This page is the authoritative specification of the openme wire protocol.
