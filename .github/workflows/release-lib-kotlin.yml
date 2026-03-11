@@ -15,10 +15,10 @@ jobs:
       run:
         working-directory: android
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v5
         with: { java-version: '17', distribution: temurin }
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v5
         with: { gradle-version: '8.9' }
       - run: gradle :openmekit:testDebugUnitTest
 
@@ -30,10 +30,10 @@ jobs:
       run:
         working-directory: android
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v5
         with: { java-version: '17', distribution: temurin }
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v5
         with: { gradle-version: '8.9' }
       - name: Get version
         id: ver
@@ -43,7 +43,7 @@ jobs:
         run: |
           mv openmekit/build/outputs/aar/openmekit-release.aar \
             "openmekit-${{ steps.ver.outputs.VERSION }}.aar"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: kotlin-aar
           path: android/openmekit-*.aar
@@ -53,7 +53,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v7
         with:
           name: kotlin-aar
           path: dist/

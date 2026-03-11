@@ -2,7 +2,7 @@
 title: "openme Documentation"
 subtitle: "Single Packet Authentication for Linux firewalls"
 description-meta: "Complete documentation for openme — open-source Single Packet Authentication (SPA) for Linux, iOS, Android, Windows, and macOS."
-keywords-meta: [openme, single packet authentication, SPA, firewall knock, port knocking, Ed25519, ChaCha20, documentation]
+keywords: [openme, single packet authentication, SPA, firewall knock, port knocking, Ed25519, ChaCha20, documentation]
 ---
 
 Welcome to the openme documentation. openme lets an authenticated client send

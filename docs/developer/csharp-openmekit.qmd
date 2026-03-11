@@ -1,7 +1,7 @@
 ---
 title: "OpenMeKit — C# / .NET"
 description-meta: "C#/.NET 8 library for integrating openme Single Packet Authentication into Windows applications. Includes the WPF system-tray app and a NuGet-compatible library."
-keywords-meta: [openme Windows, OpenMeKit C#, .NET SPA library, single packet authentication Windows, KnockService C#, WPF knock protocol, openme dotnet]
+keywords: [openme Windows, OpenMeKit C#, .NET SPA library, single packet authentication Windows, KnockService C#, WPF knock protocol, openme dotnet]
 ---
 
 **OpenMeKit** is the official .NET 8 client library for the openme

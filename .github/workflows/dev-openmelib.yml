@@ -2,6 +2,8 @@ name: dev - openmelib CI
 
 on:
   push:
+    branches:
+      - main
     paths:
       - 'c/openmelib/**'
       - '.github/workflows/dev-openmelib.yml'
@@ -61,7 +63,7 @@ jobs:
             cxx: g++
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       # Install MinGW on Windows
       - name: Install MSYS2 / MinGW
@@ -151,7 +153,7 @@ jobs:
             pkg: gcc-riscv64-linux-gnu
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install cross-compiler
         run: sudo apt-get install -y ${{ matrix.pkg }}
@@ -177,7 +179,7 @@ jobs:
     name: bare-metal / arm-none-eabi
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install toolchain
         run: sudo apt-get install -y gcc-arm-none-eabi
@@ -236,7 +238,7 @@ jobs:
             extra_libs: "WiFiNINA NTPClient"
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install arduino-cli
         uses: arduino/setup-arduino-cli@v2
@@ -288,7 +290,7 @@ jobs:
         target: [esp32, esp32s3, esp32c3, esp32c6]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Fetch Monocypher
         run: bash ${{ env.OPENME_LIB }}/vendor/monocypher/get_monocypher.sh
@@ -319,7 +321,7 @@ jobs:
     name: static analysis / cppcheck
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Fetch Monocypher
         run: bash ${{ env.OPENME_LIB }}/vendor/monocypher/get_monocypher.sh

@@ -1,7 +1,7 @@
 ---
 title: "Developer SDKs & API Reference"
 description-meta: "Official openme client libraries, SDKs, and API references for Go, Swift, Kotlin/Android, C#/.NET, and C."
-keywords-meta: [openme SDK, openme API, SPA library, Single Packet Authentication library, Go API, Swift OpenMeKit, Kotlin OpenMeKit, Android SDK, C# OpenMeKit, C library openmelib]
+keywords: [openme SDK, openme API, SPA library, Single Packet Authentication library, Go API, Swift OpenMeKit, Kotlin OpenMeKit, Android SDK, C# OpenMeKit, C library openmelib]
 ---
 
 openme ships official client libraries for every major platform. Each library

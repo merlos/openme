@@ -1,7 +1,7 @@
 ---
 title: "Client Setup"
 description-meta: "Configure and use openme clients — CLI on Linux/macOS/Windows, iOS app, Android app, macOS menu-bar app, and Windows system-tray app."
-keywords-meta: [openme client, openme connect, SPA client setup, openme iOS, openme Android, openme Windows, openme macOS, knock command]
+keywords: [openme client, openme connect, SPA client setup, openme iOS, openme Android, openme Windows, openme macOS, knock command]
 ---
 
 openme is available on every major platform. Choose your client below.
