@@ -12,7 +12,7 @@ and published alongside this site.
 
 | Library | Language | Reference |
 |---------|----------|-----------|
-| openme CLI & server | Go | [pkg.go.dev →](https://pkg.go.dev/github.com/merlos/openme) |
+| openme CLI & server | Go | [pkg.go.dev →](https://pkg.go.dev/github.com/merlos/openme/cli) |
 | OpenMeKit | Swift | [DocC Reference →](/docs/api/swift/documentation/openmekit/) |
 | OpenMeKit | Kotlin / Android | [KDoc Reference →](/docs/android-sdk/openmekit/) |
 | OpenMeKit | C# / .NET | [DocFX Reference →](/docs/api/csharp/) |
@@ -21,11 +21,11 @@ and published alongside this site.
 ## Go
 
 The Go packages are documented with [godoc](https://pkg.go.dev) conventions
-and published at **[pkg.go.dev/github.com/merlos/openme](https://pkg.go.dev/github.com/merlos/openme)**.
+and published at **[pkg.go.dev/github.com/merlos/openme/cli](https://pkg.go.dev/github.com/merlos/openme/cli)**.
 
 | Package | Description |
 |---------|-------------|
-| `pkg/protocol` | Wire format constants, packet sized, error types |
+| `pkg/protocol` | Wire format constants, packet sizes, error types |
 | `internal/crypto` | Key generation, ECDH, encryption, signing |
 | `internal/config` | Config structs, YAML loading/saving, port mode logic |
 | `internal/server` | UDP listener, packet verification, replay cache |

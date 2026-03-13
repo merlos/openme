@@ -6,7 +6,7 @@ keywords: [openme Go API, openme Go package, SPA Go library, pkgsite, golang kno
 
 The openme Go API reference is auto-generated from source code comments and published at:
 
-[**→ pkg.go.dev/github.com/merlos/openme**](https://pkg.go.dev/github.com/merlos/openme)
+[**→ pkg.go.dev/github.com/merlos/openme/cli**](https://pkg.go.dev/github.com/merlos/openme/cli)
 
 This mirrors the standard `godoc` format and is updated whenever a new version is pushed.
 
