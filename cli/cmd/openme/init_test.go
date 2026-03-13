@@ -9,8 +9,8 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/merlos/openme/internal/config"
-	internlcrypto "github.com/merlos/openme/internal/crypto"
+	"github.com/merlos/openme/cli/internal/config"
+	internlcrypto "github.com/merlos/openme/cli/internal/crypto"
 )
 
 func TestRunInit_CreatesConfig(t *testing.T) {

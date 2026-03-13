@@ -19,8 +19,8 @@ import (
 	"strconv"
 	"time"
 
-	internlcrypto "github.com/merlos/openme/internal/crypto"
-	"github.com/merlos/openme/pkg/protocol"
+	internlcrypto "github.com/merlos/openme/cli/internal/crypto"
+	"github.com/merlos/openme/cli/pkg/protocol"
 )
 
 // KnockOptions holds the parameters for a single SPA knock.

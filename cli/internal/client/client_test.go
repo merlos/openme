@@ -5,9 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/merlos/openme/internal/client"
-	internlcrypto "github.com/merlos/openme/internal/crypto"
-	"github.com/merlos/openme/pkg/protocol"
+	"github.com/merlos/openme/cli/internal/client"
+	internlcrypto "github.com/merlos/openme/cli/internal/crypto"
+	"github.com/merlos/openme/cli/pkg/protocol"
 )
 
 // buildTestOptions creates a KnockOptions with freshly generated keys.

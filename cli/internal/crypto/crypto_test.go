@@ -5,7 +5,7 @@ import (
 	"crypto/ed25519"
 	"testing"
 
-	"github.com/merlos/openme/internal/crypto"
+	"github.com/merlos/openme/cli/internal/crypto"
 )
 
 func TestGenerateCurve25519KeyPair(t *testing.T) {
