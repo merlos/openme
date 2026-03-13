@@ -4,9 +4,11 @@ description-meta: "Auto-generated Go package documentation for openme — the re
 keywords: [openme Go API, openme Go package, SPA Go library, pkgsite, golang knock protocol]
 ---
 
-The openme Go API reference is auto-generated from source code comments using
-[`pkgsite`](https://pkg.go.dev/golang.org/x/pkgsite), the same tool that
-powers [pkg.go.dev](https://pkg.go.dev).
+The openme Go API reference is auto-generated from source code comments and published at:
+
+[**→ pkg.go.dev/github.com/merlos/openme/cli**](https://pkg.go.dev/github.com/merlos/openme/cli)
+
+This mirrors the standard `godoc` format and is updated whenever a new version is pushed.
 
 ## Packages
 
@@ -32,18 +34,6 @@ pkgsite -open .
 ```
 
 This opens a local pkg.go.dev-style documentation server at `http://localhost:8080`.
-
-## Adding to the Docs Build
-
-The `cli/Makefile` includes a `docs` target that runs pkgsite in static-export
-mode and places the output in `docs/api/generated/`, which Quarto then links to:
-
-```bash
-cd cli
-make docs        # generates docs/api/generated/
-cd ../docs
-quarto render    # includes the API reference in the site
-```
 
 ## Documentation Standards
 

@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/merlos/openme/internal/config"
+	"github.com/merlos/openme/cli/internal/config"
 )
 
 func TestDefaultServerConfig(t *testing.T) {

@@ -79,7 +79,12 @@ Task {
 
 ## DocC Reference
 
-Generate the full API reference locally:
+The full DocC API reference is generated from source and published with each
+release of the documentation site:
+
+[**→ OpenMeKit Swift API Reference**](/docs/api/swift/documentation/openmekit/)
+
+To generate locally:
 
 ```bash
 cd apple/OpenMeKit

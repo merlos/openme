@@ -1,0 +1,37 @@
+{
+  "$schema": "https://raw.githubusercontent.com/dotnet/docfx/main/schemas/docfx.schema.json",
+  "metadata": [
+    {
+      "src": [
+        {
+          "src": ".",
+          "files": [ "*.csproj" ]
+        }
+      ],
+      "dest": "api",
+      "includePrivateMembers": false,
+      "disableGitFeatures": false,
+      "disableDefaultFilter": false
+    }
+  ],
+  "build": {
+    "content": [
+      {
+        "files": [ "api/**.yml", "api/index.md" ]
+      },
+      {
+        "files": [ "docs/**.md" ],
+        "src": ".",
+        "dest": "articles"
+      }
+    ],
+    "dest": "../../docs/api/csharp",
+    "globalMetadata": {
+      "_appTitle": "OpenMeKit (.NET)",
+      "_appFooter": "openme — Single Packet Authentication | MIT License",
+      "_appLogoPath": "",
+      "_enableSearch": true
+    },
+    "template": [ "default" ]
+  }
+}

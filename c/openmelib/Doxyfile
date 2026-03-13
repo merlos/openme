@@ -1,0 +1,52 @@
+# Doxyfile for openmelib — C99 SPA knock library
+# Generated documentation is placed in html/ (relative to this file).
+# The docs CI workflow copies html/ → docs/api/c/ in the Quarto site.
+
+PROJECT_NAME           = "openmelib"
+PROJECT_BRIEF          = "Pure C99 SPA knock library — Arduino, ESP32, POSIX desktop"
+PROJECT_LOGO           =
+
+OUTPUT_DIRECTORY       = .
+CREATE_SUBDIRS         = NO
+
+# Input
+INPUT                  = include src
+FILE_PATTERNS          = *.h *.c
+RECURSIVE              = NO
+EXCLUDE_PATTERNS       = */monocypher* */openme_sha256*
+
+# Extraction
+EXTRACT_ALL            = YES
+EXTRACT_STATIC         = YES
+EXTRACT_PRIVATE        = NO
+HIDE_UNDOC_MEMBERS     = NO
+JAVADOC_AUTOBRIEF      = YES
+
+# Source browsing — inline source code in the HTML output
+SOURCE_BROWSER         = YES
+INLINE_SOURCES         = NO
+STRIP_CODE_COMMENTS    = NO
+
+# Output formats
+GENERATE_HTML          = YES
+HTML_OUTPUT            = html
+HTML_TIMESTAMP         = YES
+GENERATE_LATEX         = NO
+GENERATE_MAN           = NO
+GENERATE_XML           = NO
+
+# Navigation
+DISABLE_INDEX          = NO
+GENERATE_TREEVIEW      = YES
+TREEVIEW_WIDTH         = 250
+
+# Graphs (graphviz — optional, gracefully skipped if not installed)
+HAVE_DOT               = NO
+
+# Preprocessor
+ENABLE_PREPROCESSING   = YES
+MACRO_EXPANSION        = YES
+
+# External links
+REFERENCED_BY_RELATION = YES
+REFERENCES_RELATION    = YES

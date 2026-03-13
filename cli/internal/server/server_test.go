@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/merlos/openme/internal/server"
-	"github.com/merlos/openme/pkg/protocol"
+	"github.com/merlos/openme/cli/internal/server"
+	"github.com/merlos/openme/cli/pkg/protocol"
 )
 
 func TestPortRule(t *testing.T) {

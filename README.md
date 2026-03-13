@@ -79,13 +79,13 @@ sudo openme serve
 openme status
 
 # Send a knock (opens firewall for your source IP)
-openme connect
+openme knock
 
 # Knock a named profile, then SSH automatically
-openme connect home
+openme knock home
 
-# Connect to a specific IP instead of your source IP
-openme connect --ip 10.0.0.5
+# Knock to open for a specific IP instead of your source IP
+openme knock --ip 10.0.0.5
 ```
 
 See [cli/README.md](cli/README.md) for the full CLI reference, configuration options, and cross-compilation instructions.

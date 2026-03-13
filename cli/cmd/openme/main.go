@@ -25,13 +25,13 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/merlos/openme/internal/client"
-	"github.com/merlos/openme/internal/config"
-	internlcrypto "github.com/merlos/openme/internal/crypto"
-	"github.com/merlos/openme/internal/firewall"
-	"github.com/merlos/openme/internal/qr"
-	"github.com/merlos/openme/internal/server"
 	"github.com/spf13/cobra"
+	internlcrypto "github.com/merlos/openme/cli/internal/crypto"
+	"github.com/merlos/openme/cli/internal/client"
+	"github.com/merlos/openme/cli/internal/config"
+	"github.com/merlos/openme/cli/internal/firewall"
+	"github.com/merlos/openme/cli/internal/qr"
+	"github.com/merlos/openme/cli/internal/server"
 )
 
 const defaultServerConfigPath = "/etc/openme/config.yaml"

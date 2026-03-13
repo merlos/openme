@@ -23,8 +23,8 @@ import (
 	"sync"
 	"time"
 
-	internlcrypto "github.com/merlos/openme/internal/crypto"
-	"github.com/merlos/openme/pkg/protocol"
+	internlcrypto "github.com/merlos/openme/cli/internal/crypto"
+	"github.com/merlos/openme/cli/pkg/protocol"
 )
 
 // KnockHandler is called by the server for each valid knock with the client

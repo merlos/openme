@@ -1,4 +1,4 @@
-module github.com/merlos/openme
+module github.com/merlos/openme/cli
 
 go 1.24.0
 

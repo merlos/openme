@@ -7,9 +7,17 @@ keywords: [openme C library, openmelib, Arduino SPA, ESP32 knock protocol, singl
 **openmelib** is the official C99 implementation of the openme
 [Single Packet Authentication](../protocol/index.qmd) protocol.
 
-- **Source:** `c/openmelib/` in the [openme repository](https://github.com/merlos/openme)
+- **Source (monorepo):** `c/openmelib/` in the [openme repository](https://github.com/merlos/openme)
+- **Standalone repo:** [github.com/merlos/openmelib](https://github.com/merlos/openmelib) — used by the Arduino Library Manager and ESP-IDF Component Manager
 - **Standard:** C99 (no VLAs, no dynamic allocation in the core path)
 - **Targets:** POSIX desktop, Arduino, ESP32/ESP-IDF, any bare-metal MCU with a CSPRNG
+
+::: {.callout-note}
+The standalone [merlos/openmelib](https://github.com/merlos/openmelib) repository is
+an automatically maintained mirror of the `c/openmelib/` subtree. It is updated by the
+release CI workflow on every `lib/c/vX.Y.Z` tag. Development, issue tracking, and
+contributions happen in the [openme monorepo](https://github.com/merlos/openme).
+:::
 
 ## Features
 
@@ -25,6 +33,8 @@ keywords: [openme C library, openmelib, Arduino SPA, ESP32 knock protocol, singl
 
 ### CMake (desktop / cross-compile)
 
+**From the monorepo** (development):
+
 ```bash
 cmake -S c/openmelib -B build \
     -DOPENME_FETCH_MONOCYPHER=ON \
@@ -33,10 +43,29 @@ cmake -S c/openmelib -B build \
 cmake --build build
 ```
 
+**Standalone** (external projects using CMake FetchContent):
+
+```cmake
+include(FetchContent)
+FetchContent_Declare(
+    openmelib
+    GIT_REPOSITORY https://github.com/merlos/openmelib.git
+    GIT_TAG        v1.0.0
+)
+FetchContent_MakeAvailable(openmelib)
+target_link_libraries(my_target PRIVATE openmelib)
+```
+
 ### Arduino
 
-Install via the Arduino Library Manager — search for **openmelib** — or add
-the `c/openmelib` folder to your `libraries/` directory.
+Install via the **Arduino Library Manager** — search for **openmelib**.
+The Library Manager fetches releases from the
+[merlos/openmelib](https://github.com/merlos/openmelib) repository,
+where each `vX.Y.Z` tag corresponds to a versioned release.
+
+Alternatively, download a
+[pre-built source tarball](https://github.com/merlos/openme/releases?q=lib%2Fc%2F)
+and use **Sketch → Include Library → Add .ZIP Library…**.
 
 ```cpp
 #include <openmelib.h>
@@ -56,41 +85,53 @@ openme_build_packet(
 
 ### ESP-IDF (ESP32)
 
-Add the component dependency to your `idf_component.yml`:
+Add the component to your project's `idf_component.yml` using the standalone
+[merlos/openmelib](https://github.com/merlos/openmelib) repository:
 
 ```yaml
 dependencies:
   openmelib:
-    path: path/to/c/openmelib
+    git: https://github.com/merlos/openmelib.git
+    version: ">=1.0.0"
 ```
 
-Or use the IDF Component Manager (registry entry pending).
+Or clone it directly into your project's `components/` directory:
+
+```bash
+cd components
+git clone --depth 1 --branch v1.0.0 \
+    https://github.com/merlos/openmelib.git openmelib
+```
+
+See `c/openmelib/examples/esp32_idf/` in the monorepo for a complete project.
 
 ## API Reference
 
-The public API is documented in [`include/openmelib.h`](https://github.com/merlos/openme/blob/main/c/openmelib/include/openmelib.h).
+The full Doxygen API reference is generated from source and published with
+each release of the documentation site:
 
-### Core Function
+[**→ openmelib Doxygen Reference**](/docs/api/c/index.html)
+
+The public API header is also available on GitHub:
+[`include/openmelib.h`](https://github.com/merlos/openme/blob/main/c/openmelib/include/openmelib.h).
+
+### Core function signature
 
 ```c
-/**
- * @brief Build a 165-byte SPA knock packet.
- * @return OPENME_OK (0) on success, negative error code on failure.
- * @see https://openme.merlos.org/docs/protocol/packet-format.html
- */
 int openme_build_packet(
-    uint8_t out[OPENME_PACKET_SIZE],
-    const uint8_t server_pubkey[32],
-    const uint8_t client_seed[32],
-    int64_t        timestamp_ns,
-    const uint8_t ephem_secret[32],
-    const uint8_t aead_nonce[12],
-    const uint8_t random_nonce[16],
-    const uint8_t *target_ip          /* 16 bytes or NULL */
+    uint8_t        out[OPENME_PACKET_SIZE],
+    const uint8_t  server_pubkey[32],   /* X25519 server public key */
+    const uint8_t  client_seed[32],     /* Ed25519 private key seed */
+    int64_t        timestamp_ns,        /* Unix time in nanoseconds */
+    const uint8_t  ephem_secret[32],    /* 32 random bytes per knock */
+    const uint8_t  aead_nonce[12],      /* 12 random bytes per knock */
+    const uint8_t  random_nonce[16],    /* 16 random bytes per knock */
+    const uint8_t *target_ip            /* 16-byte IPv6, or NULL = source IP */
 );
+/* Returns: OPENME_OK (0) on success, negative error code on failure. */
 ```
 
-### Constants
+### Protocol constants
 
 | Constant | Value | Description |
 |----------|-------|-------------|
