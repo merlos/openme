@@ -96,11 +96,11 @@ updated automatically.
 
 ### Can I use openme without post_knock?
 
-Yes — `post_knock` is optional. `openme connect` sends the knock and exits.
+Yes — `post_knock` is optional. `openme knock` sends the knock and exits.
 You can then connect manually, or script it:
 
 ```bash
-openme connect home && ssh user@home.example.com
+openme knock home && ssh user@home.example.com
 ```
 
 ### Is the client config safe to sync with a password manager or cloud backup?

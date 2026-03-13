@@ -17,7 +17,7 @@ sudo openme add alice
 sudo openme serve
 
 # Client
-openme connect
+openme knock
 ```
 
 See the [Getting Started guide](https://openme.merlos.org/docs/getting-started/) for a full walkthrough.

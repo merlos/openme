@@ -4,8 +4,8 @@
 // Usage:
 //
 //	openme serve                    # start the server
-//	openme connect                  # knock using the default profile
-//	openme connect home             # knock using the 'home' profile
+//	openme knock                    # knock using the default profile
+//	openme knock home               # knock using the 'home' profile
 //	openme status [profile]         # check if server is reachable
 //	openme add <name>               # register a new client on the server
 //	openme add <name> --qr          # also display a QR code
@@ -66,7 +66,7 @@ to securely and stealthily open firewall ports.`,
 		newAddCmd(),
 		newListCmd(),
 		newRevokeCmd(),
-		newConnectCmd(),
+		newKnockCmd(),
 		newStatusCmd(),
 		newProfilesCmd(),
 	)
@@ -302,14 +302,14 @@ func buildClientRecords(cfg *config.ServerConfig) ([]*server.ClientRecord, error
 }
 
 // ────────────────────────────────────────────────────────────────────────────
-// openme connect [profile]
+// openme knock [profile]
 // ────────────────────────────────────────────────────────────────────────────
 
-func newConnectCmd() *cobra.Command {
+func newKnockCmd() *cobra.Command {
 	var targetIP string
 
 	cmd := &cobra.Command{
-		Use:     "connect [profile]",
+		Use:     "knock [profile]",
 		GroupID: "client",
 		Short:   "Send a knock packet to open a firewall port",
 		Args:  cobra.MaximumNArgs(1),
@@ -318,14 +318,14 @@ func newConnectCmd() *cobra.Command {
 			if len(args) > 0 {
 				profileName = args[0]
 			}
-			return runConnect(profileName, targetIP)
+			return runKnock(profileName, targetIP)
 		},
 	}
 	cmd.Flags().StringVar(&targetIP, "ip", "0.0.0.0", "target IP to open the firewall for (0.0.0.0 = source IP)")
 	return cmd
 }
 
-func runConnect(profileName, targetIPStr string) error {
+func runKnock(profileName, targetIPStr string) error {
 	cfg, err := config.LoadClientConfig(clientConfigPath)
 	if err != nil {
 		return fmt.Errorf("loading client config: %w", err)
@@ -422,7 +422,7 @@ func runStatus(profileName string, knockFirst bool) error {
 
 	if knockFirst {
 		fmt.Println("Knocking first...")
-		if err := runConnect(profileName, "0.0.0.0"); err != nil {
+		if err := runKnock(profileName, "0.0.0.0"); err != nil {
 			return fmt.Errorf("knock failed: %w", err)
 		}
 		// Give the firewall manager time to apply the rule before checking.
