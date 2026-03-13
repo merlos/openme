@@ -4,6 +4,16 @@ Pure C99 implementation of the [openme](https://openme.merlos.org/) SPA
 (Single Packet Authentication) knock protocol.  Designed for maximum
 portability: from Linux/macOS/Windows desktops down to ESP32 and Arduino boards.
 
+---
+> **Note:** To be compatible with the Arduino IDE and the ESP-IDF Component Manager,
+> the library is mirrored to the standalone repository
+> **[github.com/merlos/openmelib](https://github.com/merlos/openmelib)**.
+> The mirror is kept in sync automatically by the release CI workflow.
+> All development, issues, and contributions happen in
+> [github.com/merlos/openme](https://github.com/merlos/openme).
+
+---
+
 ## Platform support
 
 | Platform | Compiler | RNG | Time | UDP send |
@@ -83,23 +93,48 @@ cmake .. -DOPENME_FETCH_MONOCYPHER=OFF   # uses vendor/monocypher/
 
 ## Building — ESP32 with ESP-IDF
 
-1. Run `get_monocypher.sh` to populate `vendor/monocypher/`.
-2. Copy (or symlink) the `c/openmelib/` directory into your IDF project's
-   `components/` folder.
-3. In your component's `CMakeLists.txt` use `CMakeLists_idf.txt` as a guide
-   (rename it to `CMakeLists.txt`).
-4. Build normally: `idf.py build`.
+**Option A — idf_component.yml (recommended)**
 
-See `examples/esp32_idf/` for a complete standalone project.
+Add openmelib as a dependency in your project's `idf_component.yml`, pointing
+to the standalone [merlos/openmelib](https://github.com/merlos/openmelib) repo:
+
+```yaml
+dependencies:
+  openmelib:
+    git: https://github.com/merlos/openmelib.git
+    version: ">=1.0.0"
+```
+
+**Option B — clone into `components/`**
+
+```sh
+cd your-project/components
+git clone --depth 1 --branch v1.0.0 \
+    https://github.com/merlos/openmelib.git openmelib
+```
+
+Build normally: `idf.py build`.
+
+See `examples/esp32_idf/` in the [openme monorepo](https://github.com/merlos/openme) for a complete project.
 
 ---
 
 ## Building — Arduino
 
-1. Run `get_monocypher.sh` so that `src/monocypher.h` and `src/monocypher.c`
-   are populated.
-2. In the Arduino IDE: **Sketch → Include Library → Add .ZIP Library …**
-   and select the `c/openmelib/` directory (zipped).
+**Option A — Arduino Library Manager (recommended)**
+
+1. In the Arduino IDE: **Sketch → Include Library → Manage Libraries…**
+2. Search for **openmelib** and click **Install**.
+
+The Library Manager fetches releases from the
+[merlos/openmelib](https://github.com/merlos/openmelib) mirror repository.
+
+**Option B — manual install from a release tarball**
+
+1. Download `openmelib-vX.Y.Z-src.tar.gz` from the
+   [openme GitHub Releases](https://github.com/merlos/openme/releases?q=lib%2Fc%2F) page.
+2. In the Arduino IDE: **Sketch → Include Library → Add .ZIP Library…**
+   and select the downloaded archive.
 3. Open `examples/arduino/openme_knock/openme_knock.ino`, fill in your
    credentials, and upload.
 
