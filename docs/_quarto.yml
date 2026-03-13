@@ -58,8 +58,19 @@ website:
           - developer/android.qmd
           - developer/csharp-openmekit.qmd
           - developer/c-library.qmd
-          - text: "Android KDoc Reference"
-            href: android-sdk/index.qmd
+          - section: "Generated API References"
+            contents:
+              - api/index.qmd
+              - text: "Android KDoc Reference"
+                href: android-sdk/index.qmd
+              - text: "Go (pkg.go.dev) ↗"
+                href: https://pkg.go.dev/github.com/merlos/openme
+              - text: "Swift DocC Reference"
+                href: api/swift/documentation/openmekit/
+              - text: "C# DocFX Reference"
+                href: api/csharp/index.html
+              - text: "C Doxygen Reference"
+                href: api/c/index.html
       - section: "FAQ"
         contents:
           - faq/index.qmd

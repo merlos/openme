@@ -1,16 +1,31 @@
 ---
 title: "API Reference"
+description-meta: "Generated API reference documentation for all openme libraries: Go (pkg.go.dev), Swift DocC, Android KDoc, C# DocFX, C Doxygen."
 ---
 
-The openme Go API reference is auto-generated from source code comments using
-[`pkgsite`](https://pkg.go.dev/golang.org/x/pkgsite), the same tool that
-powers [pkg.go.dev](https://pkg.go.dev).
+openme provides generated API documentation for every official library.
+Each reference is built automatically from source by the
+[documentation workflow](https://github.com/merlos/openme/blob/main/.github/workflows/docs.yml)
+and published alongside this site.
 
-## Packages
+## Language References
+
+| Library | Language | Reference |
+|---------|----------|-----------|
+| openme CLI & server | Go | [pkg.go.dev →](https://pkg.go.dev/github.com/merlos/openme) |
+| OpenMeKit | Swift | [DocC Reference →](/docs/api/swift/documentation/openmekit/) |
+| OpenMeKit | Kotlin / Android | [KDoc Reference →](/docs/android-sdk/openmekit/) |
+| OpenMeKit | C# / .NET | [DocFX Reference →](/docs/api/csharp/) |
+| openmelib | C99 | [Doxygen Reference →](/docs/api/c/) |
+
+## Go
+
+The Go packages are documented with [godoc](https://pkg.go.dev) conventions
+and published at **[pkg.go.dev/github.com/merlos/openme](https://pkg.go.dev/github.com/merlos/openme)**.
 
 | Package | Description |
 |---------|-------------|
-| `pkg/protocol` | Wire format constants, packet serialisation, error types |
+| `pkg/protocol` | Wire format constants, packet sized, error types |
 | `internal/crypto` | Key generation, ECDH, encryption, signing |
 | `internal/config` | Config structs, YAML loading/saving, port mode logic |
 | `internal/server` | UDP listener, packet verification, replay cache |
@@ -18,39 +33,37 @@ powers [pkg.go.dev](https://pkg.go.dev).
 | `internal/firewall` | iptables and nftables backends, rule expiry manager |
 | `internal/qr` | QR code generation for client provisioning |
 
-## Generating Locally
+## Swift
 
-```bash
-# Install pkgsite
-go install golang.org/x/pkgsite/cmd/pkgsite@latest
+The Swift package uses [DocC](https://www.swift.org/documentation/docc/) with
+triple-slash `///` doc comments.
 
-# From the cli/ directory
-cd cli
-pkgsite -open .
-```
+→ [OpenMeKit Swift API Reference](/docs/api/swift/documentation/openmekit/)
 
-This opens a local pkg.go.dev-style documentation server at `http://localhost:8080`.
+## Kotlin / Android
 
-## Adding to the Docs Build
+The Android library uses [Dokka](https://kotlinlang.org/docs/dokka-introduction.html)
+with KDoc `/** */` block comments.
 
-The `cli/Makefile` includes a `docs` target that runs pkgsite in static-export
-mode and places the output in `docs/api/generated/`, which Quarto then
-links to:
+→ [OpenMeKit Android KDoc Reference](/docs/android-sdk/openmekit/)
 
-```bash
-cd cli
-make docs        # generates docs/api/generated/
-cd ../docs
-quarto render    # includes the API reference in the site
-```
+## C# / .NET
+
+The .NET library uses [DocFX](https://dotnet.github.io/docfx/) with XML
+`<summary>` doc comments.
+
+→ [OpenMeKit .NET API Reference](/docs/api/csharp/)
+
+## C (openmelib)
+
+The C library uses [Doxygen](https://www.doxygen.nl/) `/** */` block comments
+on all public symbols in `include/openmelib.h`.
+
+→ [openmelib Doxygen Reference](/docs/api/c/)
 
 ## Documentation Standards
 
-All exported symbols in openme are documented. The conventions are:
-
-- **Package-level comments** describe the package's purpose and usage pattern
-- **Function comments** describe parameters, return values, and error conditions
-- **Type comments** describe the purpose and invariants of each field
-
-When adding new exported symbols, follow the same style as existing ones —
-start with the symbol name and use complete sentences.
+All exported symbols in every library follow the documentation conventions
+defined in the [copilot instructions](https://github.com/merlos/openme/blob/main/.github/copilot-instructions.md)
+— intent, parameters, return values, example, and a link to the relevant
+protocol specification page.
