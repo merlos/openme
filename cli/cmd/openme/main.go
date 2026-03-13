@@ -4,8 +4,8 @@
 // Usage:
 //
 //	openme serve                    # start the server
-//	openme connect                  # knock using the default profile
-//	openme connect home             # knock using the 'home' profile
+//	openme knock                    # knock using the default profile
+//	openme knock home               # knock using the 'home' profile
 //	openme status [profile]         # check if server is reachable
 //	openme add <name>               # register a new client on the server
 //	openme add <name> --qr          # also display a QR code
@@ -25,13 +25,13 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/spf13/cobra"
-	internlcrypto "github.com/merlos/openme/internal/crypto"
 	"github.com/merlos/openme/internal/client"
 	"github.com/merlos/openme/internal/config"
+	internlcrypto "github.com/merlos/openme/internal/crypto"
 	"github.com/merlos/openme/internal/firewall"
 	"github.com/merlos/openme/internal/qr"
 	"github.com/merlos/openme/internal/server"
+	"github.com/spf13/cobra"
 )
 
 const defaultServerConfigPath = "/etc/openme/config.yaml"
@@ -66,7 +66,7 @@ to securely and stealthily open firewall ports.`,
 		newAddCmd(),
 		newListCmd(),
 		newRevokeCmd(),
-		newConnectCmd(),
+		newKnockCmd(),
 		newStatusCmd(),
 		newProfilesCmd(),
 	)
@@ -103,9 +103,9 @@ func newLogger() *slog.Logger {
 // newInitCmd creates the `openme init` command.
 func newInitCmd() *cobra.Command {
 	var (
-		force          bool
-		serverHost     string
-		udpPort        uint16
+		force           bool
+		serverHost      string
+		udpPort         uint16
 		firewallBackend string
 	)
 
@@ -236,12 +236,12 @@ func runServe(cmd *cobra.Command, args []string) error {
 	fwMgr := firewall.NewManager(fw, cfg.Server.KnockTimeout.Duration, log)
 
 	srv := server.New(&server.Options{
-		UDPPort:      cfg.Server.UDPPort,
-		HealthPort:   cfg.Server.HealthPort,
+		UDPPort:       cfg.Server.UDPPort,
+		HealthPort:    cfg.Server.HealthPort,
 		ServerPrivKey: privKey,
-		ReplayWindow: cfg.Server.ReplayWindow.Duration,
-		Clients:      clients,
-		Log:          log,
+		ReplayWindow:  cfg.Server.ReplayWindow.Duration,
+		Clients:       clients,
+		Log:           log,
 		OnKnock: func(clientName string, srcIP, targetIP net.IP, ports []server.PortRule) {
 			log.Info("firewall: IP added", "client", clientName, "ip", targetIP)
 			cfgPorts := make([]config.PortRule, len(ports))
@@ -302,30 +302,30 @@ func buildClientRecords(cfg *config.ServerConfig) ([]*server.ClientRecord, error
 }
 
 // ────────────────────────────────────────────────────────────────────────────
-// openme connect [profile]
+// openme knock [profile]
 // ────────────────────────────────────────────────────────────────────────────
 
-func newConnectCmd() *cobra.Command {
+func newKnockCmd() *cobra.Command {
 	var targetIP string
 
 	cmd := &cobra.Command{
-		Use:     "connect [profile]",
+		Use:     "knock [profile]",
 		GroupID: "client",
 		Short:   "Send a knock packet to open a firewall port",
-		Args:  cobra.MaximumNArgs(1),
+		Args:    cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			profileName := ""
 			if len(args) > 0 {
 				profileName = args[0]
 			}
-			return runConnect(profileName, targetIP)
+			return runKnock(profileName, targetIP)
 		},
 	}
 	cmd.Flags().StringVar(&targetIP, "ip", "0.0.0.0", "target IP to open the firewall for (0.0.0.0 = source IP)")
 	return cmd
 }
 
-func runConnect(profileName, targetIPStr string) error {
+func runKnock(profileName, targetIPStr string) error {
 	cfg, err := config.LoadClientConfig(clientConfigPath)
 	if err != nil {
 		return fmt.Errorf("loading client config: %w", err)
@@ -422,7 +422,7 @@ func runStatus(profileName string, knockFirst bool) error {
 
 	if knockFirst {
 		fmt.Println("Knocking first...")
-		if err := runConnect(profileName, "0.0.0.0"); err != nil {
+		if err := runKnock(profileName, "0.0.0.0"); err != nil {
 			return fmt.Errorf("knock failed: %w", err)
 		}
 		// Give the firewall manager time to apply the rule before checking.
@@ -465,7 +465,7 @@ func newAddCmd() *cobra.Command {
 		Use:     "add <name>",
 		GroupID: "server",
 		Short:   "Register a new client and generate their config",
-		Args:  cobra.ExactArgs(1),
+		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runAdd(args[0], showQR, qrOutputPath, omitPrivateKey, expires, portMode, extraPorts)
 		},
@@ -625,7 +625,7 @@ func newRevokeCmd() *cobra.Command {
 		Use:     "revoke <name>",
 		GroupID: "server",
 		Short:   "Revoke a client's key (removes it from the server config)",
-		Args:  cobra.ExactArgs(1),
+		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runRevoke(args[0])
 		},

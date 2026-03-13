@@ -23,6 +23,6 @@ You'll end up with:
 2. [Set up the server](server-setup.qmd) — `openme init` + `openme serve`
 3. [Add a client](adding-clients.qmd) — `openme add alice`
 4. [Configure the client](client-setup.qmd) — paste the generated config
-5. [Connect](client-setup.qmd#connect) — `openme connect`
+5. [Knock](client-setup.qmd#knock) — `openme knock`
 
 Proceed to [Server Setup →](server-setup.qmd)

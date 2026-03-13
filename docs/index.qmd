@@ -53,8 +53,8 @@ sudo openme serve
 
 # Client
 openme status                                   # health check
-openme connect                                  # knock + optional post-hook
-openme connect home                             # named profile
+openme knock                                    # knock + optional post-hook
+openme knock home                               # named profile
 ```
 
 ## Design Principles
