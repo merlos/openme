@@ -5,7 +5,7 @@ keywords: [openme client config, openme profiles, post_knock, server_pubkey, pri
 ---
 
 Default location: `~/.openme/config.yaml`
-Override with: `openme --client-config /path/to/config.yaml connect`
+Override with: `openme --client-config /path/to/config.yaml knock`
 
 ## Full Example
 
@@ -62,12 +62,12 @@ delay. For slow connections, consider adding a small sleep:
 ## Multiple Profiles
 
 There is no limit on the number of profiles. The `default` profile is used
-when `openme connect` is called without a profile name:
+when `openme knock` is called without a profile name:
 
 ```bash
-openme connect           # uses 'default' profile
-openme connect home      # uses 'home' profile
-openme connect work      # uses 'work' profile
+openme knock           # uses 'default' profile
+openme knock home      # uses 'home' profile
+openme knock work      # uses 'work' profile
 openme status work       # health-checks the 'work' server
 ```
 

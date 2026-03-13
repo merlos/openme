@@ -1,7 +1,7 @@
 ---
 title: "Client Setup"
 description-meta: "Configure and use openme clients — CLI on Linux/macOS/Windows, iOS app, Android app, macOS menu-bar app, and Windows system-tray app."
-keywords: [openme client, openme connect, SPA client setup, openme iOS, openme Android, openme Windows, openme macOS, knock command]
+keywords: [openme client, openme knock, SPA client setup, openme iOS, openme Android, openme Windows, openme macOS, knock command]
 ---
 
 openme is available on every major platform. Choose your client below.
@@ -25,7 +25,7 @@ import the same YAML via paste or QR scan.
 
 ```yaml
 profiles:
-  default:                                  # used by `openme connect`
+  default:                                  # used by `openme knock`
     server_host: "myserver.example.com"
     server_udp_port: 54154
     server_pubkey: "base64..."              # server's Curve25519 public key
@@ -33,7 +33,7 @@ profiles:
     public_key:    "base64..."             # your Ed25519 public key
     post_knock:    "ssh user@myserver.example.com"  # optional (CLI only)
 
-  home:                                     # used by `openme connect home`
+  home:                                     # used by `openme knock home`
     server_host: "home.example.com"
     server_udp_port: 54154
     server_pubkey: "base64..."
@@ -68,25 +68,25 @@ your `PATH`.
 go install github.com/merlos/openme/cli/cmd/openme@latest
 ```
 
-### Connect
+### Knock
 
 ```bash
 # Health check — confirm server is reachable
 openme status
 
 # Knock using the default profile
-openme connect
+openme knock
 
 # Knock using a named profile
-openme connect home
+openme knock home
 
 # Open the firewall to a specific IP instead of your source IP
-openme connect --ip 10.0.0.5
-openme connect --ip 2001:db8::42
+openme knock --ip 10.0.0.5
+openme knock --ip 2001:db8::42
 ```
 
 If `post_knock` is set in the profile it runs automatically after a successful
-knock — making `openme connect` a transparent wrapper around `ssh`:
+knock — making `openme knock` a transparent wrapper around `ssh`:
 
 ```yaml
 post_knock: "ssh -p 2222 user@myserver.example.com"
@@ -104,10 +104,10 @@ openme status --knock     # knock then check — full end-to-end test
 
 ```bash
 # Inline without post_knock
-openme connect home && ssh user@home.example.com
+openme knock home && ssh user@home.example.com
 
 # Custom config file
-openme --client-config /etc/myapp/openme.yaml connect
+openme --client-config /etc/myapp/openme.yaml knock
 ```
 
 ---
