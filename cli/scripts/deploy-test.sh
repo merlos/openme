@@ -21,6 +21,7 @@ SSH_KEY="${HOME}/.ssh/openme"
 REMOTE_HOME="/home/merlos"   # adjust if deploying as a non-root user
 
 BINARY="openme-linux-arm64"
+BINARY_MACOS="openme-darwin-arm64"
 REMOTE_SCRIPT="remote-server.sh"
 
 # ── Build ─────────────────────────────────────────────────────────────────────
@@ -29,6 +30,11 @@ cd "${CLI_DIR}"
 CGO_ENABLED=0 GOOS=linux GOARCH=arm64 \
     go build -ldflags="-s -w" -o "${BINARY}" ./cmd/openme
 echo "    Built ${BINARY} ($(du -sh "${BINARY}" | cut -f1))"
+
+echo "==> Building openme for darwin/arm64 (Apple M1) …"
+CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 \
+    go build -ldflags="-s -w" -o "${BINARY_MACOS}" ./cmd/openme
+echo "    Built ${BINARY_MACOS} ($(du -sh "${BINARY_MACOS}" | cut -f1))"
 
 # ── Upload ────────────────────────────────────────────────────────────────────
 SCP_OPTS="-i ${SSH_KEY} -o StrictHostKeyChecking=no"
