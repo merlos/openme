@@ -289,9 +289,13 @@ func (b *NFTablesBackend) Open(srcIP net.IP, ports []config.PortRule) error {
 	}
 	family := nftFamily(srcIP)
 	for _, p := range ports {
-		rule := fmt.Sprintf("add rule inet filter openme %s saddr %s %s dport %d accept comment \"openme\"",
-			family, srcIP.String(), p.Proto, p.Port)
-		if err := runCmd(b.Log, "nft", rule); err != nil {
+		// Each word must be a separate argument — exec.Command does not use a shell
+		// and will not split a single string on spaces.
+		if err := runCmd(b.Log, "nft",
+			"add", "rule", "inet", "filter", "openme",
+			family, "saddr", srcIP.String(),
+			p.Proto, "dport", fmt.Sprint(p.Port),
+			"accept", "comment", "openme"); err != nil {
 			return err
 		}
 	}
@@ -320,13 +324,14 @@ func (b *NFTablesBackend) Close(srcIP net.IP, ports []config.PortRule) error {
 
 // ensureChain creates the inet filter table and openme chain if they do not exist.
 func (b *NFTablesBackend) ensureChain() error {
+	// Each word must be a separate argument — exec.Command does not use a shell.
 	cmds := [][]string{
-		{"nft", "add table inet filter"},
-		{"nft", "add chain inet filter openme"},
+		{"add", "table", "inet", "filter"},
+		{"add", "chain", "inet", "filter", "openme"},
 	}
 	for _, args := range cmds {
 		// Ignore "already exists" errors.
-		_ = runCmd(b.Log, args[0], args[1:]...)
+		_ = runCmd(b.Log, "nft", args...)
 	}
 	return nil
 }
