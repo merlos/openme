@@ -1,6 +1,9 @@
-# openme
+# openme - CLI
 
 > Single Packet Authentication (SPA) — open your firewall with one encrypted packet.
+
+This CLI has the server and a client in one single binary.
+
 
 `openme` lets authenticated clients send a single encrypted UDP packet to temporarily open a firewall port. To a port scanner the port is always closed. Only clients holding a valid Ed25519 key can knock.
 
