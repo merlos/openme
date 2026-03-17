@@ -21,6 +21,7 @@ SSH_KEY="${HOME}/.ssh/openme"
 REMOTE_HOME="/home/merlos"   # adjust if deploying as a non-root user
 
 BINARY="openme-linux-arm64"
+BINARY_MACOS="openme-darwin-arm64"
 REMOTE_SCRIPT="remote-server.sh"
 
 # ── Build ─────────────────────────────────────────────────────────────────────
@@ -30,22 +31,42 @@ CGO_ENABLED=0 GOOS=linux GOARCH=arm64 \
     go build -ldflags="-s -w" -o "${BINARY}" ./cmd/openme
 echo "    Built ${BINARY} ($(du -sh "${BINARY}" | cut -f1))"
 
+echo "==> Building openme for darwin/arm64 (Apple M1) …"
+CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 \
+    go build -ldflags="-s -w" -o "${BINARY_MACOS}" ./cmd/openme
+echo "    Built ${BINARY_MACOS} ($(du -sh "${BINARY_MACOS}" | cut -f1))"
+
 # ── Upload ────────────────────────────────────────────────────────────────────
-SCP_OPTS="-i ${SSH_KEY} -o StrictHostKeyChecking=no"
+SCP_OPTS="-i ${SSH_KEY} -o StrictHostKeyChecking=no -o ConnectTimeout=10"
+
+scp_or_die() {
+    # shellcheck disable=SC2086
+    if ! scp ${SCP_OPTS} "$@"; then
+        echo "" >&2
+        echo "error: scp failed. Check that:" >&2
+        echo "  • the openme server is running on ${TARGET##*@} and you have knocked" >&2
+        echo "      openme knock   (or: openme status --knock)" >&2
+        echo "  • the host is reachable: ping ${TARGET##*@}" >&2
+        echo "  • your SSH key is correct: ${SSH_KEY}" >&2
+        echo "  • the user '${TARGET%%@*}' has access: ssh -i ${SSH_KEY} ${TARGET} whoami" >&2
+        exit 1
+    fi
+}
 
 echo "==> Uploading binary …"
-# shellcheck disable=SC2086
-scp ${SCP_OPTS} "${BINARY}" "${TARGET}:${REMOTE_HOME}/openme"
+scp_or_die "${BINARY}" "${TARGET}:${REMOTE_HOME}/openme"
 
 echo "==> Uploading remote-server.sh …"
-# shellcheck disable=SC2086
-scp ${SCP_OPTS} "${SCRIPT_DIR}/${REMOTE_SCRIPT}" \
-    "${TARGET}:${REMOTE_HOME}/${REMOTE_SCRIPT}"
+scp_or_die "${SCRIPT_DIR}/${REMOTE_SCRIPT}" "${TARGET}:${REMOTE_HOME}/${REMOTE_SCRIPT}"
 
 echo "==> Making remote files executable …"
 # shellcheck disable=SC2086
-ssh -i "${SSH_KEY}" -o StrictHostKeyChecking=no "${TARGET}" \
-    "chmod +x ${REMOTE_HOME}/openme ${REMOTE_HOME}/${REMOTE_SCRIPT}"
+if ! ssh -i "${SSH_KEY}" -o StrictHostKeyChecking=no -o ConnectTimeout=10 "${TARGET}" \
+    "chmod +x ${REMOTE_HOME}/openme ${REMOTE_HOME}/${REMOTE_SCRIPT}"; then
+    echo "" >&2
+    echo "error: ssh command failed. Make sure the openme server is running on ${TARGET##*@} and you have knocked first." >&2
+    exit 1
+fi
 
 echo ""
 echo "Deploy complete. To start the test server, run:"

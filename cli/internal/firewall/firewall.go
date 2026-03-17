@@ -26,58 +26,159 @@ type Backend interface {
 	Name() string
 }
 
-// Manager wraps a Backend and handles automatic rule expiry.
-type Manager struct {
-	backend Backend
-	timeout time.Duration
-	mu      sync.Mutex
-	timers  map[string]*time.Timer // keyed by ruleKey
-	log     *slog.Logger
+// activeSession bundles the auto-expiry timer with the session metadata so
+// both can be managed under a single map entry.
+type activeSession struct {
+	entry SessionEntry
+	timer *time.Timer
 }
 
-// NewManager creates a Manager with the given backend and knock timeout.
-func NewManager(backend Backend, timeout time.Duration, log *slog.Logger) *Manager {
+// Manager wraps a Backend and handles automatic rule expiry.
+// It also maintains a session state file so `openme sessions` can display
+// currently-open rules and per-client last-seen times without attaching to
+// the running server process.
+type Manager struct {
+	backend   Backend
+	timeout   time.Duration
+	stateFile string // path to write ServerState JSON; empty = disabled
+	mu        sync.Mutex
+	sessions  map[string]*activeSession // keyed by ruleKey
+	lastSeen  map[string]time.Time      // client name → most recent knock time
+	log       *slog.Logger
+}
+
+// NewManager creates a Manager with the given backend, knock timeout, optional
+// state-file path (empty string disables persistence), and logger.
+//
+// When stateFile is non-empty the manager writes a ServerState JSON snapshot
+// after every Open/Close event, enabling `openme sessions` to read live state.
+//
+// See https://openme.merlos.org/docs/configuration/server.html
+func NewManager(backend Backend, timeout time.Duration, stateFile string, log *slog.Logger) *Manager {
 	return &Manager{
-		backend: backend,
-		timeout: timeout,
-		timers:  make(map[string]*time.Timer),
-		log:     log,
+		backend:   backend,
+		timeout:   timeout,
+		stateFile: stateFile,
+		sessions:  make(map[string]*activeSession),
+		lastSeen:  make(map[string]time.Time),
+		log:       log,
 	}
 }
 
-// Open opens firewall rules for srcIP+ports and schedules automatic removal after timeout.
-// If a rule already exists (e.g. repeated knock), the timer is reset.
-func (m *Manager) Open(srcIP net.IP, ports []config.PortRule) error {
+// Open opens firewall rules for srcIP+ports and schedules automatic removal
+// after the configured timeout.  If a rule already exists (e.g. a repeated
+// knock), the timer is reset and the session start/expiry times are updated.
+//
+// clientName is recorded in the session state file so `openme sessions` can
+// display human-readable names alongside IP addresses.
+//
+// See https://openme.merlos.org/docs/configuration/server.html
+func (m *Manager) Open(clientName string, srcIP net.IP, ports []config.PortRule) error {
 	if err := m.backend.Open(srcIP, ports); err != nil {
 		return fmt.Errorf("opening firewall rules: %w", err)
 	}
 
 	key := ruleKey(srcIP, ports)
+	now := time.Now()
+	expiresAt := now.Add(m.timeout)
+
+	// Build the session port list for state persistence.
+	sessionPorts := make([]SessionPortRule, len(ports))
+	for i, p := range ports {
+		sessionPorts[i] = SessionPortRule{Port: p.Port, Proto: p.Proto}
+	}
+
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
+	// Update last-seen regardless of whether a rule is already open.
+	m.lastSeen[clientName] = now
+
 	// Reset existing timer if present (repeated knock refreshes the window).
-	if t, ok := m.timers[key]; ok {
-		t.Reset(m.timeout)
+	if sess, ok := m.sessions[key]; ok {
+		sess.entry.ExpiresAt = expiresAt
+		sess.entry.OpenedAt = now
+		sess.timer.Reset(m.timeout)
 		m.log.Debug("firewall rule timer reset", "ip", srcIP, "timeout", m.timeout)
-		m.log.Info("firewall rule refreshed", "ip", srcIP, "timeout", m.timeout)
+		m.log.Info("firewall rule refreshed", "client", clientName, "ip", srcIP, "timeout", m.timeout)
+		m.persistState()
 		return nil
 	}
 
-	m.timers[key] = time.AfterFunc(m.timeout, func() {
+	entry := SessionEntry{
+		ClientName: clientName,
+		IP:         srcIP.String(),
+		Ports:      sessionPorts,
+		OpenedAt:   now,
+		ExpiresAt:  expiresAt,
+	}
+
+	timer := time.AfterFunc(m.timeout, func() {
 		if err := m.backend.Close(srcIP, ports); err != nil {
 			m.log.Error("auto-closing firewall rule", "ip", srcIP, "err", err)
 		} else {
 			m.log.Debug("firewall rule expired", "ip", srcIP, "ports", ports)
-			m.log.Info("IP removed from firewall", "ip", srcIP)
+			m.log.Info("IP removed from firewall", "client", clientName, "ip", srcIP)
 		}
 		m.mu.Lock()
-		delete(m.timers, key)
+		delete(m.sessions, key)
+		m.persistState()
 		m.mu.Unlock()
 	})
 
-	m.log.Debug("firewall rule opened", "ip", srcIP, "ports", ports, "timeout", m.timeout)
+	m.sessions[key] = &activeSession{entry: entry, timer: timer}
+	m.persistState()
+
+	m.log.Debug("firewall rule opened", "client", clientName, "ip", srcIP, "ports", ports, "timeout", m.timeout)
 	return nil
+}
+
+// Sessions returns a point-in-time snapshot of the current manager state:
+// all active sessions (rules still open) and the last-seen map.
+//
+// The returned ServerState is safe to read; it is a copy.
+func (m *Manager) Sessions() ServerState {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	active := make([]SessionEntry, 0, len(m.sessions))
+	for _, s := range m.sessions {
+		active = append(active, s.entry)
+	}
+
+	ls := make(map[string]time.Time, len(m.lastSeen))
+	for k, v := range m.lastSeen {
+		ls[k] = v
+	}
+
+	return ServerState{
+		UpdatedAt:      time.Now(),
+		ActiveSessions: active,
+		LastSeen:       ls,
+	}
+}
+
+// persistState writes the current state to the configured state file.
+// Caller must hold m.mu.
+func (m *Manager) persistState() {
+	if m.stateFile == "" {
+		return
+	}
+	active := make([]SessionEntry, 0, len(m.sessions))
+	for _, s := range m.sessions {
+		active = append(active, s.entry)
+	}
+	ls := make(map[string]time.Time, len(m.lastSeen))
+	for k, v := range m.lastSeen {
+		ls[k] = v
+	}
+	st := ServerState{
+		ActiveSessions: active,
+		LastSeen:       ls,
+	}
+	if err := writeState(m.stateFile, st); err != nil {
+		m.log.Warn("failed to persist session state", "err", err, "path", m.stateFile)
+	}
 }
 
 // CloseAll cancels all pending timers and removes all managed rules immediately.
@@ -85,11 +186,12 @@ func (m *Manager) Open(srcIP net.IP, ports []config.PortRule) error {
 func (m *Manager) CloseAll(ctx context.Context) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	for key, t := range m.timers {
-		t.Stop()
-		delete(m.timers, key)
-		m.log.Info("firewall rule removed on shutdown", "key", key)
+	for key, sess := range m.sessions {
+		sess.timer.Stop()
+		delete(m.sessions, key)
+		m.log.Info("firewall rule removed on shutdown", "client", sess.entry.ClientName, "ip", sess.entry.IP)
 	}
+	m.persistState()
 }
 
 // ruleKey produces a stable map key for an (IP, ports) combination.
@@ -187,9 +289,13 @@ func (b *NFTablesBackend) Open(srcIP net.IP, ports []config.PortRule) error {
 	}
 	family := nftFamily(srcIP)
 	for _, p := range ports {
-		rule := fmt.Sprintf("add rule inet filter openme %s saddr %s %s dport %d accept comment \"openme\"",
-			family, srcIP.String(), p.Proto, p.Port)
-		if err := runCmd(b.Log, "nft", rule); err != nil {
+		// Each word must be a separate argument — exec.Command does not use a shell
+		// and will not split a single string on spaces.
+		if err := runCmd(b.Log, "nft",
+			"add", "rule", "inet", "filter", "openme",
+			family, "saddr", srcIP.String(),
+			p.Proto, "dport", fmt.Sprint(p.Port),
+			"accept", "comment", "openme"); err != nil {
 			return err
 		}
 	}
@@ -218,13 +324,14 @@ func (b *NFTablesBackend) Close(srcIP net.IP, ports []config.PortRule) error {
 
 // ensureChain creates the inet filter table and openme chain if they do not exist.
 func (b *NFTablesBackend) ensureChain() error {
+	// Each word must be a separate argument — exec.Command does not use a shell.
 	cmds := [][]string{
-		{"nft", "add table inet filter"},
-		{"nft", "add chain inet filter openme"},
+		{"add", "table", "inet", "filter"},
+		{"add", "chain", "inet", "filter", "openme"},
 	}
 	for _, args := range cmds {
 		// Ignore "already exists" errors.
-		_ = runCmd(b.Log, args[0], args[1:]...)
+		_ = runCmd(b.Log, "nft", args...)
 	}
 	return nil
 }
