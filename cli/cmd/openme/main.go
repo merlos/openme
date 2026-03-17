@@ -4,6 +4,7 @@
 // Usage:
 //
 //	openme serve                    # start the server
+//	openme sessions                 # show active sessions and last-seen history
 //	openme knock                    # knock using the default profile
 //	openme knock home               # knock using the 'home' profile
 //	openme status [profile]         # check if server is reachable
@@ -22,16 +23,18 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"sort"
+	"strings"
 	"syscall"
 	"time"
 
-	"github.com/spf13/cobra"
-	internlcrypto "github.com/merlos/openme/cli/internal/crypto"
 	"github.com/merlos/openme/cli/internal/client"
 	"github.com/merlos/openme/cli/internal/config"
+	internlcrypto "github.com/merlos/openme/cli/internal/crypto"
 	"github.com/merlos/openme/cli/internal/firewall"
 	"github.com/merlos/openme/cli/internal/qr"
 	"github.com/merlos/openme/cli/internal/server"
+	"github.com/spf13/cobra"
 )
 
 const defaultServerConfigPath = "/etc/openme/config.yaml"
@@ -63,6 +66,7 @@ to securely and stealthily open firewall ports.`,
 	root.AddCommand(
 		newInitCmd(),
 		newServeCmd(),
+		newSessionsCmd(),
 		newAddCmd(),
 		newListCmd(),
 		newRevokeCmd(),
@@ -95,6 +99,191 @@ func newLogger() *slog.Logger {
 // ────────────────────────────────────────────────────────────────────────────
 // openme serve
 // ────────────────────────────────────────────────────────────────────────────
+
+// ────────────────────────────────────────────────────────────────────────────
+// openme sessions
+// ────────────────────────────────────────────────────────────────────────────
+
+// newSessionsCmd creates the `openme sessions` command.
+func newSessionsCmd() *cobra.Command {
+	var stateFile string
+	var watch bool
+
+	cmd := &cobra.Command{
+		Use:     "sessions",
+		GroupID: "server",
+		Short:   "Show active client sessions and last-seen history",
+		Long: `Display which clients currently have open firewall rules and when their
+allowance expires, plus the last knock time for all other registered clients.
+
+Requires 'openme serve' to be running with a matching --state-file path.
+
+Examples:
+  openme sessions
+  openme sessions --state-file /run/openme/sessions.json
+  openme sessions --watch`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runSessions(stateFile, watch)
+		},
+	}
+	cmd.Flags().StringVar(&stateFile, "state-file", defaultStateFilePath,
+		"path to the session state file written by 'openme serve'")
+	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "refresh every second until interrupted")
+	return cmd
+}
+
+// runSessions reads the server state file and prints a formatted session table.
+func runSessions(stateFile string, watch bool) error {
+	if watch {
+		sig := make(chan os.Signal, 1)
+		signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
+		ticker := time.NewTicker(time.Second)
+		defer ticker.Stop()
+		for {
+			// Move cursor to start of line and clear screen on repeated prints.
+			fmt.Print("\033[H\033[2J")
+			if err := printSessions(stateFile); err != nil {
+				fmt.Fprintf(os.Stderr, "warning: %v\n", err)
+			}
+			select {
+			case <-sig:
+				return nil
+			case <-ticker.C:
+			}
+		}
+	}
+	return printSessions(stateFile)
+}
+
+// printSessions reads the state file and renders the two-section table.
+func printSessions(stateFile string) error {
+	st, err := firewall.ReadState(stateFile)
+	if err != nil {
+		if os.IsNotExist(err) {
+			fmt.Printf("No session state found at %s\n", stateFile)
+			fmt.Println("Make sure 'openme serve' is running with --state-file pointing to the same path.")
+			return nil
+		}
+		return fmt.Errorf("reading session state: %w", err)
+	}
+
+	now := time.Now()
+	fmt.Printf("Session state as of %s\n\n", now.Format("2006-01-02 15:04:05"))
+
+	// ── Active sessions ────────────────────────────────────────────────────
+	fmt.Println("ACTIVE SESSIONS")
+	fmt.Println(strings.Repeat("─", 76))
+	if len(st.ActiveSessions) == 0 {
+		fmt.Println("  (none)")
+	} else {
+		fmt.Printf("  %-18s %-20s %-18s %-16s %s\n",
+			"CLIENT", "IP", "PORTS", "OPENED", "EXPIRES IN")
+		fmt.Println(" ", strings.Repeat("─", 74))
+		// Sort by opened time, newest first.
+		sorted := make([]firewall.SessionEntry, len(st.ActiveSessions))
+		copy(sorted, st.ActiveSessions)
+		sort.Slice(sorted, func(i, j int) bool {
+			return sorted[i].OpenedAt.After(sorted[j].OpenedAt)
+		})
+		for _, s := range sorted {
+			portStr := formatPorts(s.Ports)
+			remaining := time.Until(s.ExpiresAt)
+			var expiresIn string
+			if remaining <= 0 {
+				expiresIn = "expiring…"
+			} else {
+				expiresIn = formatDuration(remaining)
+			}
+			fmt.Printf("  %-18s %-20s %-18s %-16s %s\n",
+				s.ClientName, s.IP, portStr,
+				s.OpenedAt.Format("15:04:05"),
+				expiresIn,
+			)
+		}
+	}
+
+	// ── Last seen (clients with no active session) ─────────────────────────
+	inactive := inactiveLastSeen(st)
+	fmt.Println()
+	fmt.Println("LAST SEEN (no active session)")
+	fmt.Println(strings.Repeat("─", 76))
+	if len(inactive) == 0 {
+		fmt.Println("  (none)")
+	} else {
+		fmt.Printf("  %-18s %-22s %s\n", "CLIENT", "LAST KNOCK", "AGO")
+		fmt.Println(" ", strings.Repeat("─", 74))
+		// Sort by last-seen time, most recent first.
+		type row struct {
+			name string
+			t    time.Time
+		}
+		rows := make([]row, 0, len(inactive))
+		for n, t := range inactive {
+			rows = append(rows, row{n, t})
+		}
+		sort.Slice(rows, func(i, j int) bool { return rows[i].t.After(rows[j].t) })
+		for _, r := range rows {
+			fmt.Printf("  %-18s %-22s %s\n",
+				r.name,
+				r.t.Format("2006-01-02 15:04:05"),
+				formatDuration(now.Sub(r.t))+" ago",
+			)
+		}
+	}
+	fmt.Println()
+	return nil
+}
+
+// inactiveLastSeen returns the subset of LastSeen entries whose client is not
+// currently represented in ActiveSessions.
+func inactiveLastSeen(st firewall.ServerState) map[string]time.Time {
+	active := make(map[string]struct{}, len(st.ActiveSessions))
+	for _, s := range st.ActiveSessions {
+		active[s.ClientName] = struct{}{}
+	}
+	out := make(map[string]time.Time)
+	for name, t := range st.LastSeen {
+		if _, ok := active[name]; !ok {
+			out[name] = t
+		}
+	}
+	return out
+}
+
+// formatPorts returns a short comma-separated port list, e.g. "22/tcp, 443/tcp".
+func formatPorts(ports []firewall.SessionPortRule) string {
+	parts := make([]string, len(ports))
+	for i, p := range ports {
+		parts[i] = fmt.Sprintf("%d/%s", p.Port, p.Proto)
+	}
+	s := strings.Join(parts, ", ")
+	if len(s) > 17 {
+		s = s[:14] + "…"
+	}
+	return s
+}
+
+// formatDuration renders a duration as a human-readable string, e.g. "28s", "5m12s".
+func formatDuration(d time.Duration) string {
+	d = d.Round(time.Second)
+	if d < time.Minute {
+		return fmt.Sprintf("%ds", int(d.Seconds()))
+	}
+	if d < time.Hour {
+		m := int(d.Minutes())
+		s := int(d.Seconds()) % 60
+		if s == 0 {
+			return fmt.Sprintf("%dm", m)
+		}
+		return fmt.Sprintf("%dm%ds", m, s)
+	}
+	h := int(d.Hours())
+	m := int(d.Minutes()) % 60
+	if m == 0 {
+		return fmt.Sprintf("%dh", h)
+	}
+	return fmt.Sprintf("%dh%dm", h, m)
+}
 
 // ────────────────────────────────────────────────────────────────────────────
 // openme init
@@ -198,16 +387,25 @@ Next steps:
 // openme serve
 // ────────────────────────────────────────────────────────────────────────────
 
+const defaultStateFilePath = "/run/openme/sessions.json"
+
 func newServeCmd() *cobra.Command {
-	return &cobra.Command{
+	var stateFile string
+
+	cmd := &cobra.Command{
 		Use:     "serve",
 		GroupID: "server",
 		Short:   "Start the openme SPA server",
-		RunE:    runServe,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runServe(stateFile)
+		},
 	}
+	cmd.Flags().StringVar(&stateFile, "state-file", defaultStateFilePath,
+		"path to write live session state (read by 'openme sessions')")
+	return cmd
 }
 
-func runServe(cmd *cobra.Command, args []string) error {
+func runServe(stateFile string) error {
 	log := newLogger()
 
 	cfg, err := config.LoadServerConfig(serverConfigPath)
@@ -233,7 +431,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	fwMgr := firewall.NewManager(fw, cfg.Server.KnockTimeout.Duration, log)
+	fwMgr := firewall.NewManager(fw, cfg.Server.KnockTimeout.Duration, stateFile, log)
 
 	srv := server.New(&server.Options{
 		UDPPort:       cfg.Server.UDPPort,
@@ -248,7 +446,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 			for i, p := range ports {
 				cfgPorts[i] = config.PortRule{Port: p.Port, Proto: p.Proto}
 			}
-			if err := fwMgr.Open(targetIP, cfgPorts); err != nil {
+			if err := fwMgr.Open(clientName, targetIP, cfgPorts); err != nil {
 				log.Error("opening firewall", "err", err)
 			}
 		},

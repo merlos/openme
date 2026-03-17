@@ -38,7 +38,8 @@ func (m *mockBackend) Close(srcIP net.IP, ports []config.PortRule) error {
 
 func newTestManager(backend firewall.Backend, timeout time.Duration) *firewall.Manager {
 	log := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelError}))
-	return firewall.NewManager(backend, timeout, log)
+	// Pass empty stateFile to disable persistence in tests.
+	return firewall.NewManager(backend, timeout, "", log)
 }
 
 func TestManager_OpenCallsBackend(t *testing.T) {
@@ -48,7 +49,7 @@ func TestManager_OpenCallsBackend(t *testing.T) {
 	ip := net.ParseIP("192.168.1.1")
 	ports := []config.PortRule{{Port: 22, Proto: "tcp"}}
 
-	if err := mgr.Open(ip, ports); err != nil {
+	if err := mgr.Open("test-client", ip, ports); err != nil {
 		t.Fatalf("Open error = %v", err)
 	}
 
@@ -67,7 +68,7 @@ func TestManager_AutoExpiry(t *testing.T) {
 	ip := net.ParseIP("10.0.0.1")
 	ports := []config.PortRule{{Port: 22, Proto: "tcp"}}
 
-	if err := mgr.Open(ip, ports); err != nil {
+	if err := mgr.Open("test-client", ip, ports); err != nil {
 		t.Fatal(err)
 	}
 
@@ -89,7 +90,7 @@ func TestManager_CloseAll(t *testing.T) {
 	ports := []config.PortRule{{Port: 22, Proto: "tcp"}}
 
 	for _, ip := range ips {
-		if err := mgr.Open(net.ParseIP(ip), ports); err != nil {
+		if err := mgr.Open("test-client", net.ParseIP(ip), ports); err != nil {
 			t.Fatal(err)
 		}
 	}
