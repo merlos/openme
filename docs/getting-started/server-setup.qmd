@@ -91,10 +91,15 @@ After=network.target
 ExecStart=/usr/local/bin/openme serve
 Restart=on-failure
 AmbientCapabilities=CAP_NET_ADMIN
+RuntimeDirectory=openme
 
 [Install]
 WantedBy=multi-user.target
 ```
+
+`RuntimeDirectory=openme` makes systemd create `/run/openme/` (owned by root,
+`0o755`) at start-up and remove it on stop. openme writes its session state
+file there automatically.
 
 ```bash
 sudo systemctl enable --now openme
@@ -205,6 +210,52 @@ sudo nft -a list chain inet filter input
 # Delete by handle (replace <handle> with the number shown)
 sudo nft delete rule inet filter input handle <handle>
 ```
+:::
+
+---
+
+## Monitor Live Sessions {#sessions}
+
+`openme sessions` shows which clients currently have open firewall rules and
+when their allowance expires, plus the last-seen time for clients who knocked
+previously but whose rule has since expired.
+
+```bash
+sudo openme sessions
+```
+
+Example output:
+
+```
+Session state as of 2026-03-17 14:23:01
+
+ACTIVE SESSIONS
+────────────────────────────────────────────────────────────────────────────
+  CLIENT             IP                   PORTS              OPENED           EXPIRES IN
+  ──────────────────────────────────────────────────────────────────────────
+  alice              203.0.113.4          22/tcp             14:22:48         7s
+  bob                198.51.100.7         22/tcp, 2222/tcp   14:23:00         29s
+
+LAST SEEN (no active session)
+────────────────────────────────────────────────────────────────────────────
+  CLIENT             LAST KNOCK             AGO
+  ──────────────────────────────────────────────────────────────────────────
+  carol              2026-03-17 13:55:02    28m1s ago
+```
+
+Refresh continuously with `--watch` (`Ctrl-C` to stop):
+
+```bash
+sudo openme sessions --watch
+```
+
+The session state is read from `/run/openme/sessions.json` (written by the
+running server). Both commands default to this path, so no extra flags are
+needed when the systemd unit uses `RuntimeDirectory=openme`.
+
+::: {.callout-note}
+The state file is written with permissions `0600` (owner read/write only).
+Use `sudo` to run `openme sessions` unless the invoking user owns the file.
 :::
 
 ---

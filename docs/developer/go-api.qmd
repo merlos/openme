@@ -19,7 +19,7 @@ This mirrors the standard `godoc` format and is updated whenever a new version i
 | `internal/config` | Config structs, YAML loading/saving, port mode logic |
 | `internal/server` | UDP listener, packet verification, replay cache |
 | `internal/client` | Packet builder, knock sender, health check |
-| `internal/firewall` | iptables and nftables backends, rule expiry manager |
+| `internal/firewall` | iptables and nftables backends, rule expiry manager, live session state (`SessionEntry`, `ServerState`, `ReadState`) |
 | `internal/qr` | QR code generation for client provisioning |
 
 ## Generating Locally

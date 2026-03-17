@@ -67,6 +67,58 @@ Duration values use Go duration syntax: `"30s"`, `"1m"`, `"90s"`.
 
 ---
 
+## `openme serve` Flags
+
+These flags are passed on the command line to `openme serve`, not in the config file.
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--config` | `/etc/openme/config.yaml` | Path to the server YAML config file. |
+| `--state-file` | `/run/openme/sessions.json` | Path where the server writes live session state. Read by `openme sessions`. Pass an empty string to disable. |
+| `--log-level` | `info` | Log verbosity: `debug`, `info`, `warn`, `error`. |
+
+---
+
+## Session State File
+
+When `openme serve` is running, it continuously writes a JSON snapshot of
+active firewall sessions to `--state-file` (default
+`/run/openme/sessions.json`).
+
+The file is written atomically (temp file → rename) and is readable by
+`openme sessions`.  It has permissions `0600` so only the process owner (root
+when run via the systemd unit) can read it.
+
+### Schema
+
+```json
+{
+  "updated_at": "2026-03-17T14:23:01Z",
+  "active_sessions": [
+    {
+      "client_name": "alice",
+      "ip": "203.0.113.4",
+      "ports": [{"port": 54154, "proto": "tcp"}, {"port": 22, "proto": "tcp"}],
+      "opened_at": "2026-03-17T14:22:48Z",
+      "expires_at": "2026-03-17T14:23:18Z"
+    }
+  ],
+  "last_seen": {
+    "alice": "2026-03-17T14:22:48Z",
+    "bob":   "2026-03-17T13:55:02Z"
+  }
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| `active_sessions` | Clients whose firewall rules are currently open. |
+| `active_sessions[].opened_at` | Wall-clock time the rule was created (or last refreshed by a repeated knock). |
+| `active_sessions[].expires_at` | Wall-clock time the rule will be automatically removed. |
+| `last_seen` | Most recent successful knock time for **every** client, including those no longer active. Persists across repeated knocks. |
+
+---
+
 ## `defaults` Block
 
 | Key | Type | Description |

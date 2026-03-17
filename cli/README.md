@@ -11,10 +11,18 @@
 ## Quick Start
 
 ```bash
-# Server
+# Init server configuration
 sudo openme init --server myserver.example.com
+
+# Add a client, it displays the contents that need to be added to the client.
 sudo openme add alice
+# for mobile clients you can scan the qr code.
+sudo openme add alice --qr
+
 sudo openme serve
+
+# Monitor who is currently allowed in (and last-seen history)
+sudo openme sessions
 
 # Client
 openme knock
@@ -112,6 +120,7 @@ Full notes: [openme.merlos.org/docs/getting-started/cross-compilation](https://o
 | Configuration — Server | [openme.merlos.org/docs/configuration/server](https://openme.merlos.org/docs/configuration/server) |
 | Configuration — Client | [openme.merlos.org/docs/configuration/client](https://openme.merlos.org/docs/configuration/client) |
 | Firewall Backends | [openme.merlos.org/docs/configuration/firewall](https://openme.merlos.org/docs/configuration/firewall) |
+| Monitoring Sessions | [openme.merlos.org/docs/getting-started/server-setup#sessions](https://openme.merlos.org/docs/getting-started/server-setup.html#sessions) |
 | Protocol | [openme.merlos.org/docs/protocol](https://openme.merlos.org/docs/protocol/) |
 | Security Model | [openme.merlos.org/docs/security](https://openme.merlos.org/docs/security/) |
 | FAQ | [openme.merlos.org/docs/faq](https://openme.merlos.org/docs/faq/) |
