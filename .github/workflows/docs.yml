@@ -46,10 +46,16 @@ jobs:
             --transform-for-static-hosting \
             --hosting-base-path /docs/api/swift
 
+      # Tar the output so colons in DocC filenames (e.g. parse(yaml:).json)
+      # make it cross platform safe -  don't trip the NTFS-safe check in actions/upload-artifact.
+
+      - name: Archive DocC output
+        run: tar -czf swift-docc.tar.gz -C apple/OpenMeKit swift-docs
+
       - uses: actions/upload-artifact@v7
         with:
           name: swift-docc
-          path: apple/OpenMeKit/swift-docs
+          path: swift-docc.tar.gz
 
   # ── Quarto site + Doxygen / Dokka / DocFX (ubuntu) ─────────────────────────
   build:
@@ -100,7 +106,13 @@ jobs:
         uses: actions/download-artifact@v7
         with:
           name: swift-docc
-          path: docs/api/swift
+          path: /tmp/swift-docc-artifact
+
+      - name: Extract DocC reference
+        run: |
+          mkdir -p docs/api/swift
+          tar -xzf /tmp/swift-docc-artifact/swift-docc.tar.gz \
+            -C docs/api/swift --strip-components=1
 
       # ── Quarto render ──────────────────────────────────────────────────────
       - uses: quarto-dev/quarto-actions/setup@v2
