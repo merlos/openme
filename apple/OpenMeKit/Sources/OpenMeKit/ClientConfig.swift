@@ -318,7 +318,7 @@ public enum ClientConfigParser {
     /// }
     /// ```
     ///
-    /// - Parameter json: The raw string decoded from a QR code.
+    /// - Parameter string: The raw string decoded from a QR code.
     /// - Returns: A dictionary with a single ``Profile`` entry keyed by the
     ///   profile name from the payload.
     /// - Throws: ``ParserError/noProfilesFound`` if the JSON cannot be decoded

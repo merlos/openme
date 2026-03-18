@@ -48,6 +48,3 @@ The library is split into four layers:
 
 - ``ClientConfigParser``
 
-### Notifications
-
-- ``Notifications``

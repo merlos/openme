@@ -39,7 +39,8 @@ jobs:
       - name: Generate DocC (OpenMeKit)
         working-directory: apple/OpenMeKit
         run: |
-          swift package generate-documentation \
+          swift package --allow-writing-to-directory swift-docs \
+            generate-documentation \
             --target OpenMeKit \
             --output-path swift-docs \
             --transform-for-static-hosting \
