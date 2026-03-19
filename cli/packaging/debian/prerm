@@ -11,4 +11,16 @@ case "$1" in
         ;;
 esac
 
+case "$1" in
+    purge)
+        # Remove the dedicated service account created during installation.
+        if getent passwd openme >/dev/null; then
+            deluser --system openme || true
+        fi
+        if getent group openme >/dev/null; then
+            delgroup --only-if-empty openme 2>/dev/null || true
+        fi
+        ;;
+esac
+
 exit 0
