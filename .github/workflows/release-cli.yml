@@ -120,7 +120,6 @@ jobs:
           install -m 755 cli/packaging/debian/postinst \
                          cli/packaging/debian/prerm \
                          "${PKGDIR}/DEBIAN/"
-          cp cli/packaging/debian/conffiles "${PKGDIR}/DEBIAN/"
 
           dpkg-deb --root-owner-group --build "${PKGDIR}"
       - uses: actions/upload-artifact@v7
