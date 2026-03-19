@@ -3,15 +3,40 @@ set -e
 
 case "$1" in
     configure)
-        # Create the config directory if it does not exist yet.
-        mkdir -p /etc/openme
+        # ── Dedicated service account ────────────────────────────────────────
+        # Create the 'openme' system user/group if they do not already exist.
+        # The account has no login shell and no home directory.
+        if ! getent group openme >/dev/null; then
+            addgroup --system openme
+        fi
+        if ! getent passwd openme >/dev/null; then
+            adduser --system --no-create-home --shell /usr/sbin/nologin \
+                    --ingroup openme --gecos "openme SPA server" openme
+        fi
 
-        # Reload systemd and enable the service unit introduced by this package.
+        # ── Config directory ─────────────────────────────────────────────────
+        mkdir -p /etc/openme
+        chown root:openme /etc/openme
+        chmod 750 /etc/openme
+
+        # Initialise the server config on first install so the service is ready
+        # to run without requiring a manual 'openme init' step.
+        if [ ! -f /etc/openme/config.yaml ]; then
+            server_host="$(hostname -f 2>/dev/null || hostname)"
+            openme init --server "$server_host" --config /etc/openme/config.yaml
+        fi
+
+        # The config file contains the server private key — restrict access.
+        if [ -f /etc/openme/config.yaml ]; then
+            chown root:openme /etc/openme/config.yaml
+            chmod 640 /etc/openme/config.yaml
+        fi
+
+        # ── systemd ──────────────────────────────────────────────────────────
         if command -v systemctl >/dev/null 2>&1; then
             systemctl daemon-reload || true
             systemctl enable openme.service || true
             echo "openme: service installed. Start it with:"
-            echo "  sudo openme init --server <hostname>"
             echo "  sudo systemctl start openme"
         fi
         ;;
