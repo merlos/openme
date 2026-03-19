@@ -74,10 +74,6 @@ func NewManager(backend Backend, timeout time.Duration, stateFile string, log *s
 //
 // See https://openme.merlos.org/docs/configuration/server.html
 func (m *Manager) Open(clientName string, srcIP net.IP, ports []config.PortRule) error {
-	if err := m.backend.Open(srcIP, ports); err != nil {
-		return fmt.Errorf("opening firewall rules: %w", err)
-	}
-
 	key := ruleKey(srcIP, ports)
 	now := time.Now()
 	expiresAt := now.Add(m.timeout)
@@ -95,6 +91,7 @@ func (m *Manager) Open(clientName string, srcIP net.IP, ports []config.PortRule)
 	m.lastSeen[clientName] = now
 
 	// Reset existing timer if present (repeated knock refreshes the window).
+	// Do NOT call backend.Open again — the rule is already in place.
 	if sess, ok := m.sessions[key]; ok {
 		sess.entry.ExpiresAt = expiresAt
 		sess.entry.OpenedAt = now
@@ -103,6 +100,10 @@ func (m *Manager) Open(clientName string, srcIP net.IP, ports []config.PortRule)
 		m.log.Info("firewall rule refreshed", "client", clientName, "ip", srcIP, "timeout", m.timeout)
 		m.persistState()
 		return nil
+	}
+
+	if err := m.backend.Open(srcIP, ports); err != nil {
+		return fmt.Errorf("opening firewall rules: %w", err)
 	}
 
 	entry := SessionEntry{
