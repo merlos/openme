@@ -35,11 +35,20 @@ jobs:
     strategy:
       matrix:
         include:
-          - { goos: linux,   goarch: amd64 }
-          - { goos: linux,   goarch: arm64 }
+          # ── Linux ─────────────────────────────────────────────────────────
+          - { goos: linux,   goarch: amd64   }
+          - { goos: linux,   goarch: arm64   }
+          - { goos: linux,   goarch: arm,    goarm: '7' }  # armhf / Raspberry Pi
+          - { goos: linux,   goarch: '386'   }
+          - { goos: linux,   goarch: riscv64 }
+          # ── macOS ─────────────────────────────────────────────────────────
           - { goos: darwin,  goarch: amd64 }
           - { goos: darwin,  goarch: arm64 }
+          # ── Windows ───────────────────────────────────────────────────────
           - { goos: windows, goarch: amd64 }
+          - { goos: windows, goarch: arm64 }
+          # ── FreeBSD ───────────────────────────────────────────────────────
+          - { goos: freebsd, goarch: amd64 }
     defaults:
       run:
         working-directory: cli
@@ -54,6 +63,7 @@ jobs:
         env:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
+          GOARM: ${{ matrix.goarm || '' }}
           CGO_ENABLED: '0'
         run: |
           VERSION="${GITHUB_REF_NAME##*/}"
@@ -67,10 +77,60 @@ jobs:
           name: cli-${{ matrix.goos }}-${{ matrix.goarch }}
           path: cli/openme-${{ matrix.goos }}-${{ matrix.goarch }}*
 
+  deb:
+    name: Debian package / ${{ matrix.dpkg_arch }}
+    runs-on: ubuntu-latest
+    needs: build
+    strategy:
+      matrix:
+        include:
+          - { goarch: amd64,   dpkg_arch: amd64   }
+          - { goarch: arm64,   dpkg_arch: arm64   }
+          - { goarch: arm,     dpkg_arch: armhf   }  # armv7 / Raspberry Pi
+          - { goarch: '386',   dpkg_arch: i386    }
+          - { goarch: riscv64, dpkg_arch: riscv64 }
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/download-artifact@v7
+        with:
+          name: cli-linux-${{ matrix.goarch }}
+          path: dist/
+      - name: Build .deb
+        shell: bash
+        run: |
+          VERSION="${GITHUB_REF_NAME##*/}"
+          ARCH="${{ matrix.dpkg_arch }}"
+          PKGDIR="openme_${VERSION}_${ARCH}"
+
+          mkdir -p "${PKGDIR}/DEBIAN"
+          mkdir -p "${PKGDIR}/usr/bin"
+          mkdir -p "${PKGDIR}/usr/share/man/man1"
+          mkdir -p "${PKGDIR}/lib/systemd/system"
+
+          install -m 755 "dist/openme-linux-${{ matrix.goarch }}" \
+                         "${PKGDIR}/usr/bin/openme"
+          gzip -9 -c cli/packaging/openme.1 \
+                   > "${PKGDIR}/usr/share/man/man1/openme.1.gz"
+          cp cli/packaging/systemd/openme.service \
+             "${PKGDIR}/lib/systemd/system/"
+
+          sed "s/{{VERSION}}/${VERSION}/g; s/{{ARCH}}/${ARCH}/g" \
+              cli/packaging/debian/control > "${PKGDIR}/DEBIAN/control"
+          install -m 755 cli/packaging/debian/postinst \
+                         cli/packaging/debian/prerm \
+                         "${PKGDIR}/DEBIAN/"
+          cp cli/packaging/debian/conffiles "${PKGDIR}/DEBIAN/"
+
+          dpkg-deb --root-owner-group --build "${PKGDIR}"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: cli-deb-${{ matrix.dpkg_arch }}
+          path: openme_*_${{ matrix.dpkg_arch }}.deb
+
   release:
     name: Publish GitHub Release
     runs-on: ubuntu-latest
-    needs: build
+    needs: [build, deb]
     steps:
       - uses: actions/download-artifact@v7
         with:
