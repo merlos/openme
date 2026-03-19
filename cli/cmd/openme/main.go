@@ -3,15 +3,19 @@
 //
 // Usage:
 //
-//	openme serve                    # start the server
-//	openme sessions                 # show active sessions and last-seen history
-//	openme knock                    # knock using the default profile
-//	openme knock home               # knock using the 'home' profile
-//	openme status [profile]         # check if server is reachable
-//	openme add <name>               # register a new client on the server
-//	openme add <name> --qr          # also display a QR code
-//	openme list                     # list all registered clients
-//	openme revoke <name>            # revoke a client key
+//	openme serve                              # start the server
+//	openme sessions                           # show active sessions and last-seen history
+//	openme knock                              # knock using the default profile
+//	openme knock home                         # knock using the 'home' profile
+//	openme knock --check                      # knock, then verify the health port
+//	openme knock --continuous                 # knock every 25 s until Ctrl-C
+//	openme knock --continuous --interval 60s  # knock every 60 s until Ctrl-C
+//	openme knock --continuous --check         # knock + health-check every 25 s
+//	openme status [profile]                   # check if server is reachable
+//	openme add <name>                         # register a new client on the server
+//	openme add <name> --qr                    # also display a QR code
+//	openme list                               # list all registered clients
+//	openme revoke <name>                      # revoke a client key
 package main
 
 import (
@@ -504,22 +508,56 @@ func buildClientRecords(cfg *config.ServerConfig) ([]*server.ClientRecord, error
 // ────────────────────────────────────────────────────────────────────────────
 
 func newKnockCmd() *cobra.Command {
-	var targetIP string
+	var (
+		targetIP   string
+		continuous bool
+		interval   time.Duration
+		check      bool
+	)
 
 	cmd := &cobra.Command{
 		Use:     "knock [profile]",
 		GroupID: "client",
 		Short:   "Send a knock packet to open a firewall port",
-		Args:    cobra.MaximumNArgs(1),
+		Long: `Send a single SPA knock packet (or knock continuously).
+
+By default a single knock is sent. Use --continuous to keep knocking at regular
+intervals (default 25 s) — useful when knock_timeout is short or to maintain
+continuous access. Press Ctrl-C to stop.
+
+Use --check to verify the health port is reachable after each knock.
+
+Examples:
+  openme knock                              # single knock, default profile
+  openme knock home                         # single knock, 'home' profile
+  openme knock --check                      # knock, then verify the health port
+  openme knock home --check                 # knock 'home', then verify health
+  openme knock --continuous                 # knock every 25 s until Ctrl-C
+  openme knock --continuous --interval 60s  # knock every 60 s until Ctrl-C
+  openme knock home --continuous --interval 30s --check  # knock + health-check every 30 s
+  openme knock --ip 203.0.113.5             # open firewall for a specific IP`,
+		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			profileName := ""
 			if len(args) > 0 {
 				profileName = args[0]
 			}
-			return runKnock(profileName, targetIP)
+			if continuous {
+				return runKnockContinuous(profileName, targetIP, interval, check)
+			}
+			if err := runKnock(profileName, targetIP); err != nil {
+				return err
+			}
+			if check {
+				return runPostKnockCheck(profileName)
+			}
+			return nil
 		},
 	}
 	cmd.Flags().StringVar(&targetIP, "ip", "0.0.0.0", "target IP to open the firewall for (0.0.0.0 = source IP)")
+	cmd.Flags().BoolVar(&continuous, "continuous", false, "keep knocking at regular intervals until Ctrl-C")
+	cmd.Flags().DurationVar(&interval, "interval", 25*time.Second, "interval between knocks in continuous mode")
+	cmd.Flags().BoolVar(&check, "check", false, "verify the health port is reachable after each knock")
 	return cmd
 }
 
@@ -571,6 +609,80 @@ func runKnock(profileName, targetIPStr string) error {
 		return c.Run()
 	}
 	return nil
+}
+
+// runPostKnockCheck loads the profile and checks the health port after a knock.
+// It waits briefly for the firewall rule to propagate before connecting.
+func runPostKnockCheck(profileName string) error {
+	cfg, err := config.LoadClientConfig(clientConfigPath)
+	if err != nil {
+		return err
+	}
+	profile, err := config.GetProfile(cfg, profileName)
+	if err != nil {
+		return err
+	}
+	fmt.Println("Waiting for firewall rule to propagate...")
+	time.Sleep(500 * time.Millisecond)
+	fmt.Printf("Checking health port %s:%d (TCP)...\n", profile.ServerHost, profile.ServerUDPPort)
+	if client.HealthCheck(profile.ServerHost, profile.ServerUDPPort, 3*time.Second) {
+		fmt.Println("✓ Health port is open — authentication succeeded.")
+		return nil
+	}
+	fmt.Println("✗ Health port is still closed after knocking.")
+	fmt.Println("  Check server logs and firewall configuration.")
+	return fmt.Errorf("health port unreachable")
+}
+
+// runKnockContinuous sends a knock every interval until SIGINT/SIGTERM.
+// If check is true a TCP health check is performed after each knock.
+func runKnockContinuous(profileName, targetIPStr string, interval time.Duration, check bool) error {
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	fmt.Printf("Continuous knock mode — interval %s.  Press Ctrl-C to stop.\n", interval)
+
+	doKnock := func() {
+		if err := runKnock(profileName, targetIPStr); err != nil {
+			fmt.Fprintf(os.Stderr, "Knock error: %v\n", err)
+			return
+		}
+		if check {
+			cfg, err := config.LoadClientConfig(clientConfigPath)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Loading client config: %v\n", err)
+				return
+			}
+			profile, err := config.GetProfile(cfg, profileName)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Getting profile: %v\n", err)
+				return
+			}
+			time.Sleep(500 * time.Millisecond)
+			if client.HealthCheck(profile.ServerHost, profile.ServerUDPPort, 3*time.Second) {
+				fmt.Println("✓ Health port is open.")
+			} else {
+				fmt.Println("✗ Health port is closed.")
+			}
+		}
+	}
+
+	// Knock immediately on start, then on every tick.
+	doKnock()
+
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			fmt.Println("Stopped.")
+			return nil
+		case t := <-ticker.C:
+			fmt.Printf("[%s] ", t.Format(time.TimeOnly))
+			doKnock()
+		}
+	}
 }
 
 // ────────────────────────────────────────────────────────────────────────────
