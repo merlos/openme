@@ -1,4 +1,426 @@
-.TH OPENME 1 "March 2026" "openme" "User Commands"
+.TH OPENME 1 "2026-03-19" "openme" "User Commands"
+.
+.SH NAME
+openme \- Single Packet Authentication firewall knocking tool
+.
+.SH SYNOPSIS
+.B openme
+[\fIGLOBAL OPTIONS\fR]
+.I COMMAND
+[\fICOMMAND OPTIONS\fR]
+[\fIARGS\fR]
+.
+.SH DESCRIPTION
+.B openme
+implements SPA (Single Packet Authentication) using ephemeral
+Curve25519 ECDH key exchange, ChaCha20\-Poly1305 AEAD encryption, and
+Ed25519 signatures.
+.PP
+To a port scanner every port is always closed.
+Only an authenticated client holding a valid Ed25519 private key can
+send a 165\-byte knock packet that temporarily opens a firewall rule on
+the server.
+The knock packet itself is indistinguishable from random noise;
+the server never responds.
+After the configurable
+.I knock_timeout
+(default 30 seconds) the firewall rule is automatically removed.
+.PP
+The same binary acts as both the server daemon and the client:
+.PP
+.RS 4
+.IP \(bu 4
+.B Server commands:
+.BR init ", " serve ", " sessions ", " add ", " list ", " revoke
+.IP \(bu 4
+.B Client commands:
+.BR knock ", " status ", " profiles
+.RE
+.
+.SH GLOBAL OPTIONS
+These flags must be placed \fIbefore\fR the subcommand name.
+.TP
+.BI \-\-config " PATH"
+Path to the server configuration file.
+Default:
+.IR /etc/openme/config.yaml .
+.TP
+.BI \-\-client\-config " PATH"
+Path to the client configuration file.
+Default:
+.IR ~/.openme/config.yaml .
+.TP
+.BI \-\-log\-level " LEVEL"
+Log verbosity.
+One of
+.IR debug ", " info ", " warn ", " error .
+Default:
+.IR info .
+.TP
+.B \-\-help
+Print command help and exit.
+.
+.SH SERVER COMMANDS
+.
+.SS openme init
+.B openme init \-\-server\fR \fIHOSTNAME\fR [\fIOPTIONS\fR]
+.PP
+Initialise a new server configuration.
+Generates a fresh Curve25519 keypair and writes a default config file to
+.I /etc/openme/config.yaml
+(or the path set by
+.BR \-\-config ).
+.PP
+.B Options:
+.TP
+.BI \-\-server " HOSTNAME"
+Public hostname or IP address of this server (required).
+Embedded in generated client configs.
+.TP
+.BI \-\-port " PORT"
+UDP (and TCP health\-check) port.
+Default:
+.IR 54154 .
+.TP
+.BI \-\-firewall " BACKEND"
+Firewall backend.
+One of
+.IR nft " (default) or " iptables .
+.TP
+.B \-\-force
+Overwrite an existing config without prompting.
+.
+.SS openme serve
+.B openme serve
+[\fIOPTIONS\fR]
+.PP
+Start the SPA server daemon.
+Listens on the configured UDP port for knock packets.
+Validates each packet (signature, timestamp, replay nonce) and, on
+success, opens a temporary firewall rule for the knock source (or target)
+IP using the configured backend.
+.PP
+The daemon blocks until interrupted with
+.BR SIGINT " or " SIGTERM ,
+at which point all ephemeral firewall rules are closed.
+.PP
+Intended to be run as a
+.BR systemd (1)
+service; a unit file is included in the package at
+.IR /lib/systemd/system/openme.service .
+.PP
+.B Options:
+.TP
+.BI \-\-state\-file " PATH"
+Path to write live session state as JSON.
+Consumed by
+.BR "openme sessions" .
+Default:
+.IR /run/openme/sessions.json .
+.
+.SS openme sessions
+.B openme sessions
+[\fIOPTIONS\fR]
+.PP
+Display which clients currently have open firewall rules (active sessions)
+and when each allowance expires, plus the last\-seen knock time for all
+other registered clients.
+Reads the state file written by
+.BR "openme serve" ;
+both commands must use the same
+.B \-\-state\-file
+path.
+.PP
+.B Options:
+.TP
+.BI \-\-state\-file " PATH"
+Path to the session state file written by
+.BR "openme serve" .
+Default:
+.IR /run/openme/sessions.json .
+.TP
+.BR \-w ", " \-\-watch
+Refresh the output every second until interrupted with
+.BR Ctrl\-C .
+Useful for monitoring a busy server in real time.
+.
+.SS openme add \fINAME\fR
+.B openme add
+.I NAME
+[\fIOPTIONS\fR]
+.PP
+Register a new client on the server.
+Generates an Ed25519 keypair for the client, appends the public key to
+the server config, and prints a ready\-to\-use YAML profile block the
+client should copy to
+.IR ~/.openme/config.yaml .
+.PP
+.B Options:
+.TP
+.B \-\-qr
+Display a QR code in the terminal.
+Useful for provisioning mobile clients without copy\-paste.
+.TP
+.BI \-\-qr\-out " FILE"
+Write the QR code as a PNG to
+.IR FILE .
+.TP
+.B \-\-no\-privkey
+Omit the private key from the QR code.
+The mobile app must generate its own keypair and its public key must then
+be registered separately with
+.BR openme\ add .
+.TP
+.BI \-\-expires " RFC3339"
+Optional key expiry timestamp in RFC\~3339 format (e.g.\&
+.IR 2027\-01\-01T00:00:00Z ).
+Knocks from this client after the expiry time are rejected.
+.TP
+.BI \-\-port\-mode " MODE"
+Port access mode.
+One of
+.IR default " (inherit server defaults), " only " (client ports only), or"
+.IR default_plus " (defaults plus extra ports)."
+Default:
+.IR default .
+.TP
+.BI \-\-port " PORT/PROTO"
+Add an extra port rule (e.g.\ \fI2222/tcp\fR).
+May be specified multiple times.
+Used with
+.I default_plus
+or
+.IR only .
+.
+.SS openme list
+.B openme list
+.PP
+List all registered clients in the server config.
+Output includes the client name, Ed25519 key fingerprint, port mode, and
+expiry date.
+.
+.SS openme revoke \fINAME\fR
+.B openme revoke
+.I NAME
+.PP
+Remove a client from the server configuration.
+Takes effect immediately for all subsequent knock attempts; no server
+restart is required.
+.
+.SH CLIENT COMMANDS
+.
+.SS openme knock \fR[\fIPROFILE\fR]
+.B openme knock
+[\fIPROFILE\fR]
+[\fIOPTIONS\fR]
+.PP
+Send a 165\-byte SPA knock packet to the server specified in the named
+profile (default:
+.IR default ).
+On success the server opens a temporary firewall rule.
+.PP
+By default a single knock is sent and the command exits.
+With
+.B \-\-continuous
+the command keeps knocking at regular intervals until
+.B Ctrl\-C
+is pressed \(em useful when
+.I knock_timeout
+is short or to maintain uninterrupted access.
+.PP
+If
+.I post_knock
+is set in the profile the given command is executed immediately after
+the knock, making
+.B openme knock
+a transparent wrapper around
+.BR ssh (1)
+or any other tool.
+.PP
+.B Options:
+.TP
+.BI \-\-ip " ADDRESS"
+IP address to open the firewall rule for.
+Default:
+.I 0.0.0.0
+(the source IP of the knock packet as seen by the server).
+.TP
+.B \-\-continuous
+Keep sending knock packets at regular intervals until interrupted.
+The first knock is sent immediately; subsequent knocks follow the
+.B \-\-interval
+timer.
+.TP
+.BI \-\-interval " DURATION"
+Time between knocks in continuous mode.
+Accepts Go duration strings such as
+.IR 30s ", " 2m ", " 1m30s .
+Default:
+.IR 25s .
+.TP
+.B \-\-check
+After each knock, wait briefly for the firewall rule to propagate and
+then verify the health port is reachable via TCP.
+Can be combined with
+.B \-\-continuous
+to monitor connectivity on every knock.
+.
+.SS openme status \fR[\fIPROFILE\fR]
+.B openme status
+[\fIPROFILE\fR]
+[\fIOPTIONS\fR]
+.PP
+Check whether the server's TCP health port is reachable.
+The health port is only open after a successful knock and closes
+automatically when the
+.I knock_timeout
+expires.
+.TP
+.B \-\-knock
+Perform a knock first, then check the health port.
+Validates the full SPA authentication round trip end\-to\-end.
+.
+.SS openme profiles \fR[\fINAME\fR]
+.B openme profiles
+[\fINAME\fR]
+.PP
+List all profiles in the client config file.
+If
+.I NAME
+is given, display the full details of that profile.
+Sensitive fields (private keys) are always redacted from the output.
+.
+.SH FILES
+.TP
+.I /etc/openme/config.yaml
+Server configuration.
+Generated by
+.BR "openme init" .
+Permissions must be
+.I 0600
+(owner read/write only); the server refuses to start if they are wider.
+.TP
+.I ~/.openme/config.yaml
+Default client profile file.
+Contains one or more named profiles.
+Each profile holds the server address, UDP port, server public key, and
+the client's Ed25519 private key.
+Permissions should be
+.IR 0600 .
+.TP
+.I /run/openme/sessions.json
+Live session state written by
+.BR "openme serve" .
+Read by
+.BR "openme sessions" .
+.TP
+.I /lib/systemd/system/openme.service
+systemd unit file for the server daemon.
+Enable with
+.BR "systemctl enable \-\-now openme" .
+.
+.SH EXAMPLES
+.SS Server: first-time setup
+.nf
+# Generate server config and keys
+sudo openme init \-\-server myserver.example.com
+
+# Register a client (prints client YAML + optional QR)
+sudo openme add alice \-\-qr
+
+# Start the daemon
+sudo systemctl enable \-\-now openme
+
+# Watch active sessions in real time
+openme sessions \-\-watch
+.fi
+.SS Client: knock and connect
+.nf
+# Store the YAML block printed by 'openme add' in:
+#   ~/.openme/config.yaml
+
+# Single knock using the default profile
+openme knock
+
+# Knock the 'home' profile
+openme knock home
+
+# Knock then immediately verify the health port
+openme knock \-\-check
+
+# Open a rule for a specific IP address
+openme knock \-\-ip 10.0.0.5
+
+# Keep knocking every 25 s until Ctrl\-C (maintain continuous access)
+openme knock \-\-continuous
+
+# Keep knocking every 60 s and check health on each iteration
+openme knock \-\-continuous \-\-interval 60s \-\-check
+
+# Check reachability after a prior knock
+openme status
+
+# Knock then check (full round\-trip test)
+openme status \-\-knock
+.fi
+.SS Client: advanced registration
+.nf
+# Grant alice only ports 22 and 443
+sudo openme add alice \-\-port\-mode only \-\-port 22/tcp \-\-port 443/tcp
+
+# Grant bob the defaults plus an extra port; expire the key at end of year
+sudo openme add bob \-\-port\-mode default_plus \-\-port 2222/tcp \e
+     \-\-expires 2026\-12\-31T23:59:59Z
+
+# Revoke alice's access immediately
+sudo openme revoke alice
+.fi
+.
+.SH PROTOCOL
+Each knock is a single UDP datagram of exactly
+.B 165 bytes:
+.PP
+.RS 4
+.IP \(bu 4
+1 byte   \(em protocol version (currently
+.BR 0x01 )
+.IP \(bu 4
+32 bytes \(em client ephemeral Curve25519 public key (per\-knock)
+.IP \(bu 4
+12 bytes \(em ChaCha20\-Poly1305 AEAD nonce (random, per\-knock)
+.IP \(bu 4
+56 bytes \(em ciphertext + 16\-byte Poly1305 tag
+.IP \(bu 4
+64 bytes \(em Ed25519 signature over all preceding fields
+.RE
+.PP
+Key derivation uses HKDF\-SHA\-256 with info string
+.IR \(dqopenme\-v1\-chacha20poly1305\(dq .
+Full protocol specification:
+.I https://openme.merlos.org/docs/protocol/
+.
+.SH SEE ALSO
+.BR ssh (1),
+.BR nft (8),
+.BR iptables (8),
+.BR systemctl (1)
+.PP
+Full documentation:
+.I https://openme.merlos.org/docs/
+.br
+Source code:
+.I https://github.com/merlos/openme
+.
+.SH AUTHORS
+Juan M. Merlos and contributors.
+.br
+Bug reports:
+.I https://github.com/merlos/openme/issues
+.
+.SH COPYRIGHT
+MIT License.
+See
+.I https://github.com/merlos/openme/blob/main/LICENSE
 .
 .SH NAME
 openme \- Single Packet Authentication firewall knocking tool
