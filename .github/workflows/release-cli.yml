@@ -99,6 +99,7 @@ jobs:
         shell: bash
         run: |
           VERSION="${GITHUB_REF_NAME##*/}"
+          VERSION="${VERSION#v}"
           ARCH="${{ matrix.dpkg_arch }}"
           PKGDIR="openme_${VERSION}_${ARCH}"
 
