@@ -18,7 +18,10 @@ import (
 type Backend interface {
 	// Setup installs any infrastructure rules required by the backend.
 	// Should be called once when the server starts, before the first Open.
-	Setup(udpPort uint16) error
+	// When openKnockPort is true the backend also inserts a rule that accepts
+	// UDP traffic on udpPort so knock packets can reach the server.
+	// Set openKnockPort to false when the host firewall already opens that port.
+	Setup(udpPort uint16, openKnockPort bool) error
 
 	// Teardown removes the infrastructure rules installed by Setup.
 	// Should be called once when the server stops, after CloseAll.
@@ -245,14 +248,15 @@ type IPTablesBackend struct {
 
 func (b *IPTablesBackend) Name() string { return "iptables" }
 
-// Setup creates the openme chain in both iptables and ip6tables, accepts knock
-// packets on udpPort, and jumps from INPUT into the openme chain.
+// Setup creates the openme chain in both iptables and ip6tables and jumps from
+// INPUT into it. When openKnockPort is true it also inserts a rule that accepts
+// UDP traffic on udpPort so knock packets can reach the server.
 //
 // A best-effort Teardown is run first so a server restart after a crash does
 // not leave duplicate rules.
 //
 // See https://openme.merlos.org/docs/configuration/server.html
-func (b *IPTablesBackend) Setup(udpPort uint16) error {
+func (b *IPTablesBackend) Setup(udpPort uint16, openKnockPort bool) error {
 	// Best-effort cleanup of any rules left by a previous run.
 	_ = b.Teardown(udpPort)
 
@@ -261,11 +265,13 @@ func (b *IPTablesBackend) Setup(udpPort uint16) error {
 		// Create the openme chain (ignore error if it already exists).
 		_ = runCmd(b.Log, cmd, "-N", "openme")
 
-		// Accept knock packets on the SPA UDP port.
-		if err := runCmd(b.Log, cmd, "-I", "INPUT",
-			"-p", "udp", "--dport", port, "-j", "ACCEPT",
-			"-m", "comment", "--comment", "openme-knock"); err != nil {
-			return fmt.Errorf("iptables setup (%s): adding knock accept rule: %w", cmd, err)
+		// Optionally accept knock packets on the SPA UDP port.
+		if openKnockPort {
+			if err := runCmd(b.Log, cmd, "-I", "INPUT",
+				"-p", "udp", "--dport", port, "-j", "ACCEPT",
+				"-m", "comment", "--comment", "openme-knock"); err != nil {
+				return fmt.Errorf("iptables setup (%s): adding knock accept rule: %w", cmd, err)
+			}
 		}
 
 		// Jump from INPUT into the openme chain.
@@ -274,7 +280,8 @@ func (b *IPTablesBackend) Setup(udpPort uint16) error {
 			return fmt.Errorf("iptables setup (%s): adding jump rule: %w", cmd, err)
 		}
 	}
-	b.Log.Info("iptables infrastructure rules installed", "udp_port", udpPort)
+	b.Log.Info("iptables infrastructure rules installed",
+		"udp_port", udpPort, "open_knock_port", openKnockPort)
 	return nil
 }
 
@@ -343,16 +350,15 @@ type NFTablesBackend struct {
 
 func (b *NFTablesBackend) Name() string { return "nft" }
 
-// Setup installs the three infrastructure rules required for the nft backend:
-//   - Accept knock packets arriving on udpPort.
-//   - Create the "openme" chain inside the inet filter table.
-//   - Jump from the input chain into "openme" so per-client rules take effect.
+// Setup creates the "openme" chain inside the inet filter table and adds a jump
+// from the input chain into it. When openKnockPort is true it also inserts a
+// rule that accepts UDP traffic on udpPort so knock packets can reach the server.
 //
 // A best-effort Teardown is run first so a server restart after a crash does
 // not leave duplicate rules.
 //
 // See https://openme.merlos.org/docs/configuration/server.html
-func (b *NFTablesBackend) Setup(udpPort uint16) error {
+func (b *NFTablesBackend) Setup(udpPort uint16, openKnockPort bool) error {
 	// Best-effort cleanup of any rules left by a previous run.
 	_ = b.Teardown(udpPort)
 
@@ -361,12 +367,14 @@ func (b *NFTablesBackend) Setup(udpPort uint16) error {
 		return err
 	}
 
-	// Allow knock packets to reach the server's UDP listener.
-	if err := runCmd(b.Log, "nft",
-		"add", "rule", "inet", "filter", "input",
-		"udp", "dport", fmt.Sprint(udpPort), "accept",
-		"comment", "openme-knock"); err != nil {
-		return fmt.Errorf("nft setup: adding knock accept rule: %w", err)
+	// Optionally allow knock packets to reach the server's UDP listener.
+	if openKnockPort {
+		if err := runCmd(b.Log, "nft",
+			"add", "rule", "inet", "filter", "input",
+			"udp", "dport", fmt.Sprint(udpPort), "accept",
+			"comment", "openme-knock"); err != nil {
+			return fmt.Errorf("nft setup: adding knock accept rule: %w", err)
+		}
 	}
 
 	// Route INPUT traffic through the per-client openme chain.
@@ -377,7 +385,8 @@ func (b *NFTablesBackend) Setup(udpPort uint16) error {
 		return fmt.Errorf("nft setup: adding jump rule: %w", err)
 	}
 
-	b.Log.Info("nft infrastructure rules installed", "udp_port", udpPort)
+	b.Log.Info("nft infrastructure rules installed",
+		"udp_port", udpPort, "open_knock_port", openKnockPort)
 	return nil
 }
 

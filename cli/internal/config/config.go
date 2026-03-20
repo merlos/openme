@@ -93,6 +93,13 @@ type ServerConfig struct {
 		// PublicKey is the base64-encoded Curve25519 public key (derived from PrivateKey).
 		// Stored for convenience so clients can be provisioned easily.
 		PublicKey string `yaml:"public_key"`
+
+		// OpenKnockPort controls whether the server installs a firewall rule
+		// that accepts UDP traffic on UDPPort when it starts.
+		// Defaults to true. Set to false when the host's existing firewall
+		// configuration already opens the knock port and you do not want
+		// openme to manage that rule.
+		OpenKnockPort *bool `yaml:"open_knock_port,omitempty"`
 	} `yaml:"server"`
 
 	Defaults ServerDefaults `yaml:"defaults"`
