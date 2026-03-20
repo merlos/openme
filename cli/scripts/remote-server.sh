@@ -52,8 +52,9 @@ block_all_iptables() {
     iptables -P "${CHAIN_FORWARD}" DROP
     iptables -A "${CHAIN_INPUT}" -i lo -j ACCEPT
     iptables -A "${CHAIN_INPUT}" -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-    iptables -A "${CHAIN_INPUT}" -p udp --dport 54154 -j ACCEPT
-    echo "    Default policy → DROP; loopback + established + UDP 54154 → ACCEPT"
+    # openme serve will add the UDP knock-port accept rule and the openme chain
+    # via its firewall Setup on startup.
+    echo "    Default policy → DROP; loopback + established → ACCEPT"
 }
 
 # ── Block all ports (nft) ─────────────────────────────────────────────────────
@@ -66,11 +67,9 @@ block_all_nft() {
     nft add chain inet filter output  '{ type filter hook output  priority 0; policy accept; }'
     nft add rule  inet filter input ct state established,related accept
     nft add rule  inet filter input iifname lo accept
-    nft add rule  inet filter input udp dport 54154 accept
-    # openme manages rules inside this chain
-    nft add chain inet filter openme
-    nft add rule  inet filter input jump openme
-    echo "    Default policy → drop; loopback + established + UDP 54154 → accept"
+    # openme serve will add the UDP knock-port accept rule, the openme chain,
+    # and the jump rule via its firewall Setup on startup.
+    echo "    Default policy → drop; loopback + established → accept"
 }
 
 block_all() {
