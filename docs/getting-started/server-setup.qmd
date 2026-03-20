@@ -6,31 +6,117 @@ keywords: [openme server setup, SPA server Linux, openme daemon, openme init, op
 
 ## Install {#install}
 
+::: {.callout-note}
+The openme server requires **nftables** or **iptables** to manage firewall rules
+and is therefore **only supported on GNU/Linux**. For client-only use on iOS, android, macOS or
+Windows, see the [CLI client setup](client-setup.qmd) or the native desktop apps.
+:::
+
+
+
+### From a Debian / Ubuntu package
+
+Pre-built `.deb` packages are available for Debian, Ubuntu, and derivatives.
+Download the package for your architecture from
+[GitHub Releases](https://github.com/merlos/openme/releases) and install it
+with `dpkg`:
+
+::: {.panel-tabset}
+
+## amd64
+
+```bash
+curl -LO https://github.com/merlos/openme/releases/latest/download/openme_latest_amd64.deb
+sudo dpkg -i openme_latest_amd64.deb
+```
+
+## arm64
+
+```bash
+curl -LO https://github.com/merlos/openme/releases/latest/download/openme_latest_arm64.deb
+sudo dpkg -i openme_latest_arm64.deb
+```
+
+## armhf
+
+```bash
+curl -LO https://github.com/merlos/openme/releases/latest/download/openme_latest_armhf.deb
+sudo dpkg -i openme_latest_armhf.deb
+```
+
+## i386
+
+```bash
+curl -LO https://github.com/merlos/openme/releases/latest/download/openme_latest_i386.deb
+sudo dpkg -i openme_latest_i386.deb
+```
+
+## riscv64
+
+```bash
+curl -LO https://github.com/merlos/openme/releases/latest/download/openme_latest_riscv64.deb
+sudo dpkg -i openme_latest_riscv64.deb
+```
+
+:::
+
+::: {.callout-tip}
+The `.deb` package installs the binary to `/usr/bin/openme` and includes initializes the server and starts the systemd service automatically. You can skip the next two sections and proceed to [Add a client →](adding-clients.qmd).
+:::
+
+---
+
+
 ### From a pre-built binary
 
 Download the latest release from [GitHub Releases](https://github.com/merlos/openme/releases):
 
+::: {.panel-tabset}
+
+## amd64 (x86-64) 
+
 ```bash
-# Linux amd64
 curl -Lo openme https://github.com/merlos/openme/releases/latest/download/openme-linux-amd64
 chmod +x openme
 sudo mv openme /usr/local/bin/
 ```
 
-### Build from source
-
-Requires [Go 1.21+](https://go.dev/dl/).
+## arm64
 
 ```bash
-git clone https://github.com/merlos/openme
-cd openme/cli
-go build -o openme ./cmd/openme
+curl -Lo openme https://github.com/merlos/openme/releases/latest/download/openme-linux-arm64
+chmod +x openme
 sudo mv openme /usr/local/bin/
 ```
 
----
+## armhf
 
-## Initialise the Server
+```bash
+curl -Lo openme https://github.com/merlos/openme/releases/latest/download/openme-linux-arm
+chmod +x openme
+sudo mv openme /usr/local/bin/
+```
+
+## 32-bit (i386)
+
+```bash
+curl -Lo openme https://github.com/merlos/openme/releases/latest/download/openme-linux-386
+chmod +x openme
+sudo mv openme /usr/local/bin/
+```
+
+## riscv64
+
+```bash
+curl -Lo openme https://github.com/merlos/openme/releases/latest/download/openme-linux-riscv64
+chmod +x openme
+sudo mv openme /usr/local/bin/
+```
+
+:::
+
+
+### Initialise the Server
 
 `openme init` generates a fresh Curve25519 keypair and writes
 `/etc/openme/config.yaml` with sensible defaults.
@@ -51,55 +137,54 @@ Options:
 The command prints the server's **Curve25519 public key** — you'll need this
 when provisioning clients, but `openme add` handles it automatically.
 
----
+--------
 
-## Open the Knock Port
-
-The UDP knock port must be reachable (the point is that TCP ports are not).
-The examples below assume you have already applied a default-deny firewall
-policy — if not, see [Harden the Firewall](#harden-firewall) first.
-
-```bash
-# nftables
-sudo nft add rule inet filter input udp dport 54154 accept
-
-# iptables
-sudo iptables -A INPUT -p udp --dport 54154 -j ACCEPT
-```
-
-::: {.callout-tip}
-For IPv6, add an equivalent `ip6tables` or `nft inet` rule.
-:::
-
----
-
-## Start the Server
+### Start the Server
 
 ```bash
 sudo openme serve
 ```
 
-For production, install as a systemd service:
+For production, install as a systemd service (the `.deb` package does this
+automatically). The unit below matches the one shipped in the package:
 
 ```ini
 # /etc/systemd/system/openme.service
 [Unit]
-Description=openme SPA server
+Description=openme Single Packet Authorization server
+Documentation=https://openme.merlos.org/docs/getting-started/server-setup
 After=network.target
 
 [Service]
-ExecStart=/usr/local/bin/openme serve
+Type=simple
+ExecStart=/usr/bin/openme serve
 Restart=on-failure
+RestartSec=5
+
+# Run as the dedicated 'openme' system account.
+User=openme
+Group=openme
+
+# Grant only the capability required for firewall manipulation.
+CapabilityBoundingSet=CAP_NET_ADMIN
 AmbientCapabilities=CAP_NET_ADMIN
+
+# Create /run/openme (owned by openme:openme) for the session state file.
 RuntimeDirectory=openme
+RuntimeDirectoryMode=0750
+
+# Harden the service surface.
+ProtectSystem=full
+PrivateTmp=true
+NoNewPrivileges=true
 
 [Install]
 WantedBy=multi-user.target
 ```
 
-`RuntimeDirectory=openme` makes systemd create `/run/openme/` (owned by root,
-`0o755`) at start-up and remove it on stop. openme writes its session state
-file there automatically.
+`RuntimeDirectory=openme` makes systemd create `/run/openme/` (owned by
+`openme:openme`, mode `0750`) at start-up and remove it on stop. openme writes
+its session state file there automatically.
 
 ```bash
 sudo systemctl enable --now openme
@@ -131,12 +216,9 @@ sudo nft add chain inet filter output  '{ type filter hook output  priority 0; p
 sudo nft add rule inet filter input ct state established,related accept
 sudo nft add rule inet filter input iifname "lo" accept
 
-# Allow the UDP knock port (openme)
-sudo nft add rule inet filter input udp dport 54154 accept
+# By default openme opens the udp_port for knocks, but if you set open_knock_port: false then add this rule to allow the knock packets:
+#sudo nft add rule inet filter input udp dport 54154 accept
 
-# Create the openme chain (openme manages rules inside it)
-sudo nft add chain inet filter openme
-sudo nft add rule inet filter input jump openme
 ```
 
 Persist the ruleset:
@@ -161,8 +243,8 @@ sudo iptables -P OUTPUT  ACCEPT
 sudo iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 sudo iptables -A INPUT -i lo -j ACCEPT
 
-# Allow the UDP knock port (openme)
-sudo iptables -A INPUT -p udp --dport 54154 -j ACCEPT
+# By default openme opens the udp_port for knocks, but if you set open_knock_port: false then add this rule to allow the knock packets:
+#sudo iptables -A INPUT -p udp --dport 54154 -j ACCEPT
 
 # ── IPv6 ──────────────────────────────────────────────────────────────────
 sudo ip6tables -F
@@ -173,7 +255,8 @@ sudo ip6tables -P OUTPUT  ACCEPT
 
 sudo ip6tables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 sudo ip6tables -A INPUT -i lo -j ACCEPT
-sudo ip6tables -A INPUT -p udp --dport 54154 -j ACCEPT
+# By default openme opens the udp_port for knocks, but if you set open_knock_port: false then add this rule to allow the knock packets:
+#sudo ip6tables -A INPUT -p udp --dport 54154 -j ACCEPT
 ```
 
 Persist across reboots (Debian/Ubuntu):
