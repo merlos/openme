@@ -4,6 +4,22 @@ description-meta: "Frequently asked questions about openme — how SPA works, di
 keywords: [openme FAQ, single packet authentication questions, fwknop alternative, openme troubleshooting, SPA explained, openme Linux]
 ---
 
+## Comparisons
+
+Not sure how openme stacks up against the tools you already know? These pages
+give a detailed side-by-side breakdown:
+
+- [openme vs fwknop](vs-fwknop.qmd) — the other SPA tool; crypto stack,
+  dependencies, mobile support, QR provisioning.
+- [openme vs WireGuard](vs-wireguard.qmd) — SPA gate vs VPN tunnel; why they
+  complement each other and how to use both.
+- [openme vs Tailscale](vs-tailscale.qmd) — mesh VPN with a control plane vs
+  zero-cloud SPA; privacy, cloud dependency, and combined setups.
+- [openme vs Traditional VPNs](vs-vpn.qmd) — OpenVPN, IPsec/IKEv2; attack
+  surface reduction, when each tool is the right choice.
+
+---
+
 ## General
 
 ### What is Single Packet Authentication?

@@ -1,0 +1,156 @@
+---
+title: "openme vs WireGuard"
+description-meta: "openme and WireGuard serve different purposes — learn how Single Packet Authentication and a VPN tunnel complement each other, when to use each, and how to combine them to hide your WireGuard endpoint from scanners."
+keywords: [openme vs WireGuard, WireGuard SPA, hide WireGuard port, single packet authentication VPN, WireGuard firewall knock, openme WireGuard together, protect WireGuard endpoint]
+---
+
+openme and WireGuard solve fundamentally different problems and are designed
+to work **together**, not as alternatives to each other. This page explains the
+distinction and shows common patterns for combining them.
+
+## Core Difference
+
+### What is the purpose of each tool?
+
+| Tool | Primary purpose |
+|------|----------------|
+| **openme** | Firewall gate — keeps ports hidden and opens them temporarily after a cryptographic knock |
+| **WireGuard** | VPN tunnel — encrypts and routes network traffic between peers over a persistent tunnel |
+
+openme does not route traffic. WireGuard does not hide its own port from
+scanners by default.
+
+### Does WireGuard have port hiding built in?
+
+WireGuard does not respond to unauthenticated packets, so it is sometimes
+described as "stealth." However, a WireGuard endpoint still listens on a
+visible UDP port — any scanner can detect that something is listening there,
+even if handshakes fail. openme keeps the port **closed at the firewall level**
+so it is completely invisible to scanners and port-mapping tools.
+
+---
+
+## Use Cases
+
+### When should I use openme alone (without WireGuard)?
+
+Use openme alone when you want temporary access to a specific port (SSH, HTTPS,
+etc.) without routing all traffic through a tunnel:
+
+- Remote SSH access to a server — knock, connect, done; no persistent agent
+  needed.
+- Exposing an admin panel temporarily.
+- Accessing a service that does not benefit from a persistent tunnel.
+
+### When should I use WireGuard alone?
+
+Use WireGuard alone when you need a **persistent, always-on encrypted tunnel**
+between two endpoints:
+
+- Secure LAN extension between offices.
+- Routing all device traffic through a trusted exit node.
+- Peer-to-peer encrypted communication between services.
+
+### When should I use both together?
+
+Use both when you want to **hide the WireGuard endpoint from the internet**
+entirely:
+
+1. openme protects the WireGuard UDP port (e.g. `51820`).
+2. The client runs `openme knock` to open the WireGuard port for 30 seconds.
+3. The client establishes the WireGuard handshake within that window.
+4. WireGuard keeps the tunnel alive with its own keepalive mechanism — the
+   firewall rule added by openme expires, but the established WireGuard session
+   continues.
+5. When the tunnel drops, repeat the knock to re-establish.
+
+---
+
+## Setup: openme + WireGuard
+
+### How do I protect a WireGuard port with openme?
+
+On the server, set the port to open in your openme server config:
+
+```yaml
+rules:
+  - port: 51820
+    protocol: udp
+    timeout: 30
+```
+
+On the client, knock before connecting:
+
+```bash
+openme knock wireguard-server
+wg-quick up wg0
+```
+
+Or use `post_knock` in the client config:
+
+```yaml
+servers:
+  - name: wireguard-server
+    host: vpn.example.com
+    post_knock: "wg-quick up wg0"
+```
+
+See [Server Configuration](https://openme.merlos.org/docs/configuration/server.html)
+and [Client Configuration](https://openme.merlos.org/docs/configuration/client.html)
+for the full reference.
+
+### Will the WireGuard tunnel drop when the openme rule expires?
+
+No — established WireGuard sessions survive the firewall rule expiry. Once
+the UDP handshake succeeds and the WireGuard session is active, the tunnel
+continues because WireGuard's keepalive packets come from the already-allowed
+connection-track entry (stateful firewall) or from the established peer
+exchange. The openme rule only needs to be open long enough for the initial
+handshake.
+
+### Does the mobile app support WireGuard integration?
+
+The openme iOS, macOS, and Android apps can send the knock. Launching the
+WireGuard app immediately after is a manual step (or can be automated via
+Shortcuts on iOS). Native deep-link / Shortcut integration is on the roadmap.
+
+---
+
+## Comparison at a Glance
+
+| Dimension | openme | WireGuard |
+|-----------|--------|-----------|
+| Role | Firewall gate (SPA) | VPN tunnel |
+| Hides port from scanners | Yes — port is closed at firewall level | No — port is open but rejects unauthenticated handshakes |
+| Persistent tunnel | No | Yes |
+| Routes traffic | No | Yes |
+| Overhead once connected | None — door is opened, then openme exits | Per-packet encryption overhead (negligible in practice) |
+| Mobile apps | Yes (iOS, Android, watchOS) | Yes (official WireGuard apps) |
+| Server daemon | Lightweight UDP listener | WireGuard kernel module or userspace |
+| Complementary | ✅ use together | ✅ use together |
+
+---
+
+## Frequently Asked Questions
+
+### Does openme work on the same server as WireGuard?
+
+Yes — they run independently and do not interfere. A typical server runs both:
+`openmed` for the SPA listener and `wg-quick` / `wg` for the tunnel.
+
+### Can I knock from inside a WireGuard tunnel?
+
+Yes, but this is unusual (you are already tunnelled in). The more common
+scenario is knocking from outside to unlock the WireGuard port, then tunnelling
+in.
+
+### Does WireGuard have replay protection like openme does?
+
+WireGuard has its own session-level anti-replay window for tunnel traffic.
+openme has its own replay protection for knock packets (timestamp ± 60 s
+window + per-nonce deduplication cache). They are independent systems.
+
+### Where can I learn more about openme's security model?
+
+See [Security Model](https://openme.merlos.org/docs/security/) and
+[Replay Protection](https://openme.merlos.org/docs/protocol/replay-protection.html).

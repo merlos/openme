@@ -1,0 +1,169 @@
+---
+title: "openme vs Tailscale"
+description-meta: "Comparing openme SPA and Tailscale mesh VPN — understand the differences in architecture, privacy, cloud dependency, latency overhead, and when to combine both tools for maximum security."
+keywords: [openme vs Tailscale, Tailscale alternative, hide Tailscale port, single packet authentication mesh VPN, Tailscale SPA, openme Tailscale together, self-hosted Tailscale openme, no cloud VPN]
+---
+
+openme is a Single Packet Authentication (SPA) firewall gateway; Tailscale is
+a mesh VPN built on WireGuard. They approach network access from very different
+angles. This page helps you understand which tool fits your needs — and how to
+combine them when you want both.
+
+## Core Difference
+
+### What does each tool do?
+
+| Tool | What it does |
+|------|-------------|
+| **openme** | Keeps all ports closed; opens a specific port for a specific IP for ~30 seconds after a valid cryptographic knock. No persistent connection. |
+| **Tailscale** | Creates an encrypted peer-to-peer mesh network (built on WireGuard). Devices get a stable virtual IP on a private network. Requires a control plane. |
+
+### Does Tailscale protect against port scanning?
+
+By default, no — Tailscale nodes listen on a UDP port (`41641` or any random
+ephemeral port), and that port is discoverable by a scanner. Tailscale's
+[magic DNS](https://tailscale.com/kb/1081/magicdns/) and routing are overlays
+on top of a WireGuard tunnel that is still advertised to the network.
+
+openme closes the target port at the **firewall level**, making it stateful and
+completely invisible until a valid knock is received.
+
+### Does openme require a control plane or cloud service?
+
+openme requires **no cloud service, no coordination server, no account**. It is
+entirely self-hosted — a binary on the server and a config file on the client.
+
+Tailscale uses the Tailscale coordination server to distribute keys and manage
+device lists, unless you self-host with [Headscale](https://github.com/juanfont/headscale).
+If the Tailscale control plane is unreachable, new device authorizations and
+key rotations stall (existing, active tunnels continue until key expiry).
+
+---
+
+## Architecture
+
+### How does Tailscale establish connections?
+
+1. Each device authenticates to the Tailscale coordination server (or
+   Headscale) using OAuth / SSO.
+2. The control plane distributes WireGuard public keys and DERP relay
+   information.
+3. Devices try direct UDP NAT traversal; fall back to DERP relay servers if
+   direct path fails.
+4. Traffic flows encrypted peer-to-peer (or through a relay).
+
+### How does openme establish connections?
+
+1. The client sends a single 165-byte encrypted, signed UDP packet to the
+   server's public IP.
+2. The server verifies the Ed25519 signature and decrypts the payload.
+3. If valid, a firewall allow-rule is added for the client's IP on the
+   requested port for 30 seconds.
+4. The client connects directly to the now-open port (SSH, HTTPS, etc.).
+5. After 30 seconds the firewall rule is removed; the established TCP/UDP
+   session continues unaffected.
+
+No coordination server. No relay. No persistent agent.
+
+---
+
+## Privacy & Cloud Dependency
+
+### Does Tailscale collect device metadata?
+
+Tailscale's commercial service does collect device information (IP addresses,
+hostnames, last-seen timestamps, OS type) visible in the admin console.
+Tailscale's privacy policy governs this data. Using Headscale (self-hosted
+control plane) eliminates this dependency.
+
+### What data does openme collect or transmit to third parties?
+
+None. openme has no telemetry, no cloud dependency, and no account system.
+The knock packet contains only: an ephemeral public key, a nonce, an encrypted
+timestamp + random bytes + optional target IP, and an Ed25519 signature.
+No hostname, no device identifier, no OS type.
+
+---
+
+## Latency & Overhead
+
+### What is the latency overhead of Tailscale?
+
+For direct connections Tailscale's latency overhead is minimal — essentially
+just WireGuard encryption, which is negligible on modern hardware. Relay
+(DERP) connections add the RTT to the relay server location.
+
+### Does openme add latency to connections?
+
+openme adds a one-time knock-and-wait step before connecting. Once the port
+is open (typically one RTT after sending the knock), you connect at native
+speed with no encryption overhead. openme does **not** proxy or tunnel your
+traffic.
+
+---
+
+## Use Cases
+
+### When should I use openme instead of Tailscale?
+
+- You need **no persistent agent** on client devices.
+- You want **no cloud or control-plane dependency** at all.
+- You need to access a single port (SSH, a management UI) and do not need a
+  full virtual LAN.
+- You want the server to be **completely invisible** to internet scanners.
+- You are connecting from a device where installing a VPN client is not
+  possible (e.g., a shared kiosk — you can send a knock from a mobile app).
+
+### When should I use Tailscale instead of openme?
+
+- You need to connect **many devices** in a persistent mesh without configuring
+  per-device firewall rules.
+- You need **split-tunnel routing** or full-tunnel exit node functionality.
+- You rely on Tailscale features like MagicDNS, ACLs, subnet routing, or SSO
+  integration.
+- You need a **persistent always-on tunnel** where applications connect
+  transparently without a knock step.
+
+### Can I use openme and Tailscale together?
+
+Yes — a popular pattern is:
+
+1. openme protects the `41641/udp` Tailscale port (and/or the Headscale admin
+   port) so those ports are invisible until knocked.
+2. The client knocks with openme to temporarily open the Tailscale port.
+3. Tailscale completes its WireGuard handshake.
+4. Once the Tailscale tunnel is active, traffic flows through it and the openme
+   rule can expire.
+
+This gives you the best of both worlds: Tailscale's mesh routing **plus**
+openme's port invisibility.
+
+---
+
+## Self-Hosting & Privacy Comparison
+
+| Dimension | openme | Tailscale | Headscale (self-hosted) |
+|-----------|--------|-----------|------------------------|
+| Control plane | None — no coordination server | Tailscale's commercial cloud | Self-hosted (open source) |
+| Cloud dependency | None | Yes | No |
+| Account required | No | Yes | No (admin sets up users) |
+| Device registry | No | Yes | Yes |
+| Traffic telemetry | No | No (traffic is E2E encrypted) | No |
+| Open source | MIT | Some code open source | Yes (BSD) |
+| Cost | Free | Free tier + paid plans | Free (self-hosted) |
+
+---
+
+## Summary
+
+| Dimension | openme | Tailscale |
+|-----------|--------|-----------|
+| Role | Firewall gate (SPA) | Mesh VPN |
+| Hides port from scanners | Yes | No (port visible, handshake fails) |
+| Persistent tunnel | No | Yes |
+| Cloud / control plane | No | Yes (or Headscale) |
+| Account required | No | Yes |
+| Mobile apps | Yes (iOS, Android, watchOS) | Yes |
+| No-agent client possible | Yes | No |
+| Open source | MIT | Partial |
+| Complements the other | ✅ | ✅ |

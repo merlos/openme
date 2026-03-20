@@ -74,6 +74,12 @@ website:
       - section: "FAQ"
         contents:
           - faq/index.qmd
+          - section: "Comparisons"
+            contents:
+              - faq/vs-fwknop.qmd
+              - faq/vs-wireguard.qmd
+              - faq/vs-tailscale.qmd
+              - faq/vs-vpn.qmd
 
   page-footer:
     left: "© 2026 merlos.org — MIT License"

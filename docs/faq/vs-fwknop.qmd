@@ -1,0 +1,165 @@
+---
+title: "openme vs fwknop"
+description-meta: "How does openme compare to fwknop? A detailed FAQ covering cryptography, dependencies, platform support, mobile apps, and QR provisioning differences between openme and fwknop for Single Packet Authentication."
+keywords: [openme vs fwknop, fwknop alternative, single packet authentication comparison, SPA tool comparison, fwknop modern crypto, openme fwknop difference, SPA Linux firewall]
+---
+
+openme and [fwknop](https://www.cipherdyne.org/fwknop/) are both Single Packet
+Authentication (SPA) systems — they keep all ports hidden and temporarily open
+them after a valid cryptographic knock. This page explains the key differences
+to help you decide which tool fits your needs.
+
+## Cryptography
+
+### What crypto does each tool use?
+
+**fwknop** offers two modes:
+- **GnuPG** — asymmetric encryption using RSA or DSA keys managed by your GPG
+  keyring.
+- **Pre-shared key (HMAC + Rijndael/AES)** — symmetric encryption with a
+  manually distributed secret.
+
+**openme** uses a single, fixed, modern crypto stack:
+
+| Step | Algorithm |
+|------|-----------|
+| Key agreement | X25519 (Curve25519) ECDH — ephemeral per knock |
+| Key derivation | HKDF-SHA-256 with context string `openme-v1-chacha20poly1305` |
+| Encryption + authentication | ChaCha20-Poly1305 (RFC 8439) |
+| Identity / replay protection | Ed25519 signature over the signed portion |
+
+Every knock uses a fresh ephemeral key, so there is no long-term symmetric
+secret to manage or rotate.
+
+### Does openme support pre-shared keys as fwknop does?
+
+No — openme is asymmetric-only. The server holds a static X25519 public key
+and the client holds an Ed25519 signing key. There are no shared secrets to
+distribute securely.
+
+### Why Ed25519 signing on top of authenticated encryption?
+
+ChaCha20-Poly1305 already provides authentication, but only to someone who
+knows the shared AEAD key. Ed25519 signs the packet with the client's long-term
+identity key which is **independent** of the per-knock ECDH session.  This
+means the server can verify *which registered client* sent the knock before
+even attempting decryption, and it binds authentication to a stable identity
+even when the ephemeral key material changes every knock.
+
+---
+
+## Architecture & Dependencies
+
+### What does fwknop require to run?
+
+On the server side fwknop requires:
+
+- `fwknopd` daemon
+- **libpcap** to sniff incoming UDP packets (since it works below the socket
+  layer to avoid the kernel rejecting packets to closed ports)
+- Separate config files: `/etc/fwknop/fwknop.conf` and
+  `/etc/fwknop/access.conf`
+- Optional: a running GnuPG agent for GPG key mode
+
+On the client side it requires the `fwknop` CLI binary, which has a C build
+toolchain dependency.
+
+### What does openme require?
+
+- A single statically-linked Go binary — no shared libraries, no libpcap, no
+  GPG.
+- Kernel `CAP_NET_ADMIN` capability (or root) on the server for firewall rule
+  management.
+- nftables (≥ 0.9) or iptables on the server.
+
+### Why does openme not use libpcap?
+
+openme uses a standard UDP socket bound to a specific port. The server port is
+reachable directly; the kernel delivers the packet to the process. libpcap
+works at a lower level to capture traffic before the kernel drops it — useful
+if you want the UDP port to appear truly closed even to the OS, but it adds a
+C library dependency and requires elevated privileges for capture.
+
+---
+
+## Platform Support & Mobile
+
+### Which platforms does fwknop support?
+
+fwknop has clients for Linux, macOS, and Windows. There are no official iOS or
+Android apps.
+
+### Which platforms does openme support?
+
+| Platform | Status |
+|----------|--------|
+| Linux (server + CLI) | ✅ — primary platform |
+| macOS (CLI + menu-bar app) | ✅ |
+| Windows (CLI + system-tray app) | ✅ |
+| iOS (SwiftUI app) | ✅ |
+| Android (Kotlin app) | ✅ |
+| watchOS companion | ✅ |
+
+The iOS, macOS, Android, and watchOS apps share the same
+[OpenMeKit](https://github.com/merlos/openme/tree/main/apple/OpenMeKit) Swift
+package and the Android [openmekit](https://github.com/merlos/openme/tree/main/android/openmekit)
+library respectively, both implementing the identical 165-byte packet format.
+
+---
+
+## QR Code Provisioning
+
+### Can I configure clients with a QR code?
+
+openme has built-in QR provisioning: the server or an existing client can
+generate a QR code containing the connection profile (server address, public
+key, port). The mobile apps scan this QR code to add a new client profile in
+seconds.
+
+fwknop does not have built-in QR provisioning — keys must be distributed
+manually.
+
+---
+
+## Packet Format
+
+### Are the packet formats interoperable?
+
+No — openme and fwknop use different packet formats. openme's format is a fixed
+165 bytes; fwknop's format varies. The server and clients **must** be from the
+same project.
+
+### Where is openme's packet format documented?
+
+See [Packet Format](https://openme.merlos.org/docs/protocol/packet-format.html).
+
+---
+
+## Migration
+
+### Can I migrate from fwknop to openme?
+
+There is no automated migration tool. The steps are:
+
+1. Generate new keys with `openme keygen`.
+2. Deploy the openme server binary and configuration on your server.
+3. Distribute the new connection profile to clients (via QR or YAML export).
+4. Remove `fwknopd` from your server once all clients are migrated.
+
+---
+
+## Summary Comparison
+
+| Feature | openme | fwknop |
+|---------|--------|--------|
+| Crypto stack | Curve25519 + ChaCha20-Poly1305 + Ed25519 | RSA/DSA (GPG) or AES + HMAC (PSK) |
+| Pre-shared key mode | No | Yes |
+| libpcap dependency | No | Yes (server) |
+| Single static binary | Yes | No |
+| iOS / Android apps | Yes | No |
+| QR provisioning | Yes | No |
+| macOS / Windows client | Yes | Yes |
+| Packet size | Fixed 165 bytes | Variable |
+| Config file count | 1 YAML | 2 (fwknop.conf + access.conf) |
+| Language | Go | C |
+| License | MIT | GPL v2 |

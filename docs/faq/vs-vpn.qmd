@@ -1,0 +1,174 @@
+---
+title: "openme vs Traditional VPNs"
+description-meta: "How does openme Single Packet Authentication compare to traditional VPNs like OpenVPN, IPsec, and IKEv2? Learn when SPA is a better fit, when you need a VPN, and how to combine both for defense-in-depth."
+keywords: [openme vs VPN, SPA vs VPN, single packet authentication vs VPN, openme OpenVPN, openme IPsec, openme IKEv2, VPN alternative, hide VPN port, firewall knock VPN, SPA firewall]
+---
+
+Traditional VPNs (OpenVPN, IPsec/IKEv2, SSTP, L2TP) and openme Single Packet
+Authentication work at different layers of your security stack. This page
+explains the conceptual differences, typical use cases, and how to combine
+them for defense-in-depth.
+
+## Conceptual Difference
+
+### What is the fundamental difference between SPA and a VPN?
+
+A **VPN** creates an encrypted tunnel that carries your application traffic.
+Every packet you send travels through the tunnel, encrypted, to the VPN server
+or peer.
+
+**openme (SPA)** does not carry any of your application traffic. It acts
+purely as a **firewall gate**: a server keeps all its ports closed and only
+opens them — for a specific IP address, for a short window — after it receives
+a valid cryptographic knock. Once the port is open you connect directly (SSH,
+HTTPS, RDP, etc.). openme then exits; it never sits in the path of your
+connection.
+
+| Property | VPN | openme SPA |
+|----------|-----|-----------|
+| Carries application traffic | Yes | No |
+| Encrypts traffic in transit | Yes | No (leaves encryption to the application layer) |
+| Hides server ports from scanners | No — VPN port is visible | Yes — all ports closed |
+| Persistent connection | Yes | No — 30-second door |
+| Routing / virtual IP | Yes | No |
+| Performance overhead | Per-packet crypto overhead | None once connected |
+
+---
+
+## VPN Attack Surface
+
+### Can VPN servers be targeted by attackers?
+
+Yes — a VPN server is a publicly reachable service with an open port. It must
+implement a complex handshake protocol (TLS, IKE, etc.), which has historically
+been a source of vulnerabilities (e.g., CVE-2024-3400 FortiGate, Ivanti,
+Cisco ASA RCE bugs). Scanners can identify the VPN type, version, and
+potentially the vendor from banner information.
+
+With openme running in front of a VPN server, the VPN port is closed at the
+firewall level — scanners see nothing, and the VPN daemon never receives a
+packet from an unauthenticated source.
+
+### Does putting openme in front of a VPN affect performance?
+
+No. The knock is a single one-time UDP packet. After the firewall rule is added,
+you connect to the VPN normally at full speed. openme never intercepts VPN
+traffic.
+
+---
+
+## Common Scenarios
+
+### Protecting an OpenVPN server with openme
+
+OpenVPN typically listens on `1194/udp` or `443/tcp`. To hide it:
+
+1. Configure openme's server to open that port on valid knock.
+2. Clients run `openme knock` before launching their OpenVPN client.
+3. OpenVPN completes its TLS handshake within the 30-second window.
+4. As long as the OpenVPN session is alive the tunnel continues; the openme
+   rule may expire without affecting established traffic.
+
+```yaml
+# openme server config — open OpenVPN UDP port
+rules:
+  - port: 1194
+    protocol: udp
+    timeout: 30
+```
+
+### Protecting an IPsec / IKEv2 server
+
+IPsec uses `500/udp` (IKE) and `4500/udp` (NAT-T). Configure openme to open
+both:
+
+```yaml
+rules:
+  - port: 500
+    protocol: udp
+    timeout: 30
+  - port: 4500
+    protocol: udp
+    timeout: 30
+```
+
+The client knocks and then connects with the native IKEv2 client (
+`strongSwan`, Apple's built-in IKEv2, Windows built-in VPN).
+
+### Using openme instead of a VPN for simple remote access
+
+If you only need SSH or HTTPS access to a single server, openme alone may be
+sufficient — there is no need to set up tunnel routing. The pattern is:
+
+```bash
+openme knock myserver && ssh user@myserver.example.com
+```
+
+The connection is encrypted by SSH itself; openme just controls when the port
+is accessible.
+
+---
+
+## Privacy & Metadata
+
+### Does a VPN server see my traffic?
+
+The VPN server terminates your encrypted tunnel — it sees your plaintext
+traffic to the internet (for full-tunnel configurations) or at least all
+traffic destined to the VPN-side network. You are trusting the VPN operator.
+
+### What does the openme server see?
+
+The openme server receives one 165-byte UDP packet per knock. After successful
+verification it adds a firewall rule and logs the event (IP + port + timestamp).
+Your subsequent SSH or HTTPS session goes directly to the application; openme
+never sees its content.
+
+---
+
+## Comparison at a Glance
+
+| Feature | OpenVPN | IPsec / IKEv2 | openme |
+|---------|---------|--------------|--------|
+| Encrypts transit traffic | Yes | Yes | No (delegate to app layer) |
+| Hides server from scanners | No | No | Yes |
+| Requires persistent agent | Yes | Yes | No |
+| Server port open to the internet | Yes | Yes | No (closed until knock) |
+| Mobile support | Yes (OpenVPN Connect) | Yes (native OS) | Yes (iOS, Android, watchOS) |
+| Key / cert management | PKI (CA, certs) or PSK | PKI or PSK | Ed25519 key pair |
+| Complexity | High | High | Low |
+| Protocol visibility | TLS handshake | IKE handshake | Single random-looking packet |
+| Cloud / control plane | Optional | No | No |
+| Open source | Yes | Yes | Yes (MIT) |
+
+---
+
+## When to Use Each
+
+### Use a VPN when:
+
+- You need to route all traffic through a trusted exit node for privacy.
+- You need a virtual LAN (accessing private resources by IP across sites).
+- Applications connect transparently without manual knock steps.
+- Compliance or corporate policy requires all traffic to traverse a VPN.
+
+### Use openme when:
+
+- You want the server completely invisible to internet scanners.
+- You need minimal overhead and no persistent agent on the client.
+- You want to protect a small number of ports (SSH, admin UI, VPN port itself).
+- You want a simple, zero-dependency deployment.
+
+### Use both when:
+
+- You need VPN tunnelling **and** want the VPN server hidden from the internet.
+- You want defense-in-depth: even if the VPN protocol has a zero-day, scanners
+  cannot reach it.
+
+---
+
+## Further Reading
+
+- [Security Model](https://openme.merlos.org/docs/security/) — openme threat model
+- [Packet Format](https://openme.merlos.org/docs/protocol/packet-format.html) — wire format details
+- [Server Configuration](https://openme.merlos.org/docs/configuration/server.html) — configuring rules and ports
