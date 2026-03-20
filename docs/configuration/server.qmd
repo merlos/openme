@@ -16,6 +16,7 @@ server:
   firewall: nft
   knock_timeout: 30s
   replay_window: 60s
+  open_knock_port: true  # set to false if your firewall already opens this port
   private_key: "base64-encoded-curve25519-private-key=="
   public_key:  "base64-encoded-curve25519-public-key=="
 
@@ -62,6 +63,7 @@ clients:
 | `replay_window` | duration | `"60s"` | Maximum accepted age of a knock timestamp. |
 | `private_key` | base64 | — | **Secret.** Server's Curve25519 private key (32 bytes). |
 | `public_key` | base64 | — | Server's Curve25519 public key (32 bytes). Convenience copy — derived from `private_key`. |
+| `open_knock_port` | bool | `true` | When `true` the server inserts a firewall rule that accepts UDP traffic on `udp_port` at startup and removes it on shutdown. Set to `false` if your existing firewall configuration already opens that port. |
 
 Duration values use Go duration syntax: `"30s"`, `"1m"`, `"90s"`.
 

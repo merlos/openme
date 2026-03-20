@@ -117,6 +117,20 @@ Consumed by
 .BR "openme sessions" .
 Default:
 .IR /run/openme/sessions.json .
+.PP
+.B Config file keys relevant to
+.BR "openme serve" :
+.TP
+.B open_knock_port
+(boolean, default
+.IR true .)
+When true, the server inserts a firewall rule accepting UDP traffic on
+.I udp_port
+at startup and removes it on shutdown.
+Set to
+.I false
+if the host\(cqs existing firewall configuration already opens that port,
+to prevent openme from installing a duplicate rule.
 .
 .SS openme sessions
 .B openme sessions

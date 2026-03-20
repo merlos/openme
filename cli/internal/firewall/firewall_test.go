@@ -22,6 +22,9 @@ type mockBackend struct {
 
 func (m *mockBackend) Name() string { return "mock" }
 
+func (m *mockBackend) Setup(_ uint16, _ bool) error { return nil }
+func (m *mockBackend) Teardown(_ uint16) error      { return nil }
+
 func (m *mockBackend) Open(srcIP net.IP, ports []config.PortRule) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()

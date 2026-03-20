@@ -435,6 +435,10 @@ func runServe(stateFile string) error {
 	if err != nil {
 		return err
 	}
+	openKnockPort := cfg.Server.OpenKnockPort == nil || *cfg.Server.OpenKnockPort
+	if err := fw.Setup(cfg.Server.UDPPort, openKnockPort); err != nil {
+		return fmt.Errorf("firewall setup: %w", err)
+	}
 	fwMgr := firewall.NewManager(fw, cfg.Server.KnockTimeout.Duration, stateFile, log)
 
 	srv := server.New(&server.Options{
@@ -463,6 +467,9 @@ func runServe(stateFile string) error {
 		return fmt.Errorf("server error: %w", err)
 	}
 	fwMgr.CloseAll(context.Background())
+	if err := fw.Teardown(cfg.Server.UDPPort); err != nil {
+		log.Warn("firewall teardown", "err", err)
+	}
 	return nil
 }
 
