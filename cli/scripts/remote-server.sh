@@ -37,6 +37,7 @@ done
 SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
 OPENME="${SCRIPT_DIR}/openme"
 IPTABLES_BACKUP="/tmp/openme-iptables-backup.rules"
+NFT_BACKUP="/tmp/openme-nft-backup.rules"
 CHAIN_INPUT="INPUT"
 CHAIN_FORWARD="FORWARD"
 
@@ -59,6 +60,9 @@ block_all_iptables() {
 
 # ── Block all ports (nft) ─────────────────────────────────────────────────────
 block_all_nft() {
+    echo "==> Saving current nft ruleset to ${NFT_BACKUP} …"
+    nft list ruleset > "${NFT_BACKUP}"
+
     echo "==> Blocking all new incoming connections (nft) …"
     nft flush ruleset
     nft add table inet filter
@@ -98,9 +102,16 @@ unblock_all_iptables() {
 
 # ── Unblock (nft) ─────────────────────────────────────────────────────────────
 unblock_all_nft() {
-    echo "==> Flushing nft ruleset …"
-    nft flush ruleset
-    echo "    nft ruleset cleared."
+    echo "==> Restoring nft ruleset from ${NFT_BACKUP} …"
+    if [[ -f "${NFT_BACKUP}" ]]; then
+        nft flush ruleset
+        nft -f "${NFT_BACKUP}"
+        rm -f "${NFT_BACKUP}"
+        echo "    nft ruleset restored."
+    else
+        echo "    Backup not found — flushing nft ruleset."
+        nft flush ruleset
+    fi
 }
 
 unblock_all() {
