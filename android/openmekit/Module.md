@@ -48,6 +48,10 @@ viewModelScope.launch {
 }
 ```
 
-## Package
+# Package org.merlos.openmekit
 
-The library lives under the `org.merlos.openmekit` package.
+Core package containing all OpenMeKit classes.
+[KnockService] builds and dispatches the 165-byte SPA packet;
+[KnockManager] coordinates the knock lifecycle for use from ViewModels;
+[ProfileStore] persists named connection profiles via Jetpack DataStore;
+[ClientConfigParser] imports profiles from YAML or QR-code JSON.
