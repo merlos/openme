@@ -2,9 +2,9 @@ BINARY   = openme
 DIST     = dist
 MODULE   = github.com/merlos/openme
 
-# Infer version from the most recent git tag (strips leading 'v').
+# Infer version from the most recent git tag (strips leading 'cli/v').
 # Override on the command line: make release VERSION=1.2.3
-VERSION  ?= $(shell git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//' || echo "0.0.0-dev")
+VERSION  ?= $(shell git describe --tags --abbrev=0 --match 'cli/v*' 2>/dev/null | sed 's/^cli\/v//' || echo "0.0.0-dev")
 
 DEB_STAGING = $(DIST)/.deb-staging
 
