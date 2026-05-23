@@ -93,15 +93,14 @@ Requires **Go 1.21+**.
 ```bash
 git clone https://github.com/merlos/openme
 cd openme/cli
-make build            # builds with embedded version (recommended)
+make build         
 sudo mv openme /usr/local/bin/
 ```
 
 If you prefer a raw `go build`, embed the version with LDFLAGS:
 
 ```bash
-VERSION=$(git describe --tags --abbrev=0 --match 'cli/v*' 2>/dev/null | sed 's/^cli\/v//' || echo "0.0.0-dev")
-go build -ldflags="-X github.com/merlos/openme/cli/pkg/version.Version=${VERSION}" -o openme ./cmd/openme
+go build -o openme ./cmd/openme
 ```
 
 ### Cross-Compilation

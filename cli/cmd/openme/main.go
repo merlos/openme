@@ -27,11 +27,11 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"runtime"
 	"sort"
 	"strings"
 	"syscall"
 	"time"
-	"runtime"
 
 	"github.com/merlos/openme/cli/internal/client"
 	"github.com/merlos/openme/cli/internal/config"
