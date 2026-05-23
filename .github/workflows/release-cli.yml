@@ -67,9 +67,12 @@ jobs:
           CGO_ENABLED: '0'
         run: |
           VERSION="${GITHUB_REF_NAME##*/}"
+          # Strip leading 'cli/v' if present (tags are cli/v1.2.3)
+          VERSION="${VERSION#cli/v}"
           EXT=""
           [ "$GOOS" = "windows" ] && EXT=".exe"
-          go build -ldflags="-s -w" \
+          GO_LDFLAGS="-s -w -X github.com/merlos/openme/cli/pkg/version.Version=${VERSION}"
+          go build -ldflags="$GO_LDFLAGS" \
             -o "openme-${{ matrix.goos }}-${{ matrix.goarch }}${EXT}" \
             ./cmd/openme
       - uses: actions/upload-artifact@v7

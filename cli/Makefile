@@ -8,6 +8,10 @@ VERSION  ?= $(shell git describe --tags --abbrev=0 --match 'cli/v*' 2>/dev/null 
 
 DEB_STAGING = $(DIST)/.deb-staging
 
+# GO_LDFLAGS used when building to inject build-time variables (e.g. Version).
+# Use a distinct variable name to avoid collision with environment LDFLAGS.
+GO_LDFLAGS ?= -s -w -X github.com/merlos/openme/cli/pkg/version.Version=$(VERSION)
+
 TARGETS = \
 	linux/amd64 \
 	linux/arm64 \
@@ -22,7 +26,7 @@ all: build
 
 ## Build for the current platform
 build:
-	go build -o $(BINARY) ./cmd/openme
+	go build -ldflags="$(GO_LDFLAGS)" -o $(BINARY) ./cmd/openme
 
 ## Run all tests with race detector and coverage
 test:
@@ -44,7 +48,7 @@ $(TARGETS):
 	$(eval EXT    := $(if $(filter windows,$(GOOS)),.exe,))
 	@mkdir -p $(DIST)
 	CGO_ENABLED=0 GOOS=$(GOOS) GOARCH=$(GOARCH) \
-		go build -ldflags="-s -w" \
+		go build -ldflags="$(GO_LDFLAGS)" \
 		-o $(DIST)/$(BINARY)-$(GOOS)-$(GOARCH)$(EXT) \
 		./cmd/openme
 	@echo "Built $(DIST)/$(BINARY)-$(GOOS)-$(GOARCH)$(EXT)"
@@ -86,7 +90,7 @@ package-deb-amd64 package-deb-arm64:
 	@echo "→ Building $(BINARY) $(VERSION) .deb for $(_DEBARCH) …"
 	@mkdir -p $(DIST)
 	CGO_ENABLED=0 GOOS=linux GOARCH=$(_GOARCH) \
-		go build -ldflags="-s -w" \
+		go build -ldflags="$(GO_LDFLAGS)" \
 		-o $(DIST)/$(BINARY)-linux-$(_GOARCH) \
 		./cmd/openme
 
