@@ -29,7 +29,7 @@ build() {
     export CGO_ENABLED=0
     export GOFLAGS="-buildmode=exe"
     go build \
-        -ldflags "-s -w -X main.version=$pkgver" \
+        -ldflags "-s -w -X github.com/merlos/openme/cli/pkg/version.Version=$pkgver" \
         -o openme \
         ./cmd/openme
 }
