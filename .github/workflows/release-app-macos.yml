@@ -109,6 +109,7 @@ jobs:
 
       # ── Notarize via App Store Connect API key ───────────────────────────────
       - name: Notarize DMG
+        id: notarize
         env:
           APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
           APPLE_API_KEY_ISSUER_ID: ${{ secrets.APPLE_API_KEY_ISSUER_ID }}
@@ -118,11 +119,25 @@ jobs:
           printf '%s' "$APPLE_API_KEY_BASE64" | base64 --decode > "$API_KEY_PATH"
           echo "API_KEY_PATH=$API_KEY_PATH" >> "$GITHUB_ENV"
 
-          xcrun notarytool submit "$DMG_PATH" \
+          SUBMISSION=$(xcrun notarytool submit "$DMG_PATH" \
             --key "$API_KEY_PATH" \
             --key-id "$APPLE_API_KEY_ID" \
             --issuer "$APPLE_API_KEY_ISSUER_ID" \
-            --wait
+            --wait --output-format json)
+
+          echo "$SUBMISSION"
+          SUBMISSION_ID=$(echo "$SUBMISSION" | python3 -c "import sys,json; print(json.load(sys.stdin)['id'])")
+          STATUS=$(echo "$SUBMISSION" | python3 -c "import sys,json; print(json.load(sys.stdin)['status'])")
+          echo "NOTARIZATION_ID=$SUBMISSION_ID" >> "$GITHUB_ENV"
+
+          if [ "$STATUS" != "Accepted" ]; then
+            echo "::error::Notarization failed with status: $STATUS (id: $SUBMISSION_ID)"
+            xcrun notarytool log "$SUBMISSION_ID" \
+              --key "$API_KEY_PATH" \
+              --key-id "$APPLE_API_KEY_ID" \
+              --issuer "$APPLE_API_KEY_ISSUER_ID"
+            exit 1
+          fi
 
       - name: Staple notarization ticket
         run: xcrun stapler staple "$DMG_PATH"
