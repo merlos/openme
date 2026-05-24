@@ -101,12 +101,18 @@ To build for all compatible architectures
 make build-all 
 ```
 
-Which leaves the binaries in `./dist/openme-<os>-<arch>`, such as `openme-darwing-arm64`, `openme-linux-amd64`)
+Which leaves the binaries in `./dist/openme-<os>-<arch>`, such as `openme-darwing-arm64`, `openme-linux-amd64`.
 
 If you prefer a raw `go build`, embed the version with LDFLAGS:
 
 ```bash
 go build -o openme ./cmd/openme
+```
+Setting the version: 
+
+```bash
+VERSION=1.2.3
+go build -ldflags="-s -w -X github.com/merlos/openme/cli/pkg/version.Version=${VERSION}" -o openme ./cmd/openme
 ```
 
 ### Release Builds
@@ -122,7 +128,7 @@ make build-release
 # Build all release binaries into dist/
 make build-all-release
 
-# alternatively
+# alternatively forcing the version
 make build VERSION=1.2.4
 make build-all VERSION=1.2.4
 ```
