@@ -1,12 +1,6 @@
 name: dev - cli
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'cli/**'
-      - '.github/workflows/dev-cli.yml'
   pull_request:
     paths:
       - 'cli/**'
