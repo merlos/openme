@@ -118,7 +118,7 @@ go build -ldflags="-s -w -X github.com/merlos/openme/cli/pkg/version.Version=${V
 ### Release Builds
 
 These targets always derive the embedded version from the most recent
-`cli/v*` git tag. If no matching tag exists, version falls back to
+`cli-v*` git tag. If no matching tag exists, version falls back to
 `0.0.0-dev`.
 
 ```bash

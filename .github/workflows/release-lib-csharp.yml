@@ -2,7 +2,7 @@ name: Release — C# OpenMeKit
 
 on:
   push:
-    tags: ['lib/csharp/v*']
+    tags: ['lib-csharp-v*']
 
 permissions:
   contents: write
@@ -37,7 +37,7 @@ jobs:
         with: { dotnet-version: '8.x' }
       - name: Get version
         id: ver
-        run: echo "VERSION=${GITHUB_REF_NAME##*/}" >> "$GITHUB_OUTPUT"
+        run: echo "VERSION=${GITHUB_REF_NAME#lib-csharp-v}" >> "$GITHUB_OUTPUT"
       - name: Pack
         run: |
           dotnet pack OpenMeKit/OpenMeKit.csproj \

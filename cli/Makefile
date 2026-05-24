@@ -3,11 +3,11 @@ DIST     = dist
 MODULE   = github.com/merlos/openme
 
 # Non-release builds always use the development version.
-# Release targets set VERSION from the most recent cli/v* tag.
+# Release targets set VERSION from the most recent cli-v* tag.
 VERSION  ?= 0.0.0-dev
 
-# ReleaseVersion is always derived from the latest cli/v* tag (fallback: 0.0.0-dev).
-ReleaseVersion = $(shell git describe --tags --abbrev=0 --match 'cli/v*' 2>/dev/null | sed 's/^cli\/v//' || echo "0.0.0-dev")
+# ReleaseVersion is always derived from the latest cli-v* tag (fallback: 0.0.0-dev).
+ReleaseVersion = $(shell git describe --tags --abbrev=0 --match 'cli-v*' 2>/dev/null | sed 's/^cli-v//' || echo "0.0.0-dev")
 
 DEB_STAGING = $(DIST)/.deb-staging
 

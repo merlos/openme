@@ -2,7 +2,7 @@ name: Release — Swift OpenMeKit
 
 on:
   push:
-    tags: ['lib/swift/v*']
+    tags: ['lib-swift-v*']
 
 permissions:
   contents: write
@@ -31,8 +31,8 @@ jobs:
       - name: Extract semver and push SPM tag
         id: ver
         run: |
-          # lib/swift/v1.2.3  →  1.2.3
-          SEMVER=${GITHUB_REF_NAME##*/v}
+          # lib-swift-v1.2.3  ->  1.2.3
+          SEMVER=${GITHUB_REF_NAME#lib-swift-v}
           echo "SEMVER=$SEMVER" >> "$GITHUB_OUTPUT"
 
           # Push a plain vX.Y.Z tag that SPM recognises for version resolution.

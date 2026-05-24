@@ -2,7 +2,7 @@ name: Release — Android App
 
 on:
   push:
-    tags: ['app/android/v*']
+    tags: ['app-android-v*']
 
 permissions:
   contents: write
@@ -38,7 +38,7 @@ jobs:
       - name: Get version
         id: ver
         shell: bash
-        run: echo "VERSION=${GITHUB_REF_NAME##*/}" >> "$GITHUB_OUTPUT"
+        run: echo "VERSION=${GITHUB_REF_NAME#app-android-v}" >> "$GITHUB_OUTPUT"
 
       # ── Debug APK (always) ────────────────────────────────────────────────────────
       - run: gradle :app:assembleDebug

@@ -2,7 +2,7 @@ name: Release — CLI
 
 on:
   push:
-    tags: ['cli/v*']
+    tags: ['cli-v*']
 
 permissions:
   contents: write
@@ -69,8 +69,7 @@ jobs:
       - name: Build .deb
         shell: bash
         run: |
-          VERSION="${GITHUB_REF_NAME##*/}"
-          VERSION="${VERSION#cli/v}"
+          VERSION="${GITHUB_REF_NAME#cli-v}"
           ARCH="${{ matrix.dpkg_arch }}"
           PKGDIR="openme_${VERSION}_${ARCH}"
 

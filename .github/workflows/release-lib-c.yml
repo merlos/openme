@@ -2,7 +2,7 @@ name: Release — C openmelib
 
 on:
   push:
-    tags: ['lib/c/v*']
+    tags: ['lib-c-v*']
 
 permissions:
   contents: write
@@ -43,7 +43,7 @@ jobs:
         run: sudo apt-get install -y gcc-aarch64-linux-gnu
       - name: Get version
         id: ver
-        run: echo "VERSION=${GITHUB_REF_NAME##*/}" >> "$GITHUB_OUTPUT"
+        run: echo "VERSION=${GITHUB_REF_NAME#lib-c-v}" >> "$GITHUB_OUTPUT"
       - name: Configure & build
         run: |
           cmake -S c/openmelib -B _build \
@@ -75,7 +75,7 @@ jobs:
       - uses: actions/checkout@v6
       - name: Get version
         id: ver
-        run: echo "VERSION=${GITHUB_REF_NAME##*/}" >> "$GITHUB_OUTPUT"
+        run: echo "VERSION=${GITHUB_REF_NAME#lib-c-v}" >> "$GITHUB_OUTPUT"
       - name: Stamp version into source files
         run: |
           VERSION="${{ steps.ver.outputs.VERSION }}"
@@ -146,7 +146,7 @@ jobs:
 
       - name: Get version
         id: ver
-        run: echo "VERSION=${GITHUB_REF_NAME##*/}" >> "$GITHUB_OUTPUT"
+        run: echo "VERSION=${GITHUB_REF_NAME#lib-c-v}" >> "$GITHUB_OUTPUT"
 
       - name: Stamp version into source files
         run: |

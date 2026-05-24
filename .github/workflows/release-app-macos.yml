@@ -2,7 +2,7 @@ name: Release — macOS App
 
 on:
   push:
-    tags: ['app/macos/v*']
+    tags: ['app-macos-v*']
 
 permissions:
   contents: write
@@ -34,7 +34,7 @@ jobs:
       - uses: actions/checkout@v6
       - name: Get version
         id: ver
-        run: echo "VERSION=${GITHUB_REF_NAME##*/}" >> "$GITHUB_OUTPUT"
+        run: echo "VERSION=${GITHUB_REF_NAME#app-macos-v}" >> "$GITHUB_OUTPUT"
       - name: Resolve packages
         working-directory: apple
         run: xcodebuild -workspace openme.xcworkspace -scheme openme-macos -resolvePackageDependencies
