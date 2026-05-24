@@ -16,6 +16,8 @@
 //	openme add <name> --qr                    # also display a QR code
 //	openme list                               # list all registered clients
 //	openme revoke <name>                      # revoke a client key
+//	openme --version                          # print CLI version and exit
+//	openme -v                                 # shorthand for --version
 package main
 
 import (
@@ -64,13 +66,14 @@ to securely and stealthily open firewall ports.`,
 	root.PersistentFlags().StringVar(&serverConfigPath, "config", defaultServerConfigPath, "server config file path")
 	root.PersistentFlags().StringVar(&clientConfigPath, "client-config", config.DefaultClientConfigPath(), "client config file path")
 	root.PersistentFlags().StringVar(&logLevel, "log-level", "info", "log level (debug, info, warn, error)")
-	root.PersistentFlags().BoolVar(&showVersion, "version", false, "print version and exit")
+	root.PersistentFlags().BoolVarP(&showVersion, "version", "v", false, "print version and exit")
 
-	root.PersistentPreRun = func(cmd *cobra.Command, args []string) {
+	root.Run = func(cmd *cobra.Command, args []string) {
 		if showVersion {
 			fmt.Printf("openme CLI v%s (%s-%s) || openme.merlos.org\n", pkgVersion.Version, runtime.GOOS, runtime.GOARCH)
-			os.Exit(0)
+			return
 		}
+		_ = cmd.Help()
 	}
 
 	root.AddGroup(
@@ -89,14 +92,6 @@ to securely and stealthily open firewall ports.`,
 		newStatusCmd(),
 		newProfilesCmd(),
 	)
-
-	// Handle `--version` early so it works without executing a subcommand.
-	for _, a := range os.Args[1:] {
-		if a == "--version" || a == "-v" || strings.HasPrefix(a, "--version=") {
-			fmt.Printf("openme CLI v%s (%s-%s) || openme.merlos.org\n", pkgVersion.Version, runtime.GOOS, runtime.GOARCH)
-			os.Exit(0)
-		}
-	}
 
 	if err := root.Execute(); err != nil {
 		os.Exit(1)
