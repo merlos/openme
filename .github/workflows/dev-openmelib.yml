@@ -1,12 +1,6 @@
 name: dev - openmelib CI
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'c/openmelib/**'
-      - '.github/workflows/dev-openmelib.yml'
   pull_request:
     paths:
       - 'c/openmelib/**'

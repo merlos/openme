@@ -1,12 +1,6 @@
 name: dev - Windows (.NET)
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'windows/**'
-      - '.github/workflows/dev-windows.yml'
   pull_request:
     paths:
       - 'windows/**'

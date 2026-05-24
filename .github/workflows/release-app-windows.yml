@@ -2,7 +2,7 @@ name: Release — Windows App
 
 on:
   push:
-    tags: ['app/windows/v*']
+    tags: ['app-windows-v*']
 
 permissions:
   contents: write
@@ -38,7 +38,7 @@ jobs:
       - name: Get version
         id: ver
         shell: bash
-        run: echo "VERSION=${GITHUB_REF_NAME##*/}" >> "$GITHUB_OUTPUT"
+        run: echo "VERSION=${GITHUB_REF_NAME#app-windows-v}" >> "$GITHUB_OUTPUT"
       - name: Publish
         shell: pwsh
         run: |

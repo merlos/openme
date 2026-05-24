@@ -93,9 +93,44 @@ Requires **Go 1.21+**.
 ```bash
 git clone https://github.com/merlos/openme
 cd openme/cli
-go mod download
-go build -o openme ./cmd/openme
+make build         
 sudo mv openme /usr/local/bin/
+```
+To build for all compatible architectures 
+```bash
+make build-all 
+```
+
+Which leaves the binaries in `./dist/openme-<os>-<arch>`, such as `openme-darwing-arm64`, `openme-linux-amd64`.
+
+If you prefer a raw `go build`, embed the version with LDFLAGS:
+
+```bash
+go build -o openme ./cmd/openme
+```
+Setting the version: 
+
+```bash
+VERSION=1.2.3
+go build -ldflags="-s -w -X github.com/merlos/openme/cli/pkg/version.Version=${VERSION}" -o openme ./cmd/openme
+```
+
+### Release Builds
+
+These targets always derive the embedded version from the most recent
+`cli-v*` git tag. If no matching tag exists, version falls back to
+`0.0.0-dev`.
+
+```bash
+# Build current platform release binary (openme)
+make build-release
+
+# Build all release binaries into dist/
+make build-all-release
+
+# alternatively forcing the version
+make build VERSION=1.2.4
+make build-all VERSION=1.2.4
 ```
 
 ### Cross-Compilation

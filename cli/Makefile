@@ -2,27 +2,43 @@ BINARY   = openme
 DIST     = dist
 MODULE   = github.com/merlos/openme
 
-# Infer version from the most recent git tag (strips leading 'v').
-# Override on the command line: make release VERSION=1.2.3
-VERSION  ?= $(shell git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//' || echo "0.0.0-dev")
+# Non-release builds always use the development version.
+# Release targets set VERSION from the most recent cli-v* tag.
+VERSION  ?= 0.0.0-dev
+
+# ReleaseVersion is always derived from the latest cli-v* tag (fallback: 0.0.0-dev).
+ReleaseVersion = $(shell git describe --tags --abbrev=0 --match 'cli-v*' 2>/dev/null | sed 's/^cli-v//' || echo "0.0.0-dev")
 
 DEB_STAGING = $(DIST)/.deb-staging
+
+# GO_LDFLAGS used when building to inject build-time variables (e.g. Version).
+# Use a distinct variable name to avoid collision with environment LDFLAGS.
+GO_LDFLAGS ?= -s -w -X github.com/merlos/openme/cli/pkg/version.Version=$(VERSION)
 
 TARGETS = \
 	linux/amd64 \
 	linux/arm64 \
+	linux/arm \
+	linux/386 \
+	linux/riscv64 \
 	darwin/amd64 \
 	darwin/arm64 \
-	windows/amd64
+	windows/amd64 \
+	windows/arm64 \
+	freebsd/amd64
 
-.PHONY: all build test lint clean docs build-all release \
+.PHONY: all build build-release test lint clean docs build-all build-all-release release \
         package-deb package-deb-amd64 package-deb-arm64 man
 
 all: build
 
 ## Build for the current platform
 build:
-	go build -o $(BINARY) ./cmd/openme
+	go build -ldflags="$(GO_LDFLAGS)" -o $(BINARY) ./cmd/openme
+
+## Build for the current platform using tag-derived release version (fallback: 0.0.0-dev)
+build-release:
+	@$(MAKE) build VERSION="$(ReleaseVersion)"
 
 ## Run all tests with race detector and coverage
 test:
@@ -41,13 +57,18 @@ build-all: $(TARGETS)
 $(TARGETS):
 	$(eval GOOS   := $(word 1,$(subst /, ,$@)))
 	$(eval GOARCH := $(word 2,$(subst /, ,$@)))
+	$(eval GOARM  := $(if $(filter arm,$(GOARCH)),7,))
 	$(eval EXT    := $(if $(filter windows,$(GOOS)),.exe,))
 	@mkdir -p $(DIST)
-	CGO_ENABLED=0 GOOS=$(GOOS) GOARCH=$(GOARCH) \
-		go build -ldflags="-s -w" \
+	CGO_ENABLED=0 GOOS=$(GOOS) GOARCH=$(GOARCH) GOARM=$(GOARM) \
+		go build -ldflags="$(GO_LDFLAGS)" \
 		-o $(DIST)/$(BINARY)-$(GOOS)-$(GOARCH)$(EXT) \
 		./cmd/openme
 	@echo "Built $(DIST)/$(BINARY)-$(GOOS)-$(GOARCH)$(EXT)"
+
+## Cross-compile for all release platforms using tag-derived release version (fallback: 0.0.0-dev)
+build-all-release:
+	@$(MAKE) build-all VERSION="$(ReleaseVersion)"
 
 ## Generate API docs using pkgsite (requires: go install golang.org/x/pkgsite/cmd/pkgsite@latest)
 docs:
@@ -55,7 +76,7 @@ docs:
 	pkgsite -open .
 
 ## Build release archives with checksums
-release: build-all
+release: build-all-release
 	@cd $(DIST) && sha256sum $(BINARY)-* > sha256sums.txt
 	@echo "Release artifacts in $(DIST)/"
 	@ls -lh $(DIST)/
@@ -86,7 +107,7 @@ package-deb-amd64 package-deb-arm64:
 	@echo "→ Building $(BINARY) $(VERSION) .deb for $(_DEBARCH) …"
 	@mkdir -p $(DIST)
 	CGO_ENABLED=0 GOOS=linux GOARCH=$(_GOARCH) \
-		go build -ldflags="-s -w" \
+		go build -ldflags="$(GO_LDFLAGS)" \
 		-o $(DIST)/$(BINARY)-linux-$(_GOARCH) \
 		./cmd/openme
 

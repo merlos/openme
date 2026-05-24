@@ -1,12 +1,6 @@
 name: dev - cli
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'cli/**'
-      - '.github/workflows/dev-cli.yml'
   pull_request:
     paths:
       - 'cli/**'
@@ -85,7 +79,10 @@ jobs:
         run: |
           EXT=""
           [ "$GOOS" = "windows" ] && EXT=".exe"
-          go build -ldflags="-s -w" -o openme-${{ matrix.goos }}-${{ matrix.goarch }}${EXT} ./cmd/openme
+          # Derive CLI version from the most-recent cli/v* tag, fallback to 0.0.0-dev
+          VERSION=$(git describe --tags --abbrev=0 --match 'cli/v*' 2>/dev/null | sed 's/^cli\/v//' || echo "0.0.0-dev")
+          GO_LDFLAGS="-s -w -X github.com/merlos/openme/cli/pkg/version.Version=${VERSION}"
+          go build -ldflags="$GO_LDFLAGS" -o openme-${{ matrix.goos }}-${{ matrix.goarch }}${EXT} ./cmd/openme
 
       - name: Upload binary
         uses: actions/upload-artifact@v7

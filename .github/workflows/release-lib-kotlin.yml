@@ -2,7 +2,7 @@ name: Release — Kotlin OpenMeKit
 
 on:
   push:
-    tags: ['lib/kotlin/v*']
+    tags: ['lib-kotlin-v*']
 
 permissions:
   contents: write
@@ -37,7 +37,7 @@ jobs:
         with: { gradle-version: '8.9' }
       - name: Get version
         id: ver
-        run: echo "VERSION=${GITHUB_REF_NAME##*/}" >> "$GITHUB_OUTPUT"
+        run: echo "VERSION=${GITHUB_REF_NAME#lib-kotlin-v}" >> "$GITHUB_OUTPUT"
       - run: gradle :openmekit:assembleRelease
       - name: Rename AAR
         run: |

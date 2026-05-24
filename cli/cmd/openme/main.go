@@ -16,6 +16,8 @@
 //	openme add <name> --qr                    # also display a QR code
 //	openme list                               # list all registered clients
 //	openme revoke <name>                      # revoke a client key
+//	openme --version                          # print CLI version and exit
+//	openme -v                                 # shorthand for --version
 package main
 
 import (
@@ -27,6 +29,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"runtime"
 	"sort"
 	"strings"
 	"syscall"
@@ -38,6 +41,7 @@ import (
 	"github.com/merlos/openme/cli/internal/firewall"
 	"github.com/merlos/openme/cli/internal/qr"
 	"github.com/merlos/openme/cli/internal/server"
+	pkgVersion "github.com/merlos/openme/cli/pkg/version"
 	"github.com/spf13/cobra"
 )
 
@@ -47,6 +51,7 @@ var (
 	serverConfigPath string
 	clientConfigPath string
 	logLevel         string
+	showVersion      bool
 )
 
 func main() {
@@ -61,6 +66,15 @@ to securely and stealthily open firewall ports.`,
 	root.PersistentFlags().StringVar(&serverConfigPath, "config", defaultServerConfigPath, "server config file path")
 	root.PersistentFlags().StringVar(&clientConfigPath, "client-config", config.DefaultClientConfigPath(), "client config file path")
 	root.PersistentFlags().StringVar(&logLevel, "log-level", "info", "log level (debug, info, warn, error)")
+	root.PersistentFlags().BoolVarP(&showVersion, "version", "v", false, "print version and exit")
+
+	root.Run = func(cmd *cobra.Command, args []string) {
+		if showVersion {
+			fmt.Printf("openme CLI v%s (%s-%s) || openme.merlos.org\n", pkgVersion.Version, runtime.GOOS, runtime.GOARCH)
+			return
+		}
+		_ = cmd.Help()
+	}
 
 	root.AddGroup(
 		&cobra.Group{ID: "server", Title: "Server commands:"},

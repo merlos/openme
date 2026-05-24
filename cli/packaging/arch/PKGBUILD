@@ -1,16 +1,18 @@
-# Maintainer: Juan M. Merlos <merlos@users.noreply.github.com>
+# Maintainer: Merlos <merlos@users.noreply.github.com>
 pkgname=openme
-pkgver=0.1.0
+# this needs to be replacesd with the actual version before building,
+#  e.g. via `makepkg --setvar pkgver 1.2.3`
+pkgver=0.0.0-dev
 pkgrel=1
-pkgdesc="Single Packet Authorization server and client"
-arch=('x86_64' 'aarch64' 'armv7h')
+pkgdesc="Single Packet Authorization (SPA) server and client"
+arch=('x86_64' 'aarch64' 'armv7h' 'i686' 'riscv64')
 url="https://openme.merlos.org"
 license=('MIT')
 makedepends=('go')
 optdepends=('iptables-nft: for automatic firewall rule management'
             'nftables: alternative firewall backend')
 backup=('etc/openme/config.yaml')
-source=("$pkgname-$pkgver.tar.gz::https://github.com/merlos/openme/archive/refs/tags/v$pkgver.tar.gz"
+source=("$pkgname-$pkgver.tar.gz::https://github.com/merlos/openme/archive/refs/tags/cli/v$pkgver.tar.gz"
         "openme.service")
 sha256sums=('SKIP'
             'SKIP')
@@ -29,7 +31,7 @@ build() {
     export CGO_ENABLED=0
     export GOFLAGS="-buildmode=exe"
     go build \
-        -ldflags "-s -w -X main.version=$pkgver" \
+        -ldflags "-s -w -X github.com/merlos/openme/cli/pkg/version.Version=$pkgver" \
         -o openme \
         ./cmd/openme
 }
