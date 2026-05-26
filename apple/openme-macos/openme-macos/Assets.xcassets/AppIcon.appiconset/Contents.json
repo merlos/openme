@@ -6,6 +6,7 @@
       "size" : "16x16"
     },
     {
+      "filename" : "ios32h.png",
       "idiom" : "mac",
       "scale" : "2x",
       "size" : "16x16"
@@ -16,6 +17,7 @@
       "size" : "32x32"
     },
     {
+      "filename" : "ios64.png",
       "idiom" : "mac",
       "scale" : "2x",
       "size" : "32x32"
@@ -26,6 +28,7 @@
       "size" : "128x128"
     },
     {
+      "filename" : "ios256.png",
       "idiom" : "mac",
       "scale" : "2x",
       "size" : "128x128"
@@ -36,16 +39,19 @@
       "size" : "256x256"
     },
     {
+      "filename" : "ios512.png",
       "idiom" : "mac",
       "scale" : "2x",
       "size" : "256x256"
     },
     {
+      "filename" : "ios-1.png",
       "idiom" : "mac",
       "scale" : "1x",
       "size" : "512x512"
     },
     {
+      "filename" : "ios.png",
       "idiom" : "mac",
       "scale" : "2x",
       "size" : "512x512"
