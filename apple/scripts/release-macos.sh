@@ -208,6 +208,7 @@ xcodebuild build \
     -scheme openme-macos \
     -configuration Release \
     -derivedDataPath "$DERIVED_DATA" \
+    MARKETING_VERSION="$VERSION" \
     CODE_SIGN_STYLE=Manual \
     CODE_SIGN_IDENTITY="$DEVELOPER_ID_IDENTITY" \
     DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
