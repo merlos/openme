@@ -12,7 +12,18 @@ struct MenuBarMenuView: View {
     @State private var feedbackMessage: String? = nil
     @State private var feedbackTimer: Timer? = nil
 
+    private var appVersion: String {
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.0.1-dev"
+    }
+
     var body: some View {
+        // ── App name & version (non-interactive header) ───────────────────
+        Text("OpenMe \(appVersion)")
+            .foregroundStyle(.secondary)
+            .font(.caption)
+
+        Divider()
+
         // ── Per-profile knock actions ─────────────────────────────────────
         if store.profiles.isEmpty {
             Text("No profiles configured")
