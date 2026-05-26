@@ -12,6 +12,9 @@ docs/.quarto/
 .DS_Store
 **/.DS_Store
 
+# ── Apple scripts local config ──────────────────────────────
+apple/scripts/.env
+
 # ── Windows ─────────────────────────────────────────────────
 Thumbs.db
 
