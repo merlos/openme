@@ -80,7 +80,7 @@ ENV_FILE="$SCRIPT_DIR/.env"
 
 # ── Parse arguments ───────────────────────────────────────────────────────────
 usage() {
-    sed -n '/^# USAGE/,/^# =\+/{ /^# =/d; s/^# \{0,1\}//; p }' "$0"
+    awk '/^# USAGE/{p=1; next} /^# ===[=]/{if(p) exit} p{sub(/^# ?/,""); print}' "$0"
     exit 0
 }
 
