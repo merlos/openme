@@ -61,7 +61,7 @@ private struct MenuBarLabelView: View {
     @Environment(\.openWindow) private var openWindow
 
     var body: some View {
-        Image(systemName: "lock.shield")
+        Image("MenuBarIcon")
             .onReceive(NotificationCenter.default.publisher(for: .openProfileManager)) { _ in
                 NSApp.activate(ignoringOtherApps: true)
                 openWindow(id: "profile-manager")
