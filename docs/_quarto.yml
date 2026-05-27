@@ -2,6 +2,8 @@ project:
   type: website
   output-dir: _site
 
+vars: _variables.yml
+
 website:
   title: "openme"
   description: "Single Packet Authentication — open your firewall with one encrypted packet"
@@ -14,7 +16,7 @@ website:
     logo-alt: "openme"
     left:
       - text: "Download"
-        href: download.qmd
+        href: download/index.qmd
       - text: "Documentation"
         href: index.qmd
       - text: "Getting Started"

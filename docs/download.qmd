@@ -7,8 +7,8 @@ toc: false
 
 <script>
 /* ── Build-time constants — injected by Quarto from docs/_variables.yml ───
-   {{< var >}} shortcodes are replaced at render time, before the browser
-   ever runs this script.                                                   */
+   Quarto shortcode values are substituted at render time, before the
+   browser ever runs this script.                                           */
 const OM_VERSIONS = {
   macos:   "{{< var macos_version >}}",
   android: "{{< var android_version >}}",

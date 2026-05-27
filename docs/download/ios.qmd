@@ -1,0 +1,16 @@
+---
+title: "Download openme for iOS"
+description-meta: "Download the openme iPhone app from the App Store — iOS 16+."
+keywords: [openme iOS download, openme iPhone app, openme App Store]
+toc: false
+css: download.css
+---
+
+{{< include _core.qmd >}}
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  renderHero("ios", false);
+  renderAllPlatforms();
+});
+</script>

@@ -1,0 +1,16 @@
+---
+title: "Download"
+description-meta: "Download openme for macOS, iOS, Android, Windows, and Linux — native apps and CLI client."
+keywords: [openme download, openme macOS, openme iOS, openme Android, openme Windows, openme Linux, openme CLI]
+toc: false
+css: download.css
+---
+
+{{< include _core.qmd >}}
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  renderHero(detectOS(), true);
+  renderAllPlatforms();
+});
+</script>

@@ -1,0 +1,16 @@
+---
+title: "Download openme for Linux"
+description-meta: "Download the openme CLI and server daemon for Linux — .deb packages and binaries for amd64, arm64, armhf, i386, riscv64."
+keywords: [openme Linux download, openme CLI, openme deb, openme server]
+toc: false
+css: download.css
+---
+
+{{< include _core.qmd >}}
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  renderHero("linux", false);
+  renderAllPlatforms();
+});
+</script>

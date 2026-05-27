@@ -1,0 +1,16 @@
+---
+title: "Download openme for Android"
+description-meta: "Download the openme Android app from Google Play or as an APK — Android 10+."
+keywords: [openme Android download, openme APK, openme Google Play]
+toc: false
+css: download.css
+---
+
+{{< include _core.qmd >}}
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  renderHero("android", false);
+  renderAllPlatforms();
+});
+</script>

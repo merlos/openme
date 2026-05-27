@@ -1,14 +1,6 @@
-# Release versions — referenced in .qmd files via {{< var <name> >}}
-#
-# In CI (docs.yml) this file is overwritten before `quarto render` by
-# querying the GitHub Releases API for the latest tag of each platform.
-# Locally, edit these values manually or run `quarto render` with the
-# defaults below (URLs will resolve to the 0.0.1-dev placeholders).
 macos_version: "0.0.1-dev"
 android_version: "0.0.1-dev"
 windows_version: "0.0.1-dev"
 cli_version: "0.0.1-dev"
-
-# App store links — static, not tied to a release tag.
 playstore_url: "https://play.google.com/store/apps/details?id=org.merlos.openme"
 appstore_url: "https://apps.apple.com/app/openme"
