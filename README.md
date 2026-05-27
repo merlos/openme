@@ -13,34 +13,6 @@ Client                              Server (port always CLOSED to scanners)
   │<══════════ SSH / HTTPS / etc. ══════│
 ```
 
----
-
-## Repository Layout
-
-```
-openme/
-├── cli/          Go server daemon + cross-platform CLI
-├── apple/
-│   ├── OpenMeKit/      Swift package — shared SPA client library (iOS, macOS, watchOS)
-│   ├── openme-ios/     iOS app (SwiftUI, Profiles, QR/YAML import, knock widget)
-│   ├── openme-macos/   macOS app (SwiftUI menu-bar, Profiles, AppleScript post-knock)
-│   ├── openme-watch/   watchOS app (WatchConnectivity sync from iPhone)
-│   ├── openme-widget/  iOS/macOS WidgetKit widget (one-tap knock from home screen)
-│   └── openme.xcworkspace/
-├── android/
-│   ├── openmekit/      Kotlin library — SPA protocol, profile storage, YAML/QR import
-│   └── app/            Android app (Jetpack Compose, Material 3)
-├── windows/
-│   ├── OpenMeKit/      .NET client library (Kotlin-equivalent)
-│   ├── openme-windows/ WPF system-tray application
-│   └── OpenMeKit.Tests/
-├── c/
-│   └── openmelib/  Pure C99 SPA client library (ESP32, Arduino, Linux, macOS, Windows)
-├── docs/         Quarto documentation site   → openme.merlos.org/docs/
-└── website/      Marketing landing page      → openme.merlos.org
-```
-
----
 
 ## Getting Started with the CLI
 
@@ -127,6 +99,36 @@ quarto preview
 | iOS | ✅ Active | SwiftUI app (iPhone/iPad) |
 
 ---
+
+---
+
+## Repository Layout
+
+```
+openme/
+├── cli/          Go server daemon + cross-platform CLI
+├── apple/
+│   ├── OpenMeKit/      Swift package — shared SPA client library (iOS, macOS, watchOS)
+│   ├── openme-ios/     iOS app (SwiftUI, Profiles, QR/YAML import, knock widget)
+│   ├── openme-macos/   macOS app (SwiftUI menu-bar, Profiles, AppleScript post-knock)
+│   ├── openme-watch/   watchOS app (WatchConnectivity sync from iPhone)
+│   ├── openme-widget/  iOS/macOS WidgetKit widget (one-tap knock from home screen)
+│   └── openme.xcworkspace/
+├── android/
+│   ├── openmekit/      Kotlin library — SPA protocol, profile storage, YAML/QR import
+│   └── app/            Android app (Jetpack Compose, Material 3)
+├── windows/
+│   ├── OpenMeKit/      .NET client library (Kotlin-equivalent)
+│   ├── openme-windows/ WPF system-tray application
+│   └── OpenMeKit.Tests/
+├── c/
+│   └── openmelib/  Pure C99 SPA client library (ESP32, Arduino, Linux, macOS, Windows)
+├── docs/         Quarto documentation site   → openme.merlos.org/docs/
+└── website/      Marketing landing page      → openme.merlos.org
+```
+
+---
+
 
 ## Contributing
 
