@@ -5,7 +5,7 @@ project:
 vars: _variables.yml
 
 website:
-  title: "openme"
+  title: "OpenMe"
   description: "Single Packet Authentication — open your firewall with one encrypted packet"
   favicon: img/favicon.ico
   repo-url: https://github.com/merlos/openme
@@ -40,7 +40,6 @@ website:
           - getting-started/server-setup.qmd
           - getting-started/client-setup.qmd
           - getting-started/adding-clients.qmd
-          - getting-started/cross-compilation.qmd
       - section: "Configuration"
         contents:
           - configuration/index.qmd
