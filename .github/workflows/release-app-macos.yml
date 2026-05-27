@@ -1,3 +1,60 @@
+# =============================================================================
+# release-app-macos.yml
+#
+# Builds, signs, notarizes and publishes the openme macOS menu-bar app.
+#
+# TRIGGER
+#   Push a tag matching  app-macos-v*  (e.g. app-macos-v0.1.0).
+#   The version number is derived by stripping the "app-macos-v" prefix.
+#
+# JOBS
+#   test    → Runs the Xcode test suite (openme-macos scheme, macOS destination)
+#             without code-signing so it can run on a clean CI runner.
+#
+#   build   → Imports the Developer ID certificate and App Store Connect API
+#             key from secrets, runs apple/scripts/release-macos.sh which:
+#               1. Compiles & archives the app with xcodebuild
+#               2. Code-signs with the Developer ID Application certificate
+#               3. Creates a DMG with create-dmg
+#               4. Submits to Apple notarization and staples the ticket
+#             The signed, notarized DMG is uploaded as the artifact "macos-dmg".
+#
+#   release → Downloads the artifact and creates a GitHub Release named
+#             "OpenMe macOS App v<VERSION>" with auto-generated release notes.
+#
+# REQUIRED SECRETS
+#   APPLE_CERTIFICATE_BASE64
+#     Export your "Developer ID Application" certificate from Keychain Access
+#     as a .p12 file (include the private key), then base64-encode it:
+#       base64 -i DeveloperIDApplication.p12 | pbcopy
+#     Set the result as this secret.
+#
+#   APPLE_CERTIFICATE_PASSWORD
+#     The passphrase you set when exporting the .p12 file.
+#
+#   APPLE_TEAM_ID
+#     Your 10-character Apple Developer Team ID (e.g. "AB12CD34EF").
+#     Find it at https://developer.apple.com/account → Membership.
+#
+#   APPLE_API_KEY_ID
+#     The Key ID of an App Store Connect API key with Developer role.
+#     Create one at https://appstoreconnect.apple.com/access/api.
+#     Looks like "ABCD123456".
+#
+#   APPLE_API_KEY_ISSUER_ID
+#     The Issuer ID shown on the same App Store Connect API keys page.
+#     Looks like a UUID: "12345678-1234-1234-1234-123456789abc".
+#
+#   APPLE_API_KEY_BASE64
+#     The .p8 private key file downloaded when creating the API key,
+#     base64-encoded:
+#       base64 -i AuthKey_ABCD123456.p8 | pbcopy
+#
+# LOCAL EQUIVALENT
+#   ./apple/scripts/release-macos.sh <version>
+#   (Reads APPLE_TEAM_ID, APPLE_API_KEY_ID, APPLE_API_KEY_ISSUER_ID,
+#    APPLE_API_KEY_PATH from environment or an .env file.)
+# =============================================================================
 name: Release — macOS App
 
 on:
