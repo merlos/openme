@@ -13,6 +13,8 @@ website:
     logo: img/logo.svg
     logo-alt: "openme"
     left:
+      - text: "Download"
+        href: download.qmd
       - text: "Documentation"
         href: index.qmd
       - text: "Getting Started"

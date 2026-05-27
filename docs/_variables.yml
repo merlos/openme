@@ -8,3 +8,7 @@ macos_version: "0.0.1-dev"
 android_version: "0.0.1-dev"
 windows_version: "0.0.1-dev"
 cli_version: "0.0.1-dev"
+
+# App store links — static, not tied to a release tag.
+playstore_url: "https://play.google.com/store/apps/details?id=org.merlos.openme"
+appstore_url: "https://apps.apple.com/app/openme"

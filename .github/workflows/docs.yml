@@ -140,7 +140,7 @@ jobs:
           ANDROID="$(get_version app-android-v)"
           WINDOWS="$(get_version app-windows-v)"
           CLI="$(get_version cli-v)"
-          printf 'macos_version: "%s"\nandroid_version: "%s"\nwindows_version: "%s"\ncli_version: "%s"\n' \
+          printf 'macos_version: "%s"\nandroid_version: "%s"\nwindows_version: "%s"\ncli_version: "%s"\nplaystore_url: "https://play.google.com/store/apps/details?id=org.merlos.openme"\nappstore_url: "https://apps.apple.com/app/openme"\n' \
             "${MACOS:-0.0.1-dev}" "${ANDROID:-0.0.1-dev}" \
             "${WINDOWS:-0.0.1-dev}" "${CLI:-0.0.1-dev}" \
             > docs/_variables.yml

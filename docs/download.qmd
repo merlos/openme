@@ -1,0 +1,475 @@
+---
+title: "Download"
+description-meta: "Download openme for macOS, iOS, Android, Windows, and Linux — native apps and CLI client."
+keywords: [openme download, openme macOS, openme iOS, openme Android, openme Windows, openme Linux, openme CLI]
+toc: false
+---
+
+<script>
+/* ── Build-time constants — injected by Quarto from docs/_variables.yml ───
+   {{< var >}} shortcodes are replaced at render time, before the browser
+   ever runs this script.                                                   */
+const OM_VERSIONS = {
+  macos:   "{{< var macos_version >}}",
+  android: "{{< var android_version >}}",
+  windows: "{{< var windows_version >}}",
+  cli:     "{{< var cli_version >}}"
+};
+const OM_STORE = {
+  play: "{{< var playstore_url >}}",
+  app:  "{{< var appstore_url >}}"
+};
+</script>
+
+<script>
+/* ── Download URL builder ────────────────────────────────────────────────── */
+const GH = "https://github.com/merlos/openme/releases/download";
+const v  = OM_VERSIONS;
+
+const GH_REL = "https://github.com/merlos/openme/releases";
+const GH_PREV = (q) => `${GH_REL}?q=${encodeURIComponent(q)}&expanded=true`;
+
+const OM_URLS = {
+  macos_dmg:    `${GH}/app-macos-v${v.macos}/openme-macos-${v.macos}.dmg`,
+  android_apk:  `${GH}/app-android-v${v.android}/openme-${v.android}.apk`,
+  win_x64:      `${GH}/app-windows-v${v.windows}/openme-windows-${v.windows}-win-x64.zip`,
+  win_arm64:    `${GH}/app-windows-v${v.windows}/openme-windows-${v.windows}-win-arm64.zip`,
+  linux_amd64:  `${GH}/cli-v${v.cli}/openme-linux-amd64`,
+  linux_arm64:  `${GH}/cli-v${v.cli}/openme-linux-arm64`,
+  linux_arm:    `${GH}/cli-v${v.cli}/openme-linux-arm`,
+  deb_amd64:    `${GH}/cli-v${v.cli}/openme_${v.cli}_amd64.deb`,
+  deb_arm64:    `${GH}/cli-v${v.cli}/openme_${v.cli}_arm64.deb`,
+  macos_cli:    `${GH}/cli-v${v.cli}/openme-darwin-arm64`,
+  win_cli_exe:  `${GH}/cli-v${v.cli}/openme-windows-amd64.exe`,
+  releases:     GH_REL
+};
+
+/* ── OS detection ────────────────────────────────────────────────────────── */
+function detectOS() {
+  const ua = navigator.userAgent.toLowerCase();
+  if (/android/.test(ua))             return "android";
+  if (/iphone|ipad|ipod/.test(ua))    return "ios";
+  if (/macintosh|mac os x/.test(ua))  return "macos";
+  if (/windows/.test(ua))             return "windows";
+  if (/linux/.test(ua))               return "linux";
+  return "unknown";
+}
+
+/* ── Per-platform definitions ────────────────────────────────────────────── */
+const PLATFORMS = {
+  macos: {
+    label:   "macOS",
+    icon:    "bi-apple",
+    headline: "openme for macOS",
+    sub:     "Menu-bar app — macOS 13+",
+    version: v.macos,
+    prevUrl: GH_PREV("OpenMe macOS App"),
+    buttons: [
+      { label: "Download DMG",  href: OM_URLS.macos_dmg,  primary: true  },
+      { label: "CLI (arm64)",   href: OM_URLS.macos_cli,  primary: false }
+    ]
+  },
+  ios: {
+    label:   "iOS",
+    icon:    "bi-phone",
+    headline: "openme for iPhone",
+    sub:     "Native SwiftUI app — iOS 16+",
+    version: "",
+    prevUrl: null,
+    buttons: [
+      { label: "App Store",  href: OM_STORE.app,  primary: true,  external: true }
+    ]
+  },
+  android: {
+    label:   "Android",
+    icon:    "bi-android2",
+    headline: "openme for Android",
+    sub:     "Jetpack Compose app — Android 10+",
+    version: v.android,
+    prevUrl: GH_PREV("OpenMe Android App"),
+    buttons: [
+      { label: "Google Play",    href: OM_STORE.play,        primary: true,  external: true },
+      { label: "Download APK",   href: OM_URLS.android_apk,  primary: false }
+    ]
+  },
+  windows: {
+    label:   "Windows",
+    icon:    "bi-windows",
+    headline: "openme for Windows",
+    sub:     "WPF system-tray app — Windows 10+",
+    version: v.windows,
+    prevUrl: GH_PREV("OpenMe Windows App"),
+    buttons: [
+      { label: "Download x64 ZIP",   href: OM_URLS.win_x64,   primary: true  },
+      { label: "Download arm64 ZIP", href: OM_URLS.win_arm64, primary: false }
+    ]
+  },
+  linux: {
+    label:   "Linux",
+    icon:    "bi-terminal-fill",
+    headline: "openme CLI for Linux",
+    sub:     "Server daemon &amp; knock client — amd64, arm64, armhf, i386, riscv64",
+    version: v.cli,
+    prevUrl: GH_PREV("OpenMe CLI"),
+    buttons: [
+      { label: "Download .deb (amd64)", href: OM_URLS.deb_amd64,   primary: true  },
+      { label: "Binary (amd64)",        href: OM_URLS.linux_amd64, primary: false }
+    ]
+  },
+  unknown: {
+    label:   "your platform",
+    icon:    "bi-download",
+    headline: "Download openme",
+    sub:     "Platform could not be detected — see all options below.",
+    version: "",
+    prevUrl: null,
+    buttons: [
+      { label: "All Releases", href: OM_URLS.releases, primary: true, external: true }
+    ]
+  }
+};
+
+/* ── HTML helpers ────────────────────────────────────────────────────────── */
+function btnHTML(b, large) {
+  const cls = b.primary
+    ? `btn ${large ? "btn-lg " : ""}om-btn-primary`
+    : `btn ${large ? "btn-lg " : ""}om-btn-secondary`;
+  const ext = b.external ? ' target="_blank" rel="noopener noreferrer"' : "";
+  return `<a href="${b.href}" class="${cls}"${ext}>`
+    + `<i class="bi bi-download me-2"></i>${b.label}</a>`;
+}
+
+/* ── Hero card ────────────────────────────────────────────────────────────── */
+function renderHero(os) {
+  const p   = PLATFORMS[os] || PLATFORMS.unknown;
+  const ver = p.version
+    ? `<span class="om-version-badge">v${p.version}</span>`
+    : "";
+  const note = os !== "unknown"
+    ? `<p class="om-detected-note">`
+      + `<i class="bi bi-geo-alt-fill me-1"></i>`
+      + `Detected your operating system as <strong>${p.label}</strong>. `
+      + `Not right? <a href="#all-platforms">See all platforms ↓</a></p>`
+    : `<p class="om-detected-note">`
+      + `<a href="#all-platforms">See all platforms ↓</a></p>`;
+
+  document.getElementById("om-hero").innerHTML = `
+<div class="om-hero-card">
+  <div class="om-hero-inner">
+    <div class="om-hero-icon"><i class="bi ${p.icon}"></i></div>
+    <div class="om-hero-text">
+      <h2 class="om-hero-title">${p.headline} ${ver}</h2>
+      <p class="om-hero-sub">${p.sub}</p>
+      <div class="om-btn-group">
+        ${p.buttons.map(b => btnHTML(b, true)).join("\n        ")}
+      </div>
+      ${p.prevUrl ? `<p class="om-prev-versions"><i class="bi bi-clock-history me-1"></i><a href="${p.prevUrl}" target="_blank" rel="noopener noreferrer">Previous versions</a></p>` : ""}
+    </div>
+  </div>
+  ${note}
+</div>`;
+}
+
+/* ── All-platforms grid ──────────────────────────────────────────────────── */
+function platformCard(icon, title, verLabel, links, prevUrl) {
+  const linksHTML = links.map(l => {
+    const ext = l.external ? ' target="_blank" rel="noopener noreferrer"' : "";
+    return `<a href="${l.href}" class="om-platform-link"${ext}>`
+      + `<i class="bi bi-download me-1"></i>${l.label}</a>`;
+  }).join("\n      ");
+
+  const prevHTML = prevUrl
+    ? `<a href="${prevUrl}" class="om-platform-prev" target="_blank" rel="noopener noreferrer">`
+      + `<i class="bi bi-clock-history me-1"></i>Previous versions</a>`
+    : "";
+
+  return `
+<div class="om-platform-card">
+  <div class="om-platform-header">
+    <i class="bi ${icon} om-platform-icon"></i>
+    <div>
+      <div class="om-platform-name">${title}</div>
+      <div class="om-platform-ver">${verLabel}</div>
+    </div>
+  </div>
+  <div class="om-platform-links">
+    ${linksHTML}
+  </div>
+  ${prevHTML}
+</div>`;
+}
+
+function renderAllPlatforms() {
+  const cards = [
+    platformCard("bi-apple", "macOS App", `v${v.macos}`, [
+      { label: "DMG (Universal)",  href: OM_URLS.macos_dmg }
+    ], GH_PREV("OpenMe macOS App")),
+    platformCard("bi-phone", "iOS App", "App Store", [
+      { label: "App Store",  href: OM_STORE.app,  external: true }
+    ], null),
+    platformCard("bi-android2", "Android App", `v${v.android}`, [
+      { label: "Google Play",     href: OM_STORE.play,       external: true },
+      { label: "APK (sideload)",  href: OM_URLS.android_apk }
+    ], GH_PREV("OpenMe Android App")),
+    platformCard("bi-windows", "Windows App", `v${v.windows}`, [
+      { label: "ZIP (x64)",   href: OM_URLS.win_x64   },
+      { label: "ZIP (arm64)", href: OM_URLS.win_arm64 }
+    ], GH_PREV("OpenMe Windows App")),
+    platformCard("bi-terminal-fill", "Linux CLI", `v${v.cli}`, [
+      { label: ".deb (amd64)",   href: OM_URLS.deb_amd64   },
+      { label: ".deb (arm64)",   href: OM_URLS.deb_arm64   },
+      { label: "Binary (amd64)", href: OM_URLS.linux_amd64 },
+      { label: "Binary (arm64)", href: OM_URLS.linux_arm64 }
+    ], GH_PREV("OpenMe CLI")),
+    platformCard("bi-terminal", "macOS &amp; Windows CLI", `v${v.cli}`, [
+      { label: "macOS (arm64)",   href: OM_URLS.macos_cli   },
+      { label: "Windows (.exe)",  href: OM_URLS.win_cli_exe }
+    ], GH_PREV("OpenMe CLI"))
+  ].join("");
+
+  document.getElementById("om-all").innerHTML = `
+<h2 id="all-platforms" class="om-section-title">All Platforms</h2>
+<div class="om-platforms-grid">${cards}</div>
+<p class="om-releases-footer">
+  <i class="bi bi-github me-1"></i>
+  All releases, changelogs and checksums on
+  <a href="${OM_URLS.releases}" target="_blank" rel="noopener noreferrer">GitHub Releases</a>.
+</p>`;
+}
+
+/* ── Init ────────────────────────────────────────────────────────────────── */
+document.addEventListener("DOMContentLoaded", function () {
+  const os = detectOS();
+  renderHero(os);
+  renderAllPlatforms();
+});
+</script>
+
+<style>
+/* ─── Hero card ─────────────────────────────────────────────────────────── */
+.om-hero-card {
+  background: var(--om-gradient-card, linear-gradient(160deg, #1e0a40 0%, #0f0720 100%));
+  border: 1px solid rgba(124, 58, 237, 0.45);
+  border-radius: 16px;
+  padding: 2.25rem 2rem 1.5rem;
+  margin: 1.25rem 0 2.5rem;
+  box-shadow: 0 8px 40px rgba(124, 58, 237, 0.18);
+}
+.om-hero-inner {
+  display: flex;
+  align-items: flex-start;
+  gap: 2rem;
+}
+.om-hero-icon {
+  font-size: 4rem;
+  line-height: 1;
+  color: var(--om-bright, #a87fff);
+  flex-shrink: 0;
+}
+.om-hero-title {
+  font-size: 1.75rem !important;
+  margin-bottom: 0.4rem;
+  background: linear-gradient(90deg, var(--om-lavender, #ede9f7) 0%, var(--om-bright, #a87fff) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.om-hero-sub {
+  color: var(--om-muted, #9d87c7);
+  margin-bottom: 1.25rem;
+  font-size: 1.05rem;
+}
+.om-version-badge {
+  display: inline-block;
+  background: rgba(124, 58, 237, 0.22);
+  color: var(--om-bright, #a87fff);
+  border: 1px solid rgba(124, 58, 237, 0.5);
+  border-radius: 6px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.12rem 0.5rem;
+  vertical-align: middle;
+  font-family: monospace;
+  letter-spacing: 0.03em;
+  -webkit-text-fill-color: var(--om-bright, #a87fff);
+}
+.om-btn-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+.om-btn-primary {
+  background: var(--om-accent, #7c3aed) !important;
+  border-color: var(--om-accent, #7c3aed) !important;
+  color: #fff !important;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 0.6rem 1.4rem;
+  text-decoration: none !important;
+  transition: background 0.15s, transform 0.1s;
+}
+.om-btn-primary:hover {
+  background: #6d28d9 !important;
+  border-color: #6d28d9 !important;
+  transform: translateY(-1px);
+}
+.om-btn-secondary {
+  background: transparent !important;
+  border: 1.5px solid rgba(124, 58, 237, 0.55) !important;
+  color: var(--om-bright, #a87fff) !important;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 0.6rem 1.4rem;
+  text-decoration: none !important;
+  transition: border-color 0.15s, transform 0.1s;
+}
+.om-btn-secondary:hover {
+  border-color: var(--om-bright, #a87fff) !important;
+  transform: translateY(-1px);
+}
+.om-detected-note {
+  margin-top: 1.5rem;
+  margin-bottom: 0;
+  font-size: 0.82rem;
+  color: var(--om-muted, #9d87c7);
+  border-top: 1px solid rgba(124, 58, 237, 0.2);
+  padding-top: 1rem;
+}
+
+/* ─── Section title ─────────────────────────────────────────────────────── */
+.om-section-title {
+  margin-top: 0.25rem;
+  margin-bottom: 1.5rem;
+}
+
+/* ─── Platforms grid ────────────────────────────────────────────────────── */
+.om-platforms-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(265px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 2rem;
+}
+.om-platform-card {
+  background: var(--om-gradient-card, linear-gradient(160deg, #1e0a40 0%, #0f0720 100%));
+  border: 1px solid rgba(124, 58, 237, 0.3);
+  border-radius: 12px;
+  padding: 1.25rem 1.25rem 1rem;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.om-platform-card:hover {
+  border-color: rgba(124, 58, 237, 0.65);
+  box-shadow: 0 4px 20px rgba(124, 58, 237, 0.15);
+}
+.om-platform-header {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  margin-bottom: 1rem;
+}
+.om-platform-icon {
+  font-size: 2rem;
+  color: var(--om-bright, #a87fff);
+  flex-shrink: 0;
+}
+.om-platform-name {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--om-lavender, #ede9f7);
+}
+.om-platform-ver {
+  font-size: 0.75rem;
+  font-family: monospace;
+  color: var(--om-muted, #9d87c7);
+  margin-top: 0.1rem;
+}
+.om-platform-links {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+.om-platform-link {
+  color: var(--om-bright, #a87fff) !important;
+  font-size: 0.875rem;
+  text-decoration: none !important;
+  padding: 0.35rem 0.65rem;
+  border-radius: 6px;
+  border: 1px solid rgba(124, 58, 237, 0.25);
+  transition: background 0.12s, border-color 0.12s;
+}
+.om-platform-link:hover {
+  background: rgba(124, 58, 237, 0.12);
+  border-color: rgba(124, 58, 237, 0.5);
+  text-decoration: none !important;
+}
+.om-releases-footer {
+  text-align: center;
+  color: var(--om-muted, #9d87c7);
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+}
+.om-prev-versions {
+  margin-top: 0.9rem;
+  margin-bottom: 0;
+  font-size: 0.82rem;
+  color: var(--om-muted, #9d87c7);
+}
+.om-prev-versions a {
+  color: var(--om-muted, #9d87c7);
+  text-decoration: none;
+}
+.om-prev-versions a:hover {
+  color: var(--om-bright, #a87fff);
+  text-decoration: underline;
+}
+.om-platform-prev {
+  display: inline-block;
+  margin-top: 0.75rem;
+  font-size: 0.78rem;
+  color: var(--om-muted, #9d87c7) !important;
+  text-decoration: none !important;
+}
+.om-platform-prev:hover {
+  color: var(--om-bright, #a87fff) !important;
+  text-decoration: underline !important;
+}
+
+/* ─── Light theme overrides ─────────────────────────────────────────────── */
+[data-bs-theme="light"] .om-hero-card,
+[data-bs-theme="light"] .om-platform-card {
+  background: #f5f0ff;
+  border-color: rgba(109, 40, 217, 0.3);
+}
+[data-bs-theme="light"] .om-platform-name { color: #1a0a35; }
+[data-bs-theme="light"] .om-platform-ver  { color: #6d28d9; }
+[data-bs-theme="light"] .om-detected-note { color: #6d28d9; }
+[data-bs-theme="light"] .om-releases-footer { color: #4c1d95; }
+[data-bs-theme="light"] .om-hero-title {
+  -webkit-text-fill-color: unset;
+  color: #3b1d81;
+}
+[data-bs-theme="light"] .om-hero-sub  { color: #4c1d95; }
+[data-bs-theme="light"] .om-version-badge {
+  -webkit-text-fill-color: #6d28d9;
+  color: #6d28d9;
+}
+
+/* ─── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .om-hero-inner        { flex-direction: column; gap: 1rem; }
+  .om-hero-icon         { font-size: 2.5rem; }
+  .om-hero-title        { font-size: 1.4rem !important; }
+  .om-btn-primary,
+  .om-btn-secondary     { width: 100%; text-align: center; }
+}
+</style>
+
+<!-- Filled by JavaScript on DOMContentLoaded -->
+<div id="om-hero"></div>
+<div id="om-all"></div>
+
+<noscript>
+::: {.callout-warning}
+JavaScript is required to detect your platform and build download links.
+Please enable JavaScript or visit [GitHub Releases](https://github.com/merlos/openme/releases) directly.
+:::
+</noscript>
