@@ -70,11 +70,12 @@ The full documentation is published at **[openme.merlos.org/docs](https://openme
 
 | Section | Description |
 |---------|-------------|
-| [Protocol](https://openme.merlos.org/docs/protocol/) | Wire format, cryptographic design, security properties |
 | [Getting Started](https://openme.merlos.org/docs/getting-started/) | Step-by-step server and client setup |
 | [Configuration](https://openme.merlos.org/docs/configuration/) | All config options for server and client |
-| [Security Model](https://openme.merlos.org/docs/security/) | Threat model, what is and isn't protected |
 | [FAQ](https://openme.merlos.org/docs/faq/) | Common questions |
+| [Protocol](https://openme.merlos.org/docs/protocol/) | Wire format, cryptographic design, security properties |
+| [Security Model](https://openme.merlos.org/docs/security/) | Threat model, what is and isn't protected |
+
 | [For Developers](https://openme.merlos.org/docs/developer/) | Documentation For developers |
 
 To build and preview the docs locally:
