@@ -50,18 +50,34 @@ See [Client Configuration reference](../configuration/client.qmd) for all fields
 
 ### Install
 
-**From a pre-built binary** (Linux and macOS):
+#### Linux — Debian / Ubuntu package
+
+{{< include _install-deb.qmd >}}
+
+#### Linux — pre-built binary
+
+{{< include _install-binary.qmd >}}
+
+#### macOS
+
+Download from the **[macOS download page](../download/macos.html)** for the menu-bar app, or install the CLI binary:
 
 ```bash
-curl -L https://github.com/merlos/openme/releases/download/cli-v{{< var cli_version >}}/openme-linux-amd64 \
-     -o /usr/local/bin/openme
-chmod +x /usr/local/bin/openme
+curl -Lo openme https://github.com/merlos/openme/releases/download/cli-v{{< var cli_version >}}/openme-darwin-arm64
+chmod +x openme
+sudo mv openme /usr/local/bin/
 ```
 
-**Windows**: download [`openme-windows-amd64.exe`](https://github.com/merlos/openme/releases/download/cli-v{{< var cli_version >}}/openme-windows-amd64.exe) and add it to
-your `PATH`.
+#### Windows
 
-**From source**:
+See the **[Windows download page](../download/windows.html)** for the GUI app, or download the CLI `.exe` and add it to your `PATH`:
+
+```powershell
+curl -Lo openme.exe https://github.com/merlos/openme/releases/download/cli-v{{< var cli_version >}}/openme-windows-amd64.exe
+```
+
+#### From source
+
 ```bash
 go install github.com/merlos/openme/cli/cmd/openme@latest
 ```
@@ -117,7 +133,7 @@ via YAML paste or QR scan from the server.
 
 ### Install
 
-Download from the [App Store](https://apps.apple.com/app/openme) or build from
+Download from the **[openme for iOS download page](../download/ios.html)** or build from
 source via Xcode:
 
 ```bash
@@ -149,8 +165,7 @@ leaving your current app.
 
 ### Install
 
-Download [openme-macos-{{< var macos_version >}}.dmg](https://github.com/merlos/openme/releases/download/app-macos-v{{< var macos_version >}}/openme-macos-{{< var macos_version >}}.dmg) or
-build from source:
+Download from the **[openme for macOS download page](../download/macos.html)** or build from source:
 
 ```bash
 open apple/openme.xcworkspace
@@ -203,7 +218,7 @@ openmekit library internally.
 
 ### Install
 
-Download [openme-{{< var android_version >}}.apk](https://github.com/merlos/openme/releases/download/app-android-v{{< var android_version >}}/openme-{{< var android_version >}}.apk) or build from source:
+Download from the **[openme for Android download page](../download/android.html)** (Google Play or APK) or build from source:
 
 ```bash
 cd android
@@ -238,8 +253,7 @@ on Windows 10 and 11.
 
 ### Install
 
-Download from GitHub Releases
-([win-x64](https://github.com/merlos/openme/releases/download/app-windows-v{{< var windows_version >}}/openme-windows-{{< var windows_version >}}-win-x64.zip) · [win-arm64](https://github.com/merlos/openme/releases/download/app-windows-v{{< var windows_version >}}/openme-windows-{{< var windows_version >}}-win-arm64.zip)),
+Download from the **[openme for Windows download page](../download/windows.html)** (x64 or arm64 ZIP),
 extract, and run `openme-windows.exe`. No installer is required.
 
 ### Getting started
