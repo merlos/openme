@@ -63,8 +63,7 @@ openme then adds exceptions for authenticated clients.
 
 ### Which Linux distros are supported?
 
-Any Linux with nftables (kernel ≥ 3.13, nft ≥ 0.9) or iptables. Tested on
-Ubuntu 22.04+, Debian 12, Fedora 38+, and Alpine 3.18+.
+Any Linux with nftables (kernel ≥ 3.13, nft ≥ 0.9) or iptables. You just need to download the binary or compile it with Go. It has been tested on Debian and Arch Linux.
 
 ### Can I run openme alongside WireGuard?
 
