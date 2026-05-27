@@ -114,6 +114,6 @@ jobs:
           path: dist/
       - uses: softprops/action-gh-release@v2
         with:
-          name: "OpenMe macOS App | v${{ steps.ver.outputs.VERSION }}"
+          name: "OpenMe macOS App v${{ steps.ver.outputs.VERSION }}"
           generate_release_notes: true
           files: dist/*
