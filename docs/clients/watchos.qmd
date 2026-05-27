@@ -1,0 +1,45 @@
+---
+title: "watchOS Client"
+description-meta: "Install and use the openme Apple Watch companion app — knock directly from your wrist."
+keywords: [openme watchOS, openme Apple Watch, knock watch, SPA watchOS]
+---
+
+The openme watchOS app is a companion to the iOS app. Once profiles are
+configured on your iPhone, they sync to your Apple Watch so you can knock
+straight from your wrist.
+
+---
+
+## Requirements {#requirements}
+
+- Apple Watch (Series 4 or later recommended)
+- iPhone with the [openme iOS app](ios.qmd) installed and profiles configured
+
+---
+
+## Install {#install}
+
+The watchOS app is bundled with the iOS app.
+
+1. Install [openme for iOS](ios.qmd).
+2. On your iPhone, open the **Watch** app.
+3. Scroll to **openme** under **Available Apps** and tap **Install**.
+
+<!-- Screenshot placeholder: Watch app install screen -->
+![Installing openme on Apple Watch](../images/placeholder-watch-install.png){.placeholder}
+
+---
+
+## Send a Knock {#knock}
+
+1. Open **openme** on your Apple Watch.
+2. Profiles synced from your iPhone are listed automatically.
+3. Tap a profile to knock.
+
+<!-- Screenshot placeholder: watchOS knock screen -->
+![openme knock screen on Apple Watch](../images/placeholder-watch-knock.png){.placeholder}
+
+::: {.callout-note}
+Knocking requires the watch to have a network path — either via a paired iPhone
+(standard) or directly on Apple Watch models with cellular.
+:::

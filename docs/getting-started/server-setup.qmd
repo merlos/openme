@@ -1,52 +1,54 @@
 ---
-title: "Server Setup"
-description-meta: "Install and configure the openme server daemon on Linux — binary install, openme init, openme serve, and systemd service setup."
-keywords: [openme server setup, SPA server Linux, openme daemon, openme init, openme serve, nftables SPA, iptables SPA]
+title: "1. Server Setup"
+description-meta: "Install and start the openme server daemon on Linux — binary install, openme init, and openme serve."
+keywords: [openme server setup, SPA server Linux, openme daemon, openme init, openme serve]
 ---
+
+::: {.callout-note}
+The openme server requires **nftables** or **iptables** and is therefore
+**Linux-only**. For client-only use on macOS, Windows, iOS or Android see
+[Clients →](../clients/index.qmd).
+:::
 
 ## Install {#install}
 
-::: {.callout-note}
-The openme server requires **nftables** or **iptables** to manage firewall rules
-and is therefore **only supported on GNU/Linux**. For client-only use on iOS, android, macOS or
-Windows, see the [CLI client setup](client-setup.qmd) or the native desktop apps.
-:::
+### Debian / Ubuntu package (recommended)
 
-
-
-### From a Debian / Ubuntu package
-
-Pre-built `.deb` packages are available for Debian, Ubuntu, and derivatives.
-Download the package for your architecture from
-[GitHub Releases](https://github.com/merlos/openme/releases) and install it
-with `dpkg`:
+Pre-built `.deb` packages are available for all common architectures.
 
 {{< include _install-deb.qmd >}}
 
 ::: {.callout-tip}
-The `.deb` package installs the binary to `/usr/bin/openme` and includes initializes the server and starts the systemd service automatically. You can skip the next two sections and proceed to [Add a client →](adding-clients.qmd).
+The `.deb` package installs the binary to `/usr/bin/openme`, creates a
+`openme` system user, registers a systemd service, and starts it automatically.
+You can skip the **Start the Server** section below and go straight to
+[Add a client →](adding-clients.qmd).
 :::
 
----
-
-
-### From a pre-built binary
-
-Download the latest release from [GitHub Releases](https://github.com/merlos/openme/releases):
+### Pre-built binary
 
 {{< include _install-binary.qmd >}}
 
+### From source
 
-### Initialise the Server
+```bash
+git clone https://github.com/merlos/openme
+cd openme/cli
+go mod download
+go build -o openme ./cmd/openme
+sudo mv openme /usr/local/bin/
+```
 
-`openme init` generates a fresh Curve25519 keypair and writes
-`/etc/openme/config.yaml` with sensible defaults.
+---
+
+## Initialise {#init}
+
+`openme init` generates a fresh Curve25519 keypair and writes the server
+configuration to `/etc/openme/config.yaml`.
 
 ```bash
 sudo openme init --server myserver.example.com
 ```
-
-Options:
 
 | Flag | Default | Description |
 |------|---------|-------------|
@@ -55,232 +57,29 @@ Options:
 | `--firewall` | `nft` | Firewall backend: `nft` or `iptables` |
 | `--force` | `false` | Overwrite an existing config |
 
-The command prints the server's **Curve25519 public key** — you'll need this
-when provisioning clients, but `openme add` handles it automatically.
+The command prints the server's Curve25519 public key.
+`openme add` uses it automatically when provisioning clients.
 
---------
+---
 
-### Start the Server
+## Start the Server {#serve}
 
 ```bash
 sudo openme serve
 ```
 
-For production, install as a systemd service (the `.deb` package does this
-automatically). The unit below matches the one shipped in the package:
-
-```ini
-# /etc/systemd/system/openme.service
-[Unit]
-Description=openme Single Packet Authorization server
-Documentation=https://openme.merlos.org/docs/getting-started/server-setup
-After=network.target
-
-[Service]
-Type=simple
-ExecStart=/usr/bin/openme serve
-Restart=on-failure
-RestartSec=5
-
-# Run as the dedicated 'openme' system account.
-User=openme
-Group=openme
-
-# Grant only the capability required for firewall manipulation.
-CapabilityBoundingSet=CAP_NET_ADMIN
-AmbientCapabilities=CAP_NET_ADMIN
-
-# Create /run/openme (owned by openme:openme) for the session state file.
-RuntimeDirectory=openme
-RuntimeDirectoryMode=0750
-
-# Harden the service surface.
-ProtectSystem=full
-PrivateTmp=true
-NoNewPrivileges=true
-
-[Install]
-WantedBy=multi-user.target
-```
-
-`RuntimeDirectory=openme` makes systemd create `/run/openme/` (owned by
-`openme:openme`, mode `0750`) at start-up and remove it on stop. openme writes
-its session state file there automatically.
+For production, enable the systemd service (the `.deb` package does this
+automatically):
 
 ```bash
 sudo systemctl enable --now openme
 sudo systemctl status openme
 ```
 
----
-
-## Harden the Firewall {#harden-firewall}
-
-The whole point of openme is that **no TCP ports are permanently open**.  
-Apply a default-deny policy before opening anything, then only allow the UDP
-knock port.
-
-### nftables
-
-```bash
-# Flush and rebuild a minimal ruleset
-sudo nft flush ruleset
-
-sudo nft add table inet filter
-
-# Base chains
-sudo nft add chain inet filter input   '{ type filter hook input   priority 0; policy drop; }'
-sudo nft add chain inet filter forward '{ type filter hook forward priority 0; policy drop; }'
-sudo nft add chain inet filter output  '{ type filter hook output  priority 0; policy accept; }'
-
-# Allow established / related traffic and loopback
-sudo nft add rule inet filter input ct state established,related accept
-sudo nft add rule inet filter input iifname "lo" accept
-
-# By default openme opens the udp_port for knocks, but if you set open_knock_port: false then add this rule to allow the knock packets:
-#sudo nft add rule inet filter input udp dport 54154 accept
-
-```
-
-Persist the ruleset:
-
-```bash
-sudo nft list ruleset | sudo tee /etc/nftables.conf
-sudo systemctl enable --now nftables
-```
-
-### iptables / ip6tables
-
-```bash
-# ── IPv4 ──────────────────────────────────────────────────────────────────
-# Flush existing rules and set default DROP on INPUT and FORWARD
-sudo iptables -F
-sudo iptables -X
-sudo iptables -P INPUT   DROP
-sudo iptables -P FORWARD DROP
-sudo iptables -P OUTPUT  ACCEPT
-
-# Allow established / related traffic and loopback
-sudo iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-sudo iptables -A INPUT -i lo -j ACCEPT
-
-# By default openme opens the udp_port for knocks, but if you set open_knock_port: false then add this rule to allow the knock packets:
-#sudo iptables -A INPUT -p udp --dport 54154 -j ACCEPT
-
-# ── IPv6 ──────────────────────────────────────────────────────────────────
-sudo ip6tables -F
-sudo ip6tables -X
-sudo ip6tables -P INPUT   DROP
-sudo ip6tables -P FORWARD DROP
-sudo ip6tables -P OUTPUT  ACCEPT
-
-sudo ip6tables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-sudo ip6tables -A INPUT -i lo -j ACCEPT
-# By default openme opens the udp_port for knocks, but if you set open_knock_port: false then add this rule to allow the knock packets:
-#sudo ip6tables -A INPUT -p udp --dport 54154 -j ACCEPT
-```
-
-Persist across reboots (Debian/Ubuntu):
-
-```bash
-sudo apt install iptables-persistent
-sudo netfilter-persistent save
-```
-
-::: {.callout-warning}
-These rules drop **all incoming TCP connections**, including SSH.  
-Run them from the console or a recovery environment, or add a temporary SSH
-allowance first:
-
-```bash
-# Temporary SSH rule — remove it once openme clients are verified
-sudo iptables  -A INPUT -p tcp --dport 22 -j ACCEPT
-sudo ip6tables -A INPUT -p tcp --dport 22 -j ACCEPT
-```
-
-Once your openme clients are working, remove the temporary SSH rules:
-
-```bash
-sudo iptables  -D INPUT -p tcp --dport 22 -j ACCEPT
-sudo ip6tables -D INPUT -p tcp --dport 22 -j ACCEPT
-```
-
-For nftables, if you added a temporary SSH rule:
-
-```bash
-# Find the rule handle
-sudo nft -a list chain inet filter input
-
-# Delete by handle (replace <handle> with the number shown)
-sudo nft delete rule inet filter input handle <handle>
-```
-:::
+Full systemd unit reference and hardening options:
+[Server → Service](../server/service.qmd).
 
 ---
-
-## Monitor Live Sessions {#sessions}
-
-`openme sessions` shows which clients currently have open firewall rules and
-when their allowance expires, plus the last-seen time for clients who knocked
-previously but whose rule has since expired.
-
-```bash
-sudo openme sessions
-```
-
-Example output:
-
-```
-Session state as of 2026-03-17 14:23:01
-
-ACTIVE SESSIONS
-────────────────────────────────────────────────────────────────────────────
-  CLIENT             IP                   PORTS              OPENED           EXPIRES IN
-  ──────────────────────────────────────────────────────────────────────────
-  alice              203.0.113.4          22/tcp             14:22:48         7s
-  bob                198.51.100.7         22/tcp, 2222/tcp   14:23:00         29s
-
-LAST SEEN (no active session)
-────────────────────────────────────────────────────────────────────────────
-  CLIENT             LAST KNOCK             AGO
-  ──────────────────────────────────────────────────────────────────────────
-  carol              2026-03-17 13:55:02    28m1s ago
-```
-
-Refresh continuously with `--watch` (`Ctrl-C` to stop):
-
-```bash
-sudo openme sessions --watch
-```
-
-The session state is read from `/run/openme/sessions.json` (written by the
-running server). Both commands default to this path, so no extra flags are
-needed when the systemd unit uses `RuntimeDirectory=openme`.
-
-::: {.callout-note}
-The state file is written with permissions `0600` (owner read/write only).
-Use `sudo` to run `openme sessions` unless the invoking user owns the file.
-:::
-
----
-
-## Verify
-
-Once a client is configured and has knocked, you can verify the full round trip:
-
-```bash
-# Knock and immediately check the health port (end-to-end test)
-openme status --knock
-
-# Check health port only (requires a prior knock within knock_timeout)
-openme status
-```
-
-::: {.callout-note}
-The health port is **never permanently open**. It is opened by the firewall
-only after a valid knock, for the `knock_timeout` duration (default 30s).
-A closed health port means either no knock has been sent yet, or the
-`knock_timeout` has expired.
-:::
 
 Next: [Add a client →](adding-clients.qmd)
+

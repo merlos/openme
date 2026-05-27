@@ -1,0 +1,217 @@
+---
+title: "Firewall Setup"
+description-meta: "Configure openme's nftables and iptables firewall backends and harden the server with a default-deny policy."
+keywords: [openme nftables, openme iptables, SPA firewall backend, nft openme, iptables SPA rules, firewall hardening, default deny]
+---
+
+openme supports two firewall backends on Linux: **nftables** (`nft`) and
+**iptables**. Configure the backend in `/etc/openme/config.yaml`:
+
+```yaml
+server:
+  firewall: nft   # or "iptables"
+```
+
+---
+
+## nftables (recommended)
+
+Rules are added to the `inet filter` table in an `openme` chain:
+
+```bash
+# Created automatically on first knock:
+nft add table inet filter
+nft add chain inet filter openme
+
+# Per knock (example — IPv4, SSH):
+nft add rule inet filter openme ip saddr 192.168.1.10 tcp dport 22 accept comment "openme"
+
+# IPv6:
+nft add rule inet filter openme ip6 saddr 2001:db8::1 tcp dport 22 accept comment "openme"
+```
+
+Rules are removed by handle after the knock timeout. Ensure your base
+`nftables.conf` includes a jump to the openme chain in your INPUT rules:
+
+```
+chain input {
+    type filter hook input priority 0;
+    jump openme          # openme manages this chain
+    ...
+}
+```
+
+## iptables
+
+Rules are inserted at the top of the `INPUT` chain:
+
+```bash
+# IPv4:
+iptables  -I INPUT -s 192.168.1.10 -p tcp --dport 22 -j ACCEPT -m comment --comment "openme"
+
+# IPv6 (automatic when target IP is IPv6):
+ip6tables -I INPUT -s 2001:db8::1 -p tcp --dport 22 -j ACCEPT -m comment --comment "openme"
+```
+
+Rules are deleted with `-D` after the knock timeout. Note that `iptables` and
+`ip6tables` are separate — openme calls the correct one based on the target IP.
+
+## Choosing a Backend
+
+| Factor | nft | iptables |
+|--------|-----|----------|
+| Modern Linux (2015+) | ✅ Preferred | ✅ Available |
+| Atomic rule batching | ✅ | ❌ |
+| IPv4 + IPv6 unified | ✅ `inet` family | ❌ Separate tools |
+| Available on older distros | Sometimes | ✅ Always |
+
+Use `nft` on any system running a kernel ≥ 3.13 and nftables userspace ≥ 0.9.
+Use `iptables` on older systems or if your existing ruleset is iptables-based.
+
+---
+
+## Hardening — Default-Deny Policy {#harden}
+
+The whole point of openme is that **no TCP ports are permanently open**.  
+Apply a default-deny policy, then let openme open ports on demand.
+
+### nftables
+
+```bash
+# Flush and rebuild a minimal ruleset
+sudo nft flush ruleset
+sudo nft add table inet filter
+
+# Base chains
+sudo nft add chain inet filter input   '{ type filter hook input   priority 0; policy drop; }'
+sudo nft add chain inet filter forward '{ type filter hook forward priority 0; policy drop; }'
+sudo nft add chain inet filter output  '{ type filter hook output  priority 0; policy accept; }'
+
+# Allow established / related traffic and loopback
+sudo nft add rule inet filter input ct state established,related accept
+sudo nft add rule inet filter input iifname "lo" accept
+
+# openme manages the knock port by default (open_knock_port: true).
+# If you set open_knock_port: false, add this rule manually:
+#sudo nft add rule inet filter input udp dport 54154 accept
+```
+
+Persist the ruleset:
+
+```bash
+sudo nft list ruleset | sudo tee /etc/nftables.conf
+sudo systemctl enable --now nftables
+```
+
+### iptables / ip6tables
+
+```bash
+# ── IPv4 ──────────────────────────────────────────────────────────────────
+sudo iptables -F && sudo iptables -X
+sudo iptables -P INPUT   DROP
+sudo iptables -P FORWARD DROP
+sudo iptables -P OUTPUT  ACCEPT
+sudo iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+sudo iptables -A INPUT -i lo -j ACCEPT
+# openme manages the knock port. If open_knock_port: false, add manually:
+#sudo iptables -A INPUT -p udp --dport 54154 -j ACCEPT
+
+# ── IPv6 ──────────────────────────────────────────────────────────────────
+sudo ip6tables -F && sudo ip6tables -X
+sudo ip6tables -P INPUT   DROP
+sudo ip6tables -P FORWARD DROP
+sudo ip6tables -P OUTPUT  ACCEPT
+sudo ip6tables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+sudo ip6tables -A INPUT -i lo -j ACCEPT
+#sudo ip6tables -A INPUT -p udp --dport 54154 -j ACCEPT
+```
+
+Persist across reboots (Debian/Ubuntu):
+
+```bash
+sudo apt install iptables-persistent
+sudo netfilter-persistent save
+```
+
+::: {.callout-warning}
+These rules **drop all incoming TCP connections, including SSH**.  
+Run them from the console or a recovery environment, or add a temporary SSH
+allowance first and remove it once your clients are verified:
+
+```bash
+# Temporary SSH — add before applying drop policy
+sudo iptables  -A INPUT -p tcp --dport 22 -j ACCEPT
+sudo ip6tables -A INPUT -p tcp --dport 22 -j ACCEPT
+
+# Remove once openme clients are confirmed working
+sudo iptables  -D INPUT -p tcp --dport 22 -j ACCEPT
+sudo ip6tables -D INPUT -p tcp --dport 22 -j ACCEPT
+```
+
+For nftables temporary SSH:
+```bash
+sudo nft -a list chain inet filter input   # note the handle number
+sudo nft delete rule inet filter input handle <handle>
+```
+:::
+
+## macOS and Windows
+
+The firewall backend is a no-op on macOS and Windows — the `openme` binary can
+send knock packets from these platforms, but it cannot act as a server.
+Server deployments require Linux.
+
+---
+
+## Server Behind a NAT Router {#nat}
+
+When the openme server runs inside a home or office network (i.e. behind a
+NAT router), two types of **port forwarding** rules must be configured on
+the router before the server is reachable from the internet.
+
+### 1 — Forward the knock port (UDP)
+
+The client sends knock packets to the server's **public IP** on the configured
+UDP port (default `54154`). The router must forward that port to the server's
+private IP:
+
+| Direction | Protocol | External port | Internal IP | Internal port |
+|-----------|----------|--------------|-------------|--------------|
+| Inbound | UDP | 54154 | `<server-LAN-IP>` | 54154 |
+
+Without this rule the knock packet never reaches the openme daemon and no
+firewall rule is ever created.
+
+### 2 — Forward each protected service port (TCP/UDP)
+
+Even after a successful knock, the openme firewall rule allows traffic from the
+client to the server's private IP. The router still needs to forward the
+individual service port(s) to the server:
+
+| Direction | Protocol | External port | Internal IP | Internal port |
+|-----------|----------|--------------|-------------|--------------|
+| Inbound | TCP | 22 | `<server-LAN-IP>` | 22 |
+
+Repeat for every port listed under `defaults.ports` (or client-specific ports)
+in the server config.
+
+::: {.callout-note}
+**The service ports remain protected.** The router forwarding rule does *not*
+expose the port publicly on its own — the openme firewall on the server still
+blocks the port by default and only opens it for the specific client IP after a
+valid knock.
+:::
+
+### Limitations
+
+* **Double NAT** — if the router is itself behind another NAT (common with
+  some ISPs using CGNAT), port forwarding on the home router is not enough.
+  You may need to request a public static IP from your ISP or use a VPS/relay
+  as the openme server instead.
+* **Dynamic public IP** — most home connections have a changing public IP.
+  Pair the server hostname (`defaults.server`) with a dynamic DNS (DDNS)
+  service so clients always resolve the correct address.
+* **Health-check port** — `openme status` uses a TCP connection to
+  `health_port` (defaults to the same value as `udp_port`). If you use the
+  health-check remotely, add a TCP forwarding rule for that port as well.
+

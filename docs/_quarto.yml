@@ -38,14 +38,28 @@ website:
         contents:
           - getting-started/index.qmd
           - getting-started/server-setup.qmd
-          - getting-started/client-setup.qmd
           - getting-started/adding-clients.qmd
-      - section: "Configuration"
+          - getting-started/client-setup.qmd
+      - section: "Server"
+        contents:
+          - server/index.qmd
+          - server/configuration.qmd
+          - server/firewall.qmd
+          - server/service.qmd
+      - section: "Clients"
+        contents:
+          - clients/index.qmd
+          - clients/cli.qmd
+          - clients/macos.qmd
+          - clients/ios.qmd
+          - clients/android.qmd
+          - clients/windows.qmd
+          - clients/watchos.qmd
+      - section: "Configuration Reference"
         contents:
           - configuration/index.qmd
           - configuration/server.qmd
           - configuration/client.qmd
-          - configuration/firewall.qmd
       - section: "Security Model"
         contents:
           - security/index.qmd

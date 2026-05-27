@@ -1,0 +1,157 @@
+---
+title: "Server Configuration"
+description-meta: "Full reference for the openme server YAML configuration — listen address, ports, clients, firewall backend, knock timeout, and replay window."
+keywords: [openme server config, openme server YAML, SPA server configuration, knock timeout, replay window, firewall config]
+---
+
+Default location: `/etc/openme/config.yaml`  
+Override with: `openme --config /path/to/config.yaml serve`
+
+---
+
+## Full Example
+
+```yaml
+server:
+  udp_port: 54154 # udp knock port
+  health_port: 54154 # tcp
+  firewall: nft
+  knock_timeout: 30s
+  replay_window: 60s
+  open_knock_port: true  # set to false if your firewall already opens this port
+  private_key: "base64-encoded-curve25519-private-key=="
+  public_key:  "base64-encoded-curve25519-public-key=="
+
+defaults:
+  server: "myserver.example.com"
+  ports:
+    - port: 22
+      proto: tcp
+
+clients:
+  alice:
+    ed25519_pubkey: "base64-encoded-ed25519-public-key=="
+    allowed_ports:
+      mode: default # just the defaults (SSH in this case)
+  bob:
+    ed25519_pubkey: "base64-encoded-ed25519-public-key=="
+    allowed_ports:
+      mode: default_plus # defaults plus these extra ports
+      ports:
+        - port: 2222
+          proto: tcp
+    expires: "2026-12-31T23:59:59Z"
+  joe:
+    ed25519_pubkey: "base64-encoded-ed25519-public-key=="
+    allowed_ports:
+      mode: only # only the specified ports below, not the defaults
+      ports:
+        - port: 443
+          proto: tcp
+```
+
+---
+
+## `server` Block
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `udp_port` | uint16 | `54154` | UDP port to listen for knock packets. |
+| `health_port` | uint16 | same as `udp_port` | TCP port for health checks (`openme status`). |
+| `firewall` | string | `"nft"` | Firewall backend. One of `"nft"` or `"iptables"`. |
+| `knock_timeout` | duration | `"30s"` | How long a firewall rule stays open after a valid knock. |
+| `replay_window` | duration | `"60s"` | Maximum accepted age of a knock timestamp. |
+| `private_key` | base64 | — | **Secret.** Server's Curve25519 private key (32 bytes). |
+| `public_key` | base64 | — | Server's Curve25519 public key (32 bytes). Convenience copy — derived from `private_key`. |
+| `open_knock_port` | bool | `true` | When `true` the server inserts a firewall rule that accepts UDP traffic on `udp_port` at startup and removes it on shutdown. Set to `false` if your existing firewall configuration already opens that port. |
+
+Duration values use Go duration syntax: `"30s"`, `"1m"`, `"90s"`.
+
+---
+
+## `openme serve` Flags
+
+These flags are passed on the command line to `openme serve`, not in the config file.
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--config` | `/etc/openme/config.yaml` | Path to the server YAML config file. |
+| `--state-file` | `/run/openme/sessions.json` | Path where the server writes live session state. Read by `openme sessions`. Pass an empty string to disable. |
+| `--log-level` | `info` | Log verbosity: `debug`, `info`, `warn`, `error`. |
+
+---
+
+## Session State File
+
+When `openme serve` is running, it continuously writes a JSON snapshot of
+active firewall sessions to `--state-file` (default
+`/run/openme/sessions.json`).
+
+The file is written atomically (temp file → rename) and is readable by
+`openme sessions`. It has permissions `0600` so only the process owner (root
+when run via the systemd unit) can read it.
+
+### Schema
+
+```json
+{
+  "updated_at": "2026-03-17T14:23:01Z",
+  "active_sessions": [
+    {
+      "client_name": "alice",
+      "ip": "203.0.113.4",
+      "ports": [{"port": 54154, "proto": "tcp"}, {"port": 22, "proto": "tcp"}],
+      "opened_at": "2026-03-17T14:22:48Z",
+      "expires_at": "2026-03-17T14:23:18Z"
+    }
+  ],
+  "last_seen": {
+    "alice": "2026-03-17T14:22:48Z",
+    "bob":   "2026-03-17T13:55:02Z"
+  }
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| `active_sessions` | Clients whose firewall rules are currently open. |
+| `active_sessions[].opened_at` | Wall-clock time the rule was created (or last refreshed by a repeated knock). |
+| `active_sessions[].expires_at` | Wall-clock time the rule will be automatically removed. |
+| `last_seen` | Most recent successful knock time for **every** client, including those no longer active. Persists across repeated knocks. |
+
+---
+
+## `defaults` Block
+
+| Key | Type | Description |
+|-----|------|-------------|
+| `server` | string | Public hostname or IP of this server. Used when generating client configs with `openme add`. |
+| `ports` | list | Default list of ports opened for every client whose `allowed_ports.mode` is `default` or `default_plus`. |
+
+### Port entry
+
+```yaml
+- port: 22
+  proto: tcp   # "tcp" or "udp"
+```
+
+---
+
+## `clients` Block
+
+Each key under `clients` is a client name (e.g. `alice`).
+
+| Key | Type | Required | Description |
+|-----|------|----------|-------------|
+| `ed25519_pubkey` | base64 | ✅ | Client's Ed25519 public key (32 bytes). |
+| `allowed_ports.mode` | string | ✅ | Port access mode. See below. |
+| `allowed_ports.ports` | list | — | Extra ports (used with `default_plus` or `only` modes). |
+| `expires` | RFC3339 | — | Key expiry date. Omit for no expiry. |
+
+### Port Modes
+
+| Mode | Opens |
+|------|-------|
+| `default` | Only the `defaults.ports` list. |
+| `only` | Only the client's own `ports` list. |
+| `default_plus` | `defaults.ports` **plus** the client's `ports` list. |

@@ -1,0 +1,112 @@
+---
+title: "Service Management"
+description-meta: "Run the openme server as a systemd service — unit file, hardening options, session monitoring, and health verification."
+keywords: [openme systemd, openme service, openme sessions, openme status, openme server health]
+---
+
+## systemd Unit {#unit}
+
+The `.deb` package installs and enables the unit automatically.
+For a manual binary install, create the file below:
+
+```ini
+# /etc/systemd/system/openme.service
+[Unit]
+Description=openme Single Packet Authorization server
+Documentation=https://openme.merlos.org/docs/server/service.html
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/openme serve
+Restart=on-failure
+RestartSec=5
+
+# Run as the dedicated 'openme' system account.
+User=openme
+Group=openme
+
+# Grant only the capability required for firewall manipulation.
+CapabilityBoundingSet=CAP_NET_ADMIN
+AmbientCapabilities=CAP_NET_ADMIN
+
+# Create /run/openme (owned by openme:openme) for the session state file.
+RuntimeDirectory=openme
+RuntimeDirectoryMode=0750
+
+# Harden the service surface.
+ProtectSystem=full
+PrivateTmp=true
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target
+```
+
+`RuntimeDirectory=openme` makes systemd create `/run/openme/` at start-up and
+remove it on stop. openme writes its session state file there automatically.
+
+Enable and start:
+
+```bash
+sudo systemctl daemon-reload
+sudo useradd --system --no-create-home openme   # if using a dedicated user
+sudo systemctl enable --now openme
+sudo systemctl status openme
+```
+
+---
+
+## Monitor Live Sessions {#sessions}
+
+`openme sessions` shows which clients currently have open firewall rules and
+when their allowance expires, plus the last-seen time for inactive clients.
+
+```bash
+sudo openme sessions
+```
+
+Example output:
+
+```
+Session state as of 2026-03-17 14:23:01
+
+ACTIVE SESSIONS
+────────────────────────────────────────────────────────────────────────────
+  CLIENT             IP                   PORTS              OPENED           EXPIRES IN
+  alice              203.0.113.4          22/tcp             14:22:48         7s
+  bob                198.51.100.7         22/tcp, 2222/tcp   14:23:00         29s
+
+LAST SEEN (no active session)
+────────────────────────────────────────────────────────────────────────────
+  CLIENT             LAST KNOCK             AGO
+  carol              2026-03-17 13:55:02    28m1s ago
+```
+
+Refresh continuously:
+
+```bash
+sudo openme sessions --watch
+```
+
+The session state is read from `/run/openme/sessions.json` (written by the
+running server). Use `sudo` unless the invoking user owns the file.
+
+---
+
+## Verify {#verify}
+
+After a client has knocked, verify the full round trip:
+
+```bash
+# Knock and immediately check the health port (end-to-end test)
+openme status --knock
+
+# Check health port only (requires a prior knock within knock_timeout)
+openme status
+```
+
+::: {.callout-note}
+The health port is **never permanently open**. It is only reachable for the
+duration of `knock_timeout` (default 30 s) after a valid knock.
+:::

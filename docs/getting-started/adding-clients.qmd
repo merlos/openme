@@ -1,5 +1,5 @@
 ---
-title: "Adding Clients"
+title: "2. Add a Client"
 description-meta: "Add and provision new openme clients using openme add — generate Ed25519 keys, print YAML config, and onboard via QR code."
 keywords: [openme add client, provision SPA client, openme keygen, openme QR code, Ed25519 key provisioning, client onboarding]
 ---

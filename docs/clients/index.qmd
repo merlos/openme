@@ -1,0 +1,24 @@
+---
+title: "Clients"
+description-meta: "openme client apps — CLI, iOS, Android, macOS menu-bar, Windows system-tray, and watchOS."
+keywords: [openme client, openme iOS, openme Android, openme macOS, openme Windows, openme CLI, SPA client]
+---
+
+openme clients are available for every major platform.
+Each client sends a 165-byte encrypted UDP knock packet to the server,
+temporarily unlocking a firewall rule for your IP.
+
+| Client | Platform | Type |
+|--------|----------|------|
+| [CLI](cli.qmd) | Linux · macOS · Windows | Command-line |
+| [iOS](ios.qmd) | iPhone · iPad | Native app |
+| [Android](android.qmd) | Android | Native app |
+| [macOS](macos.qmd) | macOS | Menu-bar app |
+| [Windows](windows.qmd) | Windows | System-tray app |
+| [watchOS](watchos.qmd) | Apple Watch | Companion app |
+
+All clients implement the same [SPA protocol](../protocol/packet-format.html)
+and produce identical knock packets for the same inputs.
+
+**New to openme?** Follow [Getting Started](../getting-started/index.qmd) first
+to set up the server and send your first knock from the CLI.

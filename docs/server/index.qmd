@@ -1,0 +1,17 @@
+---
+title: "Server"
+description-meta: "openme server reference — configuration, firewall setup and hardening, and systemd service management."
+keywords: [openme server, SPA server Linux, openme daemon, openme systemd, openme firewall]
+---
+
+This section covers everything you need to run and maintain the openme server
+daemon in production.
+
+| Page | Description |
+|------|-------------|
+| [Configuration](configuration.qmd) | Full YAML reference for `/etc/openme/config.yaml` |
+| [Firewall](firewall.qmd) | nftables / iptables backends; hardening a default-deny policy |
+| [Service](service.qmd) | systemd unit, session monitoring, verify |
+
+**New to openme?** Start with [Getting Started](../getting-started/index.qmd)
+to install, initialise, and send your first knock.
