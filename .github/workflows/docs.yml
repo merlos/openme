@@ -130,22 +130,7 @@ jobs:
       - name: Generate _variables.yml (latest release versions)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          get_version() {
-            gh api 'repos/merlos/openme/releases?per_page=100' \
-              --jq "[.[] | select(.tag_name | startswith(\"$1\"))][0].tag_name // \"\"" \
-              | sed "s/^$1//"
-          }
-          MACOS="$(get_version app-macos-v)"
-          ANDROID="$(get_version app-android-v)"
-          WINDOWS="$(get_version app-windows-v)"
-          CLI="$(get_version cli-v)"
-          printf 'macos_version: "%s"\nandroid_version: "%s"\nwindows_version: "%s"\ncli_version: "%s"\nplaystore_url: "https://play.google.com/store/apps/details?id=org.merlos.openme"\nappstore_url: "https://apps.apple.com/app/openme"\n' \
-            "${MACOS:-0.0.1-dev}" "${ANDROID:-0.0.1-dev}" \
-            "${WINDOWS:-0.0.1-dev}" "${CLI:-0.0.1-dev}" \
-            > docs/_variables.yml
-          echo "Generated docs/_variables.yml:"
-          cat docs/_variables.yml
+        run: bash docs/scripts/gen-variables.sh
 
       - name: Render docs
         run: quarto render

@@ -81,9 +81,21 @@ The full documentation is published at **[openme.merlos.org/docs](https://openme
 To build and preview the docs locally:
 
 ```bash
-cd docs
-quarto preview
+# 1. Populate _variables.yml with real release versions (requires: gh auth login)
+./docs/scripts/gen-variables.sh
+
+# 2. Or skip GitHub auth / network access entirely (uses "0.0.1-dev" as version)
+./docs/scripts/gen-variables.sh --offline
+
+# 3. Preview with live reload
+cd docs && quarto preview
+
+# 4. Full static render
+cd docs && quarto render
 ```
+
+`docs/scripts/gen-variables.sh` is also called automatically by the
+`.github/workflows/docs.yml` CI workflow on every tagged release.
 
 ---
 
