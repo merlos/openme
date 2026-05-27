@@ -26,36 +26,36 @@ with `dpkg`:
 ## amd64
 
 ```bash
-curl -LO https://github.com/merlos/openme/releases/latest/download/openme_latest_amd64.deb
-sudo dpkg -i openme_latest_amd64.deb
+curl -LO https://github.com/merlos/openme/releases/download/cli-v{{< var cli_version >}}/openme_{{< var cli_version >}}_amd64.deb
+sudo dpkg -i openme_{{< var cli_version >}}_amd64.deb
 ```
 
 ## arm64
 
 ```bash
-curl -LO https://github.com/merlos/openme/releases/latest/download/openme_latest_arm64.deb
-sudo dpkg -i openme_latest_arm64.deb
+curl -LO https://github.com/merlos/openme/releases/download/cli-v{{< var cli_version >}}/openme_{{< var cli_version >}}_arm64.deb
+sudo dpkg -i openme_{{< var cli_version >}}_arm64.deb
 ```
 
 ## armhf
 
 ```bash
-curl -LO https://github.com/merlos/openme/releases/latest/download/openme_latest_armhf.deb
-sudo dpkg -i openme_latest_armhf.deb
+curl -LO https://github.com/merlos/openme/releases/download/cli-v{{< var cli_version >}}/openme_{{< var cli_version >}}_armhf.deb
+sudo dpkg -i openme_{{< var cli_version >}}_armhf.deb
 ```
 
 ## i386
 
 ```bash
-curl -LO https://github.com/merlos/openme/releases/latest/download/openme_latest_i386.deb
-sudo dpkg -i openme_latest_i386.deb
+curl -LO https://github.com/merlos/openme/releases/download/cli-v{{< var cli_version >}}/openme_{{< var cli_version >}}_i386.deb
+sudo dpkg -i openme_{{< var cli_version >}}_i386.deb
 ```
 
 ## riscv64
 
 ```bash
-curl -LO https://github.com/merlos/openme/releases/latest/download/openme_latest_riscv64.deb
-sudo dpkg -i openme_latest_riscv64.deb
+curl -LO https://github.com/merlos/openme/releases/download/cli-v{{< var cli_version >}}/openme_{{< var cli_version >}}_riscv64.deb
+sudo dpkg -i openme_{{< var cli_version >}}_riscv64.deb
 ```
 
 :::
@@ -76,7 +76,7 @@ Download the latest release from [GitHub Releases](https://github.com/merlos/ope
 ## amd64 (x86-64) 
 
 ```bash
-curl -Lo openme https://github.com/merlos/openme/releases/latest/download/openme-linux-amd64
+curl -Lo openme https://github.com/merlos/openme/releases/download/cli-v{{< var cli_version >}}/openme-linux-amd64
 chmod +x openme
 sudo mv openme /usr/local/bin/
 ```
@@ -84,7 +84,7 @@ sudo mv openme /usr/local/bin/
 ## arm64
 
 ```bash
-curl -Lo openme https://github.com/merlos/openme/releases/latest/download/openme-linux-arm64
+curl -Lo openme https://github.com/merlos/openme/releases/download/cli-v{{< var cli_version >}}/openme-linux-arm64
 chmod +x openme
 sudo mv openme /usr/local/bin/
 ```
@@ -92,7 +92,7 @@ sudo mv openme /usr/local/bin/
 ## armhf
 
 ```bash
-curl -Lo openme https://github.com/merlos/openme/releases/latest/download/openme-linux-arm
+curl -Lo openme https://github.com/merlos/openme/releases/download/cli-v{{< var cli_version >}}/openme-linux-arm
 chmod +x openme
 sudo mv openme /usr/local/bin/
 ```
@@ -100,7 +100,7 @@ sudo mv openme /usr/local/bin/
 ## 32-bit (i386)
 
 ```bash
-curl -Lo openme https://github.com/merlos/openme/releases/latest/download/openme-linux-386
+curl -Lo openme https://github.com/merlos/openme/releases/download/cli-v{{< var cli_version >}}/openme-linux-386
 chmod +x openme
 sudo mv openme /usr/local/bin/
 ```
@@ -108,7 +108,7 @@ sudo mv openme /usr/local/bin/
 ## riscv64
 
 ```bash
-curl -Lo openme https://github.com/merlos/openme/releases/latest/download/openme-linux-riscv64
+curl -Lo openme https://github.com/merlos/openme/releases/download/cli-v{{< var cli_version >}}/openme-linux-riscv64
 chmod +x openme
 sudo mv openme /usr/local/bin/
 ```
