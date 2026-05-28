@@ -50,8 +50,18 @@ chmod +x openme && sudo mv openme /usr/local/bin/
 
 [Download for Windows →](../download/windows.qmd)
 
-Download [`openme-windows-amd64.exe`](https://github.com/merlos/openme/releases/download/{{< var cli_tag_prefix >}}{{< var cli_version >}}/openme-windows-amd64.exe)
-and add it to your `PATH`.
+Download [`openme-windows-amd64.exe`](https://github.com/merlos/openme/releases/download/{{< var cli_tag_prefix >}}{{< var cli_version >}}/openme-windows-amd64.exe) (x64)
+or [`openme-windows-arm64.exe`](https://github.com/merlos/openme/releases/download/{{< var cli_tag_prefix >}}{{< var cli_version >}}/openme-windows-arm64.exe) (ARM64)
+and add it to your `PATH`:
+
+```powershell
+$dest = "$env:ProgramFiles\openme"
+New-Item -ItemType Directory -Force -Path $dest | Out-Null
+Move-Item .\openme-windows-amd64.exe "$dest\openme.exe"   # adjust filename for ARM64
+[Environment]::SetEnvironmentVariable(
+    "Path", $env:Path + ";$dest", [EnvironmentVariableTarget]::Machine)
+Write-Host "Restart your terminal, then run: openme --version"
+```
 
 ### From source
 
