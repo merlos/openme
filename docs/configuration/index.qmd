@@ -10,7 +10,6 @@ only one file to back up per host.
 
 - [Server Config](server.qmd) — `/etc/openme/config.yaml`
 - [Client Config](client.qmd) — `~/.openme/config.yaml`
-- [Firewall Backends](firewall.qmd) — `iptables` vs `nft`
 
 ## File Permissions
 

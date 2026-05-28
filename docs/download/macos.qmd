@@ -1,0 +1,16 @@
+---
+title: "Download openme for macOS"
+description-meta: "Download the openme macOS menu-bar app — DMG for macOS 13+."
+keywords: [openme macOS download, openme mac app, openme DMG]
+toc: false
+css: download.css
+---
+
+{{< include _core.qmd >}}
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  renderHero("macos", false);
+  renderAllPlatforms();
+});
+</script>

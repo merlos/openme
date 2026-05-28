@@ -13,16 +13,17 @@ You'll end up with:
 
 **Prerequisites:**
 
-- Linux server with `iptables` or `nftables`
-- Go 1.21+ (to build from source) or a pre-built binary
-- `sudo` / root access on the server
+- Linux server with `iptables` or `nftables` and `sudo` / root access
+- A client machine (any platform)
 
 ## Steps
 
-1. [Install openme](server-setup.qmd#install) on both server and client
-2. [Set up the server](server-setup.qmd) — `openme init` + `openme serve`
-3. [Add a client](adding-clients.qmd) — `openme add alice`
-4. [Configure the client](client-setup.qmd) — paste the generated config
-5. [Knock](client-setup.qmd#knock) — `openme knock`
+1. **[Install & run the server](server-setup.qmd)** — install the binary, `openme init`, `openme serve`
+2. **[Add a client](adding-clients.qmd)** — `openme add alice` on the server
+3. **[Configure & knock](client-setup.qmd)** — paste the config, run `openme knock`
 
-Proceed to [Server Setup →](server-setup.qmd)
+Once you have a working setup, explore the full reference docs:
+
+- [Server →](../server/index.qmd) — configuration, firewall hardening, systemd service
+- [Clients →](../clients/index.qmd) — iOS, Android, macOS app, Windows app
+

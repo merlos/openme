@@ -70,19 +70,32 @@ The full documentation is published at **[openme.merlos.org/docs](https://openme
 
 | Section | Description |
 |---------|-------------|
-| [Protocol](https://openme.merlos.org/docs/protocol/) | Wire format, cryptographic design, security properties |
 | [Getting Started](https://openme.merlos.org/docs/getting-started/) | Step-by-step server and client setup |
 | [Configuration](https://openme.merlos.org/docs/configuration/) | All config options for server and client |
-| [Security Model](https://openme.merlos.org/docs/security/) | Threat model, what is and isn't protected |
 | [FAQ](https://openme.merlos.org/docs/faq/) | Common questions |
+| [Protocol](https://openme.merlos.org/docs/protocol/) | Wire format, cryptographic design, security properties |
+| [Security Model](https://openme.merlos.org/docs/security/) | Threat model, what is and isn't protected |
+
 | [For Developers](https://openme.merlos.org/docs/developer/) | Documentation For developers |
 
 To build and preview the docs locally:
 
 ```bash
-cd docs
-quarto preview
+# 1. Populate _variables.yml with real release versions (requires: gh auth login)
+./docs/scripts/gen-variables.sh
+
+# 2. Or skip GitHub auth / network access entirely (uses "0.0.1-dev" as version)
+./docs/scripts/gen-variables.sh --offline
+
+# 3. Preview with live reload
+cd docs && quarto preview
+
+# 4. Full static render
+cd docs && quarto render
 ```
+
+`docs/scripts/gen-variables.sh` is also called automatically by the
+`.github/workflows/docs.yml` CI workflow on every tagged release.
 
 ---
 

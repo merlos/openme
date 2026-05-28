@@ -1,3 +1,48 @@
+# =============================================================================
+# release-cli.yml
+#
+# Tests, cross-compiles, packages as .deb, and publishes the openme CLI.
+#
+# TRIGGER
+#   Push a tag matching  cli-v*  (e.g. cli-v0.1.0).
+#   The version number is derived by stripping the "cli-v" prefix.
+#
+# JOBS
+#   test    → Matrix job over [ubuntu-latest, macos-latest, windows-latest].
+#             Runs go vet and go test -race for the cli/ module.
+#
+#   build   → Runs `make build-all-release` in cli/ on ubuntu-latest.
+#             Produces cross-compiled binaries for all target platforms and
+#             uploads them as the artifact "cli-binaries":
+#               openme-linux-amd64
+#               openme-linux-arm64
+#               openme-linux-arm      (armv7 / Raspberry Pi)
+#               openme-linux-386
+#               openme-linux-riscv64
+#               openme-darwin-arm64   (macOS Apple Silicon)
+#               openme-windows-amd64.exe
+#
+#   deb     → Matrix job over [amd64, arm64, armhf, i386, riscv64].
+#             Each job downloads the cli-binaries artifact, constructs a
+#             Debian package directory from cli/packaging/debian/, installs
+#             the binary + man page + systemd unit, and runs dpkg-deb.
+#             Produces:
+#               openme_<version>_<arch>.deb
+#
+#   release → Downloads all cli-* artifacts and creates a GitHub Release
+#             named "OpenMe CLI v<VERSION>" with auto-generated release notes.
+#
+# REQUIRED SECRETS
+#   None — Go cross-compilation and dpkg-deb packaging require no credentials.
+#
+# LOCAL BUILD
+#   cd cli
+#   make build-all-release   # produces dist/openme-*
+#
+# TAGGING CONVENTION
+#   git tag cli-v0.1.0
+#   git push origin cli-v0.1.0
+# =============================================================================
 name: Release — CLI
 
 on:
@@ -102,6 +147,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build, deb]
     steps:
+      - name: Get version
+        id: ver
+        run: echo "VERSION=${GITHUB_REF_NAME#cli-v}" >> "$GITHUB_OUTPUT"
       - uses: actions/download-artifact@v7
         with:
           pattern: cli-*
@@ -109,6 +157,6 @@ jobs:
           path: dist/
       - uses: softprops/action-gh-release@v2
         with:
-          name: "CLI ${{ github.ref_name }}"
+          name: "OpenMe CLI v${{ steps.ver.outputs.VERSION }}"
           generate_release_notes: true
           files: dist/*

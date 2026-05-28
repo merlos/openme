@@ -1,0 +1,16 @@
+---
+title: "Download openme for Windows"
+description-meta: "Download the openme Windows system-tray app — Windows 10+, x64 and arm64."
+keywords: [openme Windows download, openme WPF app, openme Windows ZIP]
+toc: false
+css: download.css
+---
+
+{{< include _core.qmd >}}
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  renderHero("windows", false);
+  renderAllPlatforms();
+});
+</script>

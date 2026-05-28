@@ -2,8 +2,10 @@ project:
   type: website
   output-dir: _site
 
+vars: _variables.yml
+
 website:
-  title: "openme"
+  title: "OpenMe"
   description: "Single Packet Authentication — open your firewall with one encrypted packet"
   favicon: img/favicon.ico
   repo-url: https://github.com/merlos/openme
@@ -13,6 +15,8 @@ website:
     logo: img/logo.svg
     logo-alt: "openme"
     left:
+      - text: "Download"
+        href: download/index.qmd
       - text: "Documentation"
         href: index.qmd
       - text: "Getting Started"
@@ -34,15 +38,28 @@ website:
         contents:
           - getting-started/index.qmd
           - getting-started/server-setup.qmd
-          - getting-started/client-setup.qmd
           - getting-started/adding-clients.qmd
-          - getting-started/cross-compilation.qmd
-      - section: "Configuration"
+          - getting-started/client-setup.qmd
+      - section: "Server"
+        contents:
+          - server/index.qmd
+          - server/configuration.qmd
+          - server/firewall.qmd
+          - server/service.qmd
+      - section: "Clients"
+        contents:
+          - clients/index.qmd
+          - clients/cli.qmd
+          - clients/macos.qmd
+          - clients/ios.qmd
+          - clients/android.qmd
+          - clients/windows.qmd
+          - clients/watchos.qmd
+      - section: "Configuration Reference"
         contents:
           - configuration/index.qmd
           - configuration/server.qmd
           - configuration/client.qmd
-          - configuration/firewall.qmd
       - section: "Security Model"
         contents:
           - security/index.qmd

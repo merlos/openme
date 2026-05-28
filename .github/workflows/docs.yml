@@ -1,4 +1,4 @@
-name: dev - docs
+name: Docs
 
 on:
   push:
@@ -15,6 +15,8 @@ on:
       - 'windows/OpenMeKit/**'
       - '.github/workflows/docs.yml'
   workflow_dispatch:
+  release:
+    types: [published]
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
@@ -35,6 +37,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: main
 
       - name: Generate DocC (OpenMeKit)
         working-directory: apple/OpenMeKit
@@ -65,6 +69,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: main
 
       # ── C library: Doxygen ─────────────────────────────────────────────────
       - name: Install Doxygen
@@ -119,6 +125,12 @@ jobs:
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
+
+      # ── Inject release versions into _variables.yml ────────────────────────
+      - name: Generate _variables.yml (latest release versions)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash docs/scripts/gen-variables.sh
 
       - name: Render docs
         run: quarto render

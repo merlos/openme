@@ -1,0 +1,28 @@
+<script>
+/* ── Build-time constants — injected by Quarto from docs/_variables.yml ───
+   Quarto shortcode values are substituted at render time, before the
+   browser ever runs this script.                                           */
+const OM_VERSIONS = {
+  macos:   "{{< var macos_version >}}",
+  android: "{{< var android_version >}}",
+  windows: "{{< var windows_version >}}",
+  cli:     "{{< var cli_version >}}"
+};
+const OM_STORE = {
+  play: "{{< var playstore_url >}}",
+  app:  "{{< var appstore_url >}}"
+};
+</script>
+
+<script src="download.js"></script>
+
+<!-- Filled by JavaScript on DOMContentLoaded -->
+<div id="om-hero"></div>
+<div id="om-all"></div>
+
+<noscript>
+::: {.callout-warning}
+JavaScript is required to detect your platform and build download links.
+Please enable JavaScript or visit [GitHub Releases](https://github.com/merlos/openme/releases) directly.
+:::
+</noscript>

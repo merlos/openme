@@ -1,0 +1,43 @@
+::: {.panel-tabset}
+
+## amd64 (x86-64)
+
+```bash
+curl -Lo openme https://github.com/merlos/openme/releases/download/cli-v{{< var cli_version >}}/openme-linux-amd64
+chmod +x openme
+sudo mv openme /usr/local/bin/
+```
+
+## arm64
+
+```bash
+curl -Lo openme https://github.com/merlos/openme/releases/download/cli-v{{< var cli_version >}}/openme-linux-arm64
+chmod +x openme
+sudo mv openme /usr/local/bin/
+```
+
+## armhf
+
+```bash
+curl -Lo openme https://github.com/merlos/openme/releases/download/cli-v{{< var cli_version >}}/openme-linux-arm
+chmod +x openme
+sudo mv openme /usr/local/bin/
+```
+
+## 32-bit (i386)
+
+```bash
+curl -Lo openme https://github.com/merlos/openme/releases/download/cli-v{{< var cli_version >}}/openme-linux-386
+chmod +x openme
+sudo mv openme /usr/local/bin/
+```
+
+## riscv64
+
+```bash
+curl -Lo openme https://github.com/merlos/openme/releases/download/cli-v{{< var cli_version >}}/openme-linux-riscv64
+chmod +x openme
+sudo mv openme /usr/local/bin/
+```
+
+:::
