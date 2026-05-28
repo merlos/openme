@@ -25,8 +25,8 @@ The watchOS app is bundled with the iOS app.
 2. On your iPhone, open the **Watch** app.
 3. Scroll to **openme** under **Available Apps** and tap **Install**.
 
-<!-- Screenshot placeholder: Watch app install screen -->
-![Installing openme on Apple Watch](../images/placeholder-watch-install.png){.placeholder}
+<!-- Screenshot: Watch app install screen -->
+![Installing openme on Apple Watch](../img/watch-install.png){.placeholder}
 
 ---
 
@@ -36,8 +36,8 @@ The watchOS app is bundled with the iOS app.
 2. Profiles synced from your iPhone are listed automatically.
 3. Tap a profile to knock.
 
-<!-- Screenshot placeholder: watchOS knock screen -->
-![openme knock screen on Apple Watch](../images/placeholder-watch-knock.png){.placeholder}
+<!-- Screenshot: watchOS knock screen -->
+![openme knock screen on Apple Watch](../img/watch-knock.png){.placeholder}
 
 ::: {.callout-note}
 Knocking requires the watch to have a network path — either via a paired iPhone
