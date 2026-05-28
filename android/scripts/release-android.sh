@@ -3,7 +3,7 @@
 # android/scripts/release-android.sh
 #
 # Local release script for the openme Android app.
-# Mirrors the GitHub Actions workflow: .github/workflows/release-app-android.yml
+# Mirrors the GitHub Actions workflow: .github/workflows/release-android-app.yml
 #
 # Performs in order:
 #   1. Run openmekit JVM unit tests  (skippable with --skip-tests)
