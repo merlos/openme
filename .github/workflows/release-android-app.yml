@@ -1,22 +1,30 @@
 # =============================================================================
-# release-app-android.yml
+# release-android-app.yml
 #
 # Builds, optionally signs, and publishes the openme Android app.
 #
 # TRIGGER
-#   Push a tag matching  app-android-v*  (e.g. app-android-v0.1.0).
-#   The version number is derived by stripping the "app-android-v" prefix.
+#   Push a tag matching  android-app-v*  (e.g. android-app-v0.1.0).
+#   The version number is derived by stripping the "android-app-v" prefix.
 #
 # JOBS
 #   test    → Runs openmekit JVM unit tests with Gradle on ubuntu-latest.
 #
-#   build   → Always produces a debug APK (openme-<version>-debug.apk).
-#             If ANDROID_KEYSTORE_BASE64 is set, also produces a signed
-#             release APK (openme-<version>.apk) using the keystore from
-#             secrets. Both are uploaded as separate artifacts.
+#   build   → Decodes the keystore secret (when present) to a temp file and
+#             runs android/scripts/release-android.sh which:
+#               1. Builds a debug APK  (openme-<version>-debug.apk)
+#               2. Builds a signed release APK  (openme-<version>.apk)
+#               3. Builds a signed release AAB  (openme-<version>.aab)
+#                  when ANDROID_KEYSTORE_BASE64 is set.
+#             All artefacts are uploaded as separate artifacts.
 #
 #   release → Downloads all APK artifacts and creates a GitHub Release named
 #             "OpenMe Android App v<VERSION>" with auto-generated release notes.
+#
+# LOCAL EQUIVALENT
+#   ./android/scripts/release-android.sh <version>
+#   (Reads ANDROID_KEYSTORE_FILE, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS,
+#    ANDROID_KEY_PASSWORD from environment or android/scripts/.env)
 #
 # REQUIRED SECRETS (only needed for signed release APK)
 #   ANDROID_KEYSTORE_BASE64
@@ -37,6 +45,7 @@
 #     (may be the same as ANDROID_KEYSTORE_PASSWORD).
 #
 # CREATING A KEYSTORE (first time)
+#  /Applications/Android\ Studio.app/Contents/jbr/Contents/Home/bin 
 #   keytool -genkeypair -v \
 #     -keystore release.keystore \
 #     -alias openme \
@@ -48,7 +57,7 @@ name: Release — Android App
 
 on:
   push:
-    tags: ['app-android-v*']
+    tags: ['android-app-v*']
 
 permissions:
   contents: write
@@ -72,59 +81,59 @@ jobs:
     name: Build APK
     runs-on: ubuntu-latest
     needs: test
-    defaults:
-      run:
-        working-directory: android
+    env:
+      HAS_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-java@v5
         with: { java-version: '17', distribution: temurin }
       - uses: gradle/actions/setup-gradle@v5
         with: { gradle-version: '8.9' }
+
       - name: Get version
         id: ver
         shell: bash
-        run: echo "VERSION=${GITHUB_REF_NAME#app-android-v}" >> "$GITHUB_OUTPUT"
+        run: echo "VERSION=${GITHUB_REF_NAME#android-app-v}" >> "$GITHUB_OUTPUT"
 
-      # ── Debug APK (always) ────────────────────────────────────────────────────────
-      - run: gradle :app:assembleDebug
-      - name: Rename debug APK
+      # ── CI-only: decode keystore to a temp file ──────────────────────────────
+      # Locally ANDROID_KEYSTORE_FILE points directly to the file on disk.
+      - name: Decode keystore
+        if: ${{ env.HAS_KEYSTORE == 'true' }}
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: |
-          mv app/build/outputs/apk/debug/app-debug.apk \
-            "app/build/outputs/apk/debug/openme-${{ steps.ver.outputs.VERSION }}-debug.apk"
+          KEYSTORE_PATH="$RUNNER_TEMP/release.keystore"
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE_PATH"
+          echo "ANDROID_KEYSTORE_FILE=$KEYSTORE_PATH" >> "$GITHUB_ENV"
+
+      # ── Run release script ───────────────────────────────────────────────────
+      - name: Build APKs
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          chmod +x android/scripts/release-android.sh
+          ./android/scripts/release-android.sh "${{ steps.ver.outputs.VERSION }}" \
+            --skip-tests \
+            --skip-bundle \
+            --output-dir "$RUNNER_TEMP/dist"
+
+      # ── Clean up keystore ────────────────────────────────────────────────────
+      - name: Clean up keystore
+        if: always()
+        run: rm -f "$RUNNER_TEMP/release.keystore"
+
       - uses: actions/upload-artifact@v7
         with:
           name: apk-debug
-          path: android/app/build/outputs/apk/debug/openme-*.apk
+          path: ${{ runner.temp }}/dist/openme-*-debug.apk
 
-      # ── Release APK (signed, when secrets are present) ──────────────────────
-      - name: Decode keystore
-        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
-        env:
-          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-        run: printf '%s' "$KEYSTORE_BASE64" | base64 --decode > app/release.keystore
-      - name: Build release APK
-        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
-        env:
-          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: |
-          gradle :app:assembleRelease \
-            -Pandroid.injected.signing.store.file="$PWD/app/release.keystore" \
-            -Pandroid.injected.signing.store.password="$KEYSTORE_PASSWORD" \
-            -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
-            -Pandroid.injected.signing.key.password="$KEY_PASSWORD"
-      - name: Rename release APK
-        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
-        run: |
-          mv app/build/outputs/apk/release/app-release.apk \
-            "app/build/outputs/apk/release/openme-${{ steps.ver.outputs.VERSION }}.apk"
       - uses: actions/upload-artifact@v7
-        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+        if: ${{ env.HAS_KEYSTORE == 'true' }}
         with:
           name: apk-release
-          path: android/app/build/outputs/apk/release/openme-*.apk
+          path: ${{ runner.temp }}/dist/openme-*[0-9].apk
 
   release:
     name: Publish GitHub Release
@@ -133,7 +142,7 @@ jobs:
     steps:
       - name: Get version
         id: ver
-        run: echo "VERSION=${GITHUB_REF_NAME#app-android-v}" >> "$GITHUB_OUTPUT"
+        run: echo "VERSION=${GITHUB_REF_NAME#android-app-v}" >> "$GITHUB_OUTPUT"
       - uses: actions/download-artifact@v7
         with:
           pattern: apk-*
