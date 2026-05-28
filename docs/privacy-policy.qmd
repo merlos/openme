@@ -1,0 +1,107 @@
+---
+title: "Privacy Policy"
+description-meta: "openme privacy policy — the app collects no personal data."
+---
+
+# Privacy Policy
+
+**App:** openme  
+**Last updated:** 2026-05-28
+
+---
+
+## TL;DR
+No personal data is collected, processed, stored, or shared by the openme application. The app generates and stores cryptographic keys locally on the user's device and sends encrypted knock packets directly to user-configured server addresses. We do not operate any servers, analytics, or third-party services that receive user data.
+
+
+## In Plain English with style
+
+*openme knocks on ports so your server stays tight,*  
+*No passwords, no emails — your data's alright.*  
+*We don't collect your name, your location, your face,*  
+*No personal data is stored anyplace.*
+
+*The keys that you generate live on your phone,*  
+*They never reach our servers — you own them alone.*  
+*No analytics, no trackers, no third-party peeks,*  
+*Your knock is your secret — no log archive seeks.*
+
+*We don't share what we don't have, that's the deal,*  
+*No data is gathered — that's the privacy seal.*  
+*If the policy changes we'll update this page,*  
+*But "collect nothing" will always remain our creed and our stage.*
+
+---
+
+## Legal Edition
+
+### 1. Introduction and Scope
+
+This Privacy Policy ("Policy") governs the collection, processing, storage, transfer, and disclosure of information by the openme application ("Application," "App," "we," "us," or "our") made available on the Google Play Store and the Apple App Store. This Policy applies to all versions of the Application for Android, iOS, macOS, watchOS, and Windows platforms.
+
+By installing or using the Application, you ("User," "you," or "your") acknowledge that you have read, understood, and agree to be bound by this Policy. If you do not agree with the terms set forth herein, you should immediately discontinue use of the Application and uninstall it from your device.
+
+### 2. Data Controller
+
+For the purposes of applicable data protection legislation, including but not limited to the General Data Protection Regulation (EU) 2016/679 ("GDPR"), the California Consumer Privacy Act ("CCPA"), and any other applicable national or regional data protection laws, the developer of the openme Application acts as the data controller. Contact information is available at the repository: <https://github.com/merlos/openme>.
+
+### 3. Categories of Personal Data Collected
+
+**The Application does not collect, process, transmit, store, retain, or otherwise handle any personal data or personally identifiable information ("PII") whatsoever.**
+
+Specifically, and without limitation, the Application **does NOT collect** any of the following categories of personal data:*
+
+- Names, usernames, or aliases;
+- Email addresses, telephone numbers, or other contact identifiers;
+- Postal addresses, geolocation data, GPS coordinates, or device location;
+- Device identifiers, advertising identifiers (including but not limited to IDFA or GAID), IP addresses, or MAC addresses;
+- Authentication credentials, passwords, biometric data, or facial recognition data;
+- Financial information, payment card data, or bank account details;
+- Health data, fitness data, or any sensitive personal data as defined under applicable law;
+- Browsing history, search history, or interaction logs;
+- User-generated content uploaded to any remote server operated by us;
+- Crash reports, diagnostic data, analytics events, or telemetry of any kind.
+
+::: {.callout-note}
+**App store platforms** (Apple App Store, Google Play Store, Microsoft Store) may independently collect device identifiers, purchase history, crash reports, and usage analytics governed by their own privacy policies. Such collection is performed by the platform operator, not by us, and is outside our control.
+:::
+
+### 4. Cryptographic Key Material
+
+The Application generates and stores cryptographic key pairs (Ed25519 signing keys and X25519 key agreement keys) exclusively in the local secure storage of the User's device (e.g., Android Keystore, iOS Secure Enclave, or the local file system with restrictive permissions). Such key material:
+
+(a) is generated entirely on the User's device using a cryptographically secure pseudo-random number generator ("CSPRNG");  
+(b) is never transmitted to any server, service, or third party operated by or affiliated with us;  
+(c) remains under the sole custody and control of the User at all times.
+
+### 5. Network Communications
+
+The Application sends Single Packet Authentication ("SPA") UDP datagrams exclusively to server addresses explicitly configured by the User. These packets are encrypted and authenticated as described in the protocol specification. We do not operate relay servers, proxy services, telemetry endpoints, or any intermediary infrastructure through which User traffic passes.
+
+### 6. Third-Party Services and SDKs
+
+The Application does not integrate any third-party analytics SDKs, advertising networks, crash-reporting services, social media SDKs, or remote configuration services. Accordingly, no data is shared with any third party by virtue of the Application's operation.
+
+### 7. Children's Privacy
+
+The Application is not directed to children under the age of 13 (or such higher age as may be prescribed by applicable law in the User's jurisdiction). Because the Application collects no personal data from any user of any age, no special measures beyond this statement are required or applicable.
+
+### 8. Data Retention
+
+Because no personal data is collected, processed, or stored by us, there is no data retention period to disclose. All locally stored application data (cryptographic keys and server profiles) is retained on the User's device for the duration that the User chooses to retain it, and is permanently deleted upon uninstallation of the Application or manual deletion by the User.
+
+### 9. Data Subject Rights
+
+To the extent that applicable data protection law confers rights upon data subjects — including but not limited to rights of access, rectification, erasure ("right to be forgotten"), restriction of processing, data portability, and objection — the exercise of such rights is not applicable to this Application because no personal data is processed by us. Users retain full control over all data stored locally on their own devices.
+
+### 10. Security
+
+We have implemented appropriate technical measures consistent with the sensitivity of the data processed (i.e., none) and with industry best practices for the Application's cryptographic operations. The Application employs modern authenticated encryption (ChaCha20-Poly1305), elliptic-curve key agreement (X25519), and digital signatures (Ed25519) to protect the integrity and confidentiality of knock packets in transit.
+
+### 11. Changes to This Policy
+
+We reserve the right to amend this Policy at any time. Any material changes will be reflected by an updated "Last updated" date at the top of this document and, where required by applicable law, communicated to users through the applicable app store listing or other appropriate means. Your continued use of the Application following the posting of changes constitutes your acceptance of such changes. Given that the Application collects no data, any future amendment is expected to reflect additions of functionality rather than changes to data collection practices.
+
+### 12. Contact
+
+If you have any questions, concerns, or requests relating to this Privacy Policy, you may contact us by opening a discussion at: <https://github.com/merlos/openme/discussions>

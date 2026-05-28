@@ -97,6 +97,7 @@ website:
               - faq/vs-wireguard.qmd
               - faq/vs-tailscale.qmd
               - faq/vs-vpn.qmd
+          - privacy-policy.qmd
 
   page-footer:
     left: "© 2026 merlos.org — MIT License"
