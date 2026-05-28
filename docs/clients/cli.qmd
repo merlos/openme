@@ -19,7 +19,7 @@ both roles.
 [Download for Linux →](../download/linux.qmd)
 
 ```bash
-curl -Lo openme.deb "https://github.com/merlos/openme/releases/download/cli-v{{< var cli_version >}}/openme_{{< var cli_version >}}_linux_amd64.deb"
+curl -Lo openme.deb "https://github.com/merlos/openme/releases/download/{{< var cli_tag_prefix >}}{{< var cli_version >}}/openme_{{< var cli_version >}}_linux_amd64.deb"
 sudo dpkg -i openme.deb
 ```
 
@@ -28,7 +28,7 @@ See [Download → Linux](../download/linux.qmd) for all architectures (arm64, ar
 ### Linux — binary
 
 ```bash
-curl -Lo openme "https://github.com/merlos/openme/releases/download/cli-v{{< var cli_version >}}/openme-linux-amd64"
+curl -Lo openme "https://github.com/merlos/openme/releases/download/{{< var cli_tag_prefix >}}{{< var cli_version >}}/openme-linux-amd64"
 chmod +x openme && sudo mv openme /usr/local/bin/
 ```
 
@@ -38,11 +38,11 @@ chmod +x openme && sudo mv openme /usr/local/bin/
 
 ```bash
 # Apple Silicon
-curl -Lo openme "https://github.com/merlos/openme/releases/download/cli-v{{< var cli_version >}}/openme-darwin-arm64"
+curl -Lo openme "https://github.com/merlos/openme/releases/download/{{< var cli_tag_prefix >}}{{< var cli_version >}}/openme-darwin-arm64"
 chmod +x openme && sudo mv openme /usr/local/bin/
 
 # Intel
-curl -Lo openme "https://github.com/merlos/openme/releases/download/cli-v{{< var cli_version >}}/openme-darwin-amd64"
+curl -Lo openme "https://github.com/merlos/openme/releases/download/{{< var cli_tag_prefix >}}{{< var cli_version >}}/openme-darwin-amd64"
 chmod +x openme && sudo mv openme /usr/local/bin/
 ```
 
@@ -50,7 +50,7 @@ chmod +x openme && sudo mv openme /usr/local/bin/
 
 [Download for Windows →](../download/windows.qmd)
 
-Download [`openme-windows-amd64.exe`](https://github.com/merlos/openme/releases/download/cli-v{{< var cli_version >}}/openme-windows-amd64.exe)
+Download [`openme-windows-amd64.exe`](https://github.com/merlos/openme/releases/download/{{< var cli_tag_prefix >}}{{< var cli_version >}}/openme-windows-amd64.exe)
 and add it to your `PATH`.
 
 ### From source
