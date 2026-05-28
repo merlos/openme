@@ -5,23 +5,32 @@ const v  = OM_VERSIONS;
 const GH_REL = "https://github.com/merlos/openme/releases";
 const GH_PREV = (q) => `${GH_REL}?q=${encodeURIComponent(q)}&expanded=true`;
 
+// Tag prefixes come from _variables.yml (written by docs/scripts/gen-variables.sh).
+// Never hardcode them here — change TAG_PREFIX_* in gen-variables.sh instead.
+const tp = {
+  macos:   v.macos_tag_prefix,
+  android: v.android_tag_prefix,
+  windows: v.windows_tag_prefix,
+  cli:     v.cli_tag_prefix,
+};
+
 const OM_URLS = {
-  macos_dmg:    `${GH}/app-macos-v${v.macos}/openme-macos-${v.macos}.dmg`,
-  android_apk:  `${GH}/app-android-v${v.android}/openme-${v.android}.apk`,
-  win_x64:      `${GH}/app-windows-v${v.windows}/openme-windows-${v.windows}-win-x64.zip`,
-  win_arm64:    `${GH}/app-windows-v${v.windows}/openme-windows-${v.windows}-win-arm64.zip`,
-  linux_amd64:   `${GH}/cli-v${v.cli}/openme-linux-amd64`,
-  linux_arm64:   `${GH}/cli-v${v.cli}/openme-linux-arm64`,
-  linux_arm:     `${GH}/cli-v${v.cli}/openme-linux-arm`,
-  linux_386:     `${GH}/cli-v${v.cli}/openme-linux-386`,
-  linux_riscv64: `${GH}/cli-v${v.cli}/openme-linux-riscv64`,
-  deb_amd64:     `${GH}/cli-v${v.cli}/openme_${v.cli}_amd64.deb`,
-  deb_arm64:     `${GH}/cli-v${v.cli}/openme_${v.cli}_arm64.deb`,
-  deb_armhf:     `${GH}/cli-v${v.cli}/openme_${v.cli}_armhf.deb`,
-  deb_i386:      `${GH}/cli-v${v.cli}/openme_${v.cli}_i386.deb`,
-  deb_riscv64:   `${GH}/cli-v${v.cli}/openme_${v.cli}_riscv64.deb`,
-  macos_cli:    `${GH}/cli-v${v.cli}/openme-darwin-arm64`,
-  win_cli_exe:  `${GH}/cli-v${v.cli}/openme-windows-amd64.exe`,
+  macos_dmg:     `${GH}/${tp.macos}${v.macos}/openme-macos-${v.macos}.dmg`,
+  android_apk:   `${GH}/${tp.android}${v.android}/openme-${v.android}.apk`,
+  win_x64:       `${GH}/${tp.windows}${v.windows}/openme-windows-${v.windows}-win-x64.zip`,
+  win_arm64:     `${GH}/${tp.windows}${v.windows}/openme-windows-${v.windows}-win-arm64.zip`,
+  linux_amd64:   `${GH}/${tp.cli}${v.cli}/openme-linux-amd64`,
+  linux_arm64:   `${GH}/${tp.cli}${v.cli}/openme-linux-arm64`,
+  linux_arm:     `${GH}/${tp.cli}${v.cli}/openme-linux-arm`,
+  linux_386:     `${GH}/${tp.cli}${v.cli}/openme-linux-386`,
+  linux_riscv64: `${GH}/${tp.cli}${v.cli}/openme-linux-riscv64`,
+  deb_amd64:     `${GH}/${tp.cli}${v.cli}/openme_${v.cli}_amd64.deb`,
+  deb_arm64:     `${GH}/${tp.cli}${v.cli}/openme_${v.cli}_arm64.deb`,
+  deb_armhf:     `${GH}/${tp.cli}${v.cli}/openme_${v.cli}_armhf.deb`,
+  deb_i386:      `${GH}/${tp.cli}${v.cli}/openme_${v.cli}_i386.deb`,
+  deb_riscv64:   `${GH}/${tp.cli}${v.cli}/openme_${v.cli}_riscv64.deb`,
+  macos_cli:     `${GH}/${tp.cli}${v.cli}/openme-darwin-arm64`,
+  win_cli_exe:   `${GH}/${tp.cli}${v.cli}/openme-windows-amd64.exe`,
   releases:     GH_REL
 };
 
