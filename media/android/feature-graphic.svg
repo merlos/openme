@@ -1,0 +1,56 @@
+<svg width="1024" height="500" viewBox="0 0 1024 500" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Background — matches the icon's radial gradient -->
+    <radialGradient id="bg" cx="512" cy="250" r="660" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#3F1184"/>
+      <stop offset="1" stop-color="#0E041E"/>
+    </radialGradient>
+
+    <!-- Soft purple glow centred behind the icon -->
+    <radialGradient id="iconGlow" cx="790" cy="250" r="230" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#783DD8" stop-opacity="0.28"/>
+      <stop offset="1" stop-color="#783DD8" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Very subtle edge vignette -->
+    <radialGradient id="vignette" cx="512" cy="250" r="620" gradientUnits="userSpaceOnUse">
+      <stop offset="55%" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.45"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1024" height="500" fill="url(#bg)"/>
+  <!-- Vignette -->
+  <rect width="1024" height="500" fill="url(#vignette)"/>
+
+  <!-- Glow behind icon -->
+  <circle cx="790" cy="250" r="230" fill="url(#iconGlow)"/>
+
+  <!-- Icon (1024×1024 source scaled to 380×380, centred vertically) -->
+  <image href="../logo/icon.svg"
+         x="600" y="60" width="380" height="380"
+         preserveAspectRatio="xMidYMid meet"/>
+
+  <!-- Subtle vertical divider between text and icon areas -->
+  <line x1="578" y1="80" x2="578" y2="420"
+        stroke="#783DD8" stroke-width="1" stroke-opacity="0.25"/>
+
+  <!-- App name -->
+  <text x="65" y="225"
+        font-family="'Helvetica Neue', Helvetica, Arial, sans-serif"
+        font-size="115" font-weight="700"
+        fill="white" letter-spacing="-1">openme</text>
+
+  <!-- Tagline -->
+  <text x="67" y="293"
+        font-family="'Helvetica Neue', Helvetica, Arial, sans-serif"
+        font-size="29" font-weight="400"
+        fill="#B794F4" letter-spacing="0.3">Single Packet Authentication</text>
+
+  <!-- Sub-description -->
+  <text x="67" y="350"
+        font-family="'Helvetica Neue', Helvetica, Arial, sans-serif"
+        font-size="21" font-weight="300"
+        fill="white" opacity="0.52">Stealth port knocking. Zero attack surface.</text>
+</svg>
