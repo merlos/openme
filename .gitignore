@@ -14,6 +14,7 @@ docs/.quarto/
 
 # ── Apple scripts local config ──────────────────────────────
 apple/scripts/.env
+android/scripts/.env
 
 # ── Windows ─────────────────────────────────────────────────
 Thumbs.db
