@@ -62,6 +62,7 @@ private struct MenuBarLabelView: View {
 
     var body: some View {
         Image("MenuBarIcon")
+            .renderingMode(.template)
             .onReceive(NotificationCenter.default.publisher(for: .openProfileManager)) { _ in
                 NSApp.activate(ignoringOtherApps: true)
                 openWindow(id: "profile-manager")
