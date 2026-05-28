@@ -69,17 +69,17 @@ struct MenuBarMenuView: View {
         Divider()
 
         // ── Links ─────────────────────────────────────────────────────────
-        Button("Website") {
+        Button("openme.merlos.org") {
             NSWorkspace.shared.open(URL(string: "https://openme.merlos.org")!)
         }
 
-        Button("Documentation") {
+        Button("OpenMe Docs") {
             NSWorkspace.shared.open(URL(string: "https://openme.merlos.org/docs")!)
         }
 
         Divider()
 
-        Button("Quit openme") {
+        Button("Quit OpenMe") {
             NSApp.terminate(nil)
         }
         .keyboardShortcut("q")
