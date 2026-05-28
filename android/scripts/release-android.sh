@@ -147,12 +147,18 @@ else
     fi
 fi
 
+# ── Compute versionCode from semver (MAJOR*10000 + MINOR*100 + PATCH) ───────
+# e.g. 0.1.0 → 100 · 0.2.0 → 200 · 1.0.0 → 10000 · 1.2.3 → 10203
+IFS='.' read -r VER_MAJOR VER_MINOR VER_PATCH <<< "$VERSION"
+VERSION_CODE=$(( ${VER_MAJOR:-0} * 10000 + ${VER_MINOR:-0} * 100 + ${VER_PATCH:-0} ))
+
 # ── Setup output dir ──────────────────────────────────────────────────────────
 mkdir -p "$OUTPUT_DIR"
 
 echo "══════════════════════════════════════════════════"
 echo "  openme-android local release"
 echo "  version   : $VERSION"
+echo "  versionCode: $VERSION_CODE"
 echo "  output    : $OUTPUT_DIR"
 echo "  sign APK  : $DO_SIGN"
 echo "══════════════════════════════════════════════════"
@@ -172,7 +178,7 @@ fi
 # ── Step 2: Debug APK ─────────────────────────────────────────────────────────
 echo ""
 echo "── Building debug APK ──"
-./gradlew :app:assembleDebug
+./gradlew :app:assembleDebug "-Pversion.code=$VERSION_CODE"
 
 DEBUG_SRC="$ANDROID_DIR/app/build/outputs/apk/debug/app-debug.apk"
 DEBUG_OUT="$OUTPUT_DIR/openme-${VERSION}-debug.apk"
@@ -184,6 +190,7 @@ if [[ "$DO_SIGN" == true ]]; then
     echo ""
     echo "── Building signed release APK ──"
     ./gradlew :app:assembleRelease \
+        "-Pversion.code=$VERSION_CODE" \
         "-Pandroid.injected.signing.store.file=$KEYSTORE_FILE" \
         "-Pandroid.injected.signing.store.password=$KEYSTORE_PASSWORD" \
         "-Pandroid.injected.signing.key.alias=$KEY_ALIAS" \
@@ -206,6 +213,7 @@ elif [[ "$DO_SIGN" == true ]]; then
     echo ""
     echo "── Building signed release AAB (Google Play) ──"
     ./gradlew :app:bundleRelease \
+        "-Pversion.code=$VERSION_CODE" \
         "-Pandroid.injected.signing.store.file=$KEYSTORE_FILE" \
         "-Pandroid.injected.signing.store.password=$KEYSTORE_PASSWORD" \
         "-Pandroid.injected.signing.key.alias=$KEY_ALIAS" \

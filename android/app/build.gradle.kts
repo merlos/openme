@@ -5,6 +5,11 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
+// versionCode is injected by the release script as -Pversion.code=N
+// (MAJOR*10000 + MINOR*100 + PATCH, e.g. 0.1.0 → 100, 1.2.3 → 10203)
+// Falls back to 1 for local development builds.
+val versionCodeProp = (project.findProperty("version.code") as String?)?.toInt() ?: 1
+
 android {
     namespace = "org.merlos.openme"
     compileSdk = 35
@@ -13,7 +18,7 @@ android {
         applicationId = "org.merlos.openme"
         minSdk = 29
         targetSdk = 35
-        versionCode = 1
+        versionCode = versionCodeProp
         versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
