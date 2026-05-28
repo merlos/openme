@@ -70,6 +70,14 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 VARIABLES_FILE="$REPO_ROOT/docs/_variables.yml"
 
+# ── Tag prefix configuration ──────────────────────────────────────────────────
+# Change these when the tag naming convention changes.  They are written into
+# _variables.yml so download.js can always stay in sync automatically.
+TAG_PREFIX_MACOS="macos-app-v"
+TAG_PREFIX_ANDROID="android-app-v"
+TAG_PREFIX_WINDOWS="windows-app-v"
+TAG_PREFIX_CLI="cli-v"
+
 # ── Defaults ──────────────────────────────────────────────────────────────────
 OFFLINE=false
 DEV_FALLBACK="0.0.1-dev"
@@ -108,20 +116,25 @@ if [[ "$OFFLINE" == true ]]; then
     CLI="$DEV_FALLBACK"
 else
     echo "── Fetching latest release versions from GitHub ──"
-    MACOS="$(get_version app-macos-v)"
-    ANDROID="$(get_version app-android-v)"
-    WINDOWS="$(get_version app-windows-v)"
-    CLI="$(get_version cli-v)"
+    MACOS="$(get_version "$TAG_PREFIX_MACOS")"
+    ANDROID="$(get_version "$TAG_PREFIX_ANDROID")"
+    WINDOWS="$(get_version "$TAG_PREFIX_WINDOWS")"
+    CLI="$(get_version "$TAG_PREFIX_CLI")"
 fi
 
 # ── Write docs/_variables.yml ─────────────────────────────────────────────────
-printf \
-    'macos_version: "%s"\nandroid_version: "%s"\nwindows_version: "%s"\ncli_version: "%s"\nplaystore_url: "https://play.google.com/store/apps/details?id=org.merlos.openme"\nappstore_url: "https://apps.apple.com/app/openme"\n' \
-    "${MACOS:-$DEV_FALLBACK}" \
-    "${ANDROID:-$DEV_FALLBACK}" \
-    "${WINDOWS:-$DEV_FALLBACK}" \
-    "${CLI:-$DEV_FALLBACK}" \
-    > "$VARIABLES_FILE"
+cat > "$VARIABLES_FILE" <<EOF
+macos_version:      "${MACOS:-$DEV_FALLBACK}"
+android_version:    "${ANDROID:-$DEV_FALLBACK}"
+windows_version:    "${WINDOWS:-$DEV_FALLBACK}"
+cli_version:        "${CLI:-$DEV_FALLBACK}"
+macos_tag_prefix:   "${TAG_PREFIX_MACOS}"
+android_tag_prefix: "${TAG_PREFIX_ANDROID}"
+windows_tag_prefix: "${TAG_PREFIX_WINDOWS}"
+cli_tag_prefix:     "${TAG_PREFIX_CLI}"
+playstore_url:      "https://play.google.com/store/apps/details?id=org.merlos.openme"
+appstore_url:       "https://apps.apple.com/app/openme"
+EOF
 
 echo ""
 echo "── Generated $VARIABLES_FILE ──"

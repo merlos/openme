@@ -5,7 +5,17 @@ keywords: [openme client setup, openme knock, openme CLI install, openme config]
 ---
 
 This step covers the CLI client, which works on Linux, macOS and Windows.
-For native apps see [Clients →](../clients/index.qmd).
+
+::: {.callout-tip}
+## Prefer a native app?
+
+| Platform | App | Download |
+|----------|-----|----------|
+| macOS | openme menu-bar app | [Download →](../download/macos.qmd) |
+| Windows | openme system-tray app | [Download →](../download/windows.qmd) |
+| iOS / iPadOS | openme for iOS | [App Store →](../download/ios.qmd) |
+| Android | openme for Android | [Google Play →](../download/android.qmd) |
+:::
 
 ---
 
@@ -21,22 +31,61 @@ For native apps see [Clients →](../clients/index.qmd).
 
 #### macOS
 
+
+::: {.panel-tabset}
+
+##### Apple Silicon (M1/M2/M3/M4)
+
 ```bash
-curl -Lo openme https://github.com/merlos/openme/releases/download/cli-v{{< var cli_version >}}/openme-darwin-arm64
-chmod +x openme
-sudo mv openme /usr/local/bin/
+curl -Lo openme https://github.com/merlos/openme/releases/download/{{< var cli_tag_prefix >}}{{< var cli_version >}}/openme-darwin-arm64
+chmod +x openme && sudo mv openme /usr/local/bin/
 ```
+
+##### Intel
+
+```bash
+curl -Lo openme https://github.com/merlos/openme/releases/download/{{< var cli_tag_prefix >}}{{< var cli_version >}}/openme-darwin-amd64
+chmod +x openme && sudo mv openme /usr/local/bin/
+```
+
+:::
+
+::: {.callout-tip}
+Prefer a native menu-bar app? [Download openme for macOS →](../download/macos.qmd)
+:::
+
 
 #### Windows
 
-Download [`openme-windows-amd64.exe`](https://github.com/merlos/openme/releases/download/cli-v{{< var cli_version >}}/openme-windows-amd64.exe)
-and add it to your `PATH`.
+
+Download the binary for your architecture:
+
+- x64 (Intel / AMD): [`openme-windows-amd64.exe`](https://github.com/merlos/openme/releases/download/{{< var cli_tag_prefix >}}{{< var cli_version >}}/openme-windows-amd64.exe)
+- ARM64: [`openme-windows-arm64.exe`](https://github.com/merlos/openme/releases/download/{{< var cli_tag_prefix >}}{{< var cli_version >}}/openme-windows-arm64.exe)
+
+Then add it to your `PATH` (run in PowerShell as Administrator):
+
+```powershell
+$dest = "$env:ProgramFiles\openme"
+New-Item -ItemType Directory -Force -Path $dest | Out-Null
+Move-Item .\openme-windows-amd64.exe "$dest\openme.exe"   # adjust filename for ARM64
+[Environment]::SetEnvironmentVariable(
+    "Path", $env:Path + ";$dest", [EnvironmentVariableTarget]::Machine)
+Write-Host "Restart your terminal, then run: openme --version"
+```
+
+::: {.callout-tip}
+Prefer a native system-tray app? [Download openme for Windows →](../download/windows.qmd)
+:::
+
 
 #### From source
 
 ```bash
 go install github.com/merlos/openme/cli/cmd/openme@latest
 ```
+
+
 
 ---
 
