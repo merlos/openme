@@ -5,7 +5,17 @@ keywords: [openme client setup, openme knock, openme CLI install, openme config]
 ---
 
 This step covers the CLI client, which works on Linux, macOS and Windows.
-For native apps see [Clients →](../clients/index.qmd).
+
+::: {.callout-tip}
+## Prefer a native app?
+
+| Platform | App | Download |
+|----------|-----|----------|
+| macOS | openme menu-bar app | [Download →](../download/macos.qmd) |
+| Windows | openme system-tray app | [Download →](../download/windows.qmd) |
+| iOS / iPadOS | openme for iOS | [App Store →](../download/ios.qmd) |
+| Android | openme for Android | [Google Play →](../download/android.qmd) |
+:::
 
 ---
 
@@ -21,9 +31,6 @@ For native apps see [Clients →](../clients/index.qmd).
 
 #### macOS
 
-::: {.callout-tip}
-Prefer a native menu-bar app? [Download openme for macOS →](../download/macos.qmd)
-:::
 
 ::: {.panel-tabset}
 
@@ -43,11 +50,13 @@ chmod +x openme && sudo mv openme /usr/local/bin/
 
 :::
 
+::: {.callout-tip}
+Prefer a native menu-bar app? [Download openme for macOS →](../download/macos.qmd)
+:::
+
+
 #### Windows
 
-::: {.callout-tip}
-Prefer a native system-tray app? [Download openme for Windows →](../download/windows.qmd)
-:::
 
 Download the binary for your architecture:
 
@@ -65,11 +74,18 @@ Move-Item .\openme-windows-amd64.exe "$dest\openme.exe"   # adjust filename for 
 Write-Host "Restart your terminal, then run: openme --version"
 ```
 
+::: {.callout-tip}
+Prefer a native system-tray app? [Download openme for Windows →](../download/windows.qmd)
+:::
+
+
 #### From source
 
 ```bash
 go install github.com/merlos/openme/cli/cmd/openme@latest
 ```
+
+
 
 ---
 
