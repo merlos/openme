@@ -383,10 +383,14 @@ a:hover { text-decoration: underline; }
   text-align: center;
   min-width: 140px;
   transition: border-color .2s, transform .15s;
+  text-decoration: none;
+  display: block;
+  cursor: pointer;
 }
 .platform:hover {
   border-color: var(--c-accent);
   transform: translateY(-2px);
+  text-decoration: none;
 }
 .platform__icon { font-size: 32px; margin-bottom: 10px; }
 .platform__name { font-weight: 600; font-size: 15px; margin-bottom: 6px; color: var(--c-text); }
@@ -768,12 +772,16 @@ a:hover { text-decoration: underline; }
   padding: 28px 36px;
   text-align: center;
   min-width: 140px;
+  text-decoration: none;
+  display: block;
+  cursor: pointer;
 }
 .platform__icon { font-size: 32px; margin-bottom: 10px; }
 .platform__name { font-weight: 600; font-size: 15px; margin-bottom: 6px; }
 .platform__status { font-size: 12px; }
 .platform--available .platform__status { color: var(--c-green); }
 .platform--soon .platform__status { color: var(--c-text-muted); }
+.platform:hover { text-decoration: none; }
 
 /* ── Footer ───────────────────────────────────────────────── */
 .footer {
