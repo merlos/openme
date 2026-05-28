@@ -6,7 +6,11 @@ const OM_VERSIONS = {
   macos:   "{{< var macos_version >}}",
   android: "{{< var android_version >}}",
   windows: "{{< var windows_version >}}",
-  cli:     "{{< var cli_version >}}"
+  cli:     "{{< var cli_version >}}",
+  macos_tag_prefix:   "{{< var macos_tag_prefix >}}",
+  android_tag_prefix: "{{< var android_tag_prefix >}}",
+  windows_tag_prefix: "{{< var windows_tag_prefix >}}",
+  cli_tag_prefix:     "{{< var cli_tag_prefix >}}"
 };
 const OM_STORE = {
   play: "{{< var playstore_url >}}",
