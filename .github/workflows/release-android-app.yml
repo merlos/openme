@@ -1,11 +1,11 @@
 # =============================================================================
-# release-app-android.yml
+# release-android-app.yml
 #
 # Builds, optionally signs, and publishes the openme Android app.
 #
 # TRIGGER
-#   Push a tag matching  app-android-v*  (e.g. app-android-v0.1.0).
-#   The version number is derived by stripping the "app-android-v" prefix.
+#   Push a tag matching  android-app-v*  (e.g. android-app-v0.1.0).
+#   The version number is derived by stripping the "android-app-v" prefix.
 #
 # JOBS
 #   test    → Runs openmekit JVM unit tests with Gradle on ubuntu-latest.
@@ -14,8 +14,9 @@
 #             runs android/scripts/release-android.sh which:
 #               1. Builds a debug APK  (openme-<version>-debug.apk)
 #               2. Builds a signed release APK  (openme-<version>.apk)
+#               3. Builds a signed release AAB  (openme-<version>.aab)
 #                  when ANDROID_KEYSTORE_BASE64 is set.
-#             Both APKs are uploaded as separate artifacts.
+#             All artefacts are uploaded as separate artifacts.
 #
 #   release → Downloads all APK artifacts and creates a GitHub Release named
 #             "OpenMe Android App v<VERSION>" with auto-generated release notes.
@@ -56,7 +57,7 @@ name: Release — Android App
 
 on:
   push:
-    tags: ['app-android-v*']
+    tags: ['android-app-v*']
 
 permissions:
   contents: write
@@ -90,7 +91,7 @@ jobs:
       - name: Get version
         id: ver
         shell: bash
-        run: echo "VERSION=${GITHUB_REF_NAME#app-android-v}" >> "$GITHUB_OUTPUT"
+        run: echo "VERSION=${GITHUB_REF_NAME#android-app-v}" >> "$GITHUB_OUTPUT"
 
       # ── CI-only: decode keystore to a temp file ──────────────────────────────
       # Locally ANDROID_KEYSTORE_FILE points directly to the file on disk.
@@ -113,6 +114,7 @@ jobs:
           chmod +x android/scripts/release-android.sh
           ./android/scripts/release-android.sh "${{ steps.ver.outputs.VERSION }}" \
             --skip-tests \
+            --skip-bundle \
             --output-dir "$RUNNER_TEMP/dist"
 
       # ── Clean up keystore ────────────────────────────────────────────────────
@@ -138,7 +140,7 @@ jobs:
     steps:
       - name: Get version
         id: ver
-        run: echo "VERSION=${GITHUB_REF_NAME#app-android-v}" >> "$GITHUB_OUTPUT"
+        run: echo "VERSION=${GITHUB_REF_NAME#android-app-v}" >> "$GITHUB_OUTPUT"
       - uses: actions/download-artifact@v7
         with:
           pattern: apk-*

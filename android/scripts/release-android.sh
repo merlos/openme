@@ -11,7 +11,10 @@
 #   3. Build a signed release APK    (openme-<version>.apk)
 #      Signing is skipped when ANDROID_KEYSTORE_FILE is not set / the file
 #      does not exist (matches CI behaviour when the keystore secret is absent).
-#   4. Copy all produced APKs to the output directory.
+#   4. Build a signed release AAB    (openme-<version>.aab)
+#      Required for Google Play submission. Skipped without signing keys.
+#      Use --skip-bundle to suppress AAB generation.
+#   5. Copy all produced artefacts to the output directory.
 #
 # USAGE
 #   ./android/scripts/release-android.sh <version> [options]
@@ -21,7 +24,8 @@
 # OPTIONS
 #   --skip-tests       Skip the Gradle unit-test step.
 #   --skip-sign        Skip signing even if keystore env vars are present.
-#   --output-dir DIR   Directory where the final APKs are written.
+#   --skip-bundle      Skip the AAB (App Bundle) build step.
+#   --output-dir DIR   Directory where the final artefacts are written.
 #                      Default: dist/  (relative to the repo root)
 #   --env-file FILE    Path to an env file to source instead of the default
 #                      android/scripts/.env
@@ -68,6 +72,7 @@ ANDROID_DIR="$REPO_ROOT/android"
 # ── Defaults ──────────────────────────────────────────────────────────────────
 SKIP_TESTS=false
 SKIP_SIGN=false
+SKIP_BUNDLE=false
 OUTPUT_DIR="$REPO_ROOT/dist"
 VERSION=""
 ENV_FILE="$SCRIPT_DIR/.env"
@@ -83,6 +88,7 @@ while [[ $# -gt 0 ]]; do
         --help|-h)        usage ;;
         --skip-tests)     SKIP_TESTS=true;    shift ;;
         --skip-sign)      SKIP_SIGN=true;     shift ;;
+        --skip-bundle)    SKIP_BUNDLE=true;   shift ;;
         --output-dir)     OUTPUT_DIR="$2";    shift 2 ;;
         --env-file)       ENV_FILE="$2";      shift 2 ;;
         -*)               echo "Unknown option: $1"; exit 1 ;;
@@ -192,14 +198,37 @@ else
     echo "── Skipping signed release APK (keystore not configured) ──"
 fi
 
+# ── Step 4: Signed release AAB (Google Play) ─────────────────────────────────
+if [[ "$SKIP_BUNDLE" == true ]]; then
+    echo ""
+    echo "── Skipping AAB (--skip-bundle) ──"
+elif [[ "$DO_SIGN" == true ]]; then
+    echo ""
+    echo "── Building signed release AAB (Google Play) ──"
+    ./gradlew :app:bundleRelease \
+        "-Pandroid.injected.signing.store.file=$KEYSTORE_FILE" \
+        "-Pandroid.injected.signing.store.password=$KEYSTORE_PASSWORD" \
+        "-Pandroid.injected.signing.key.alias=$KEY_ALIAS" \
+        "-Pandroid.injected.signing.key.password=$KEY_PASSWORD"
+
+    AAB_SRC="$ANDROID_DIR/app/build/outputs/bundle/release/app-release.aab"
+    AAB_OUT="$OUTPUT_DIR/openme-${VERSION}.aab"
+    cp "$AAB_SRC" "$AAB_OUT"
+    echo "  release AAB: $AAB_OUT"
+else
+    echo ""
+    echo "── Skipping AAB (keystore not configured) ──"
+fi
+
 # ── Done ──────────────────────────────────────────────────────────────────────
 echo ""
 echo "══════════════════════════════════════════════════"
 echo "  Done."
+echo "  debug APK  : $OUTPUT_DIR/openme-${VERSION}-debug.apk"
 if [[ "$DO_SIGN" == true ]]; then
-    echo "  debug APK  : $OUTPUT_DIR/openme-${VERSION}-debug.apk"
     echo "  release APK: $OUTPUT_DIR/openme-${VERSION}.apk"
-else
-    echo "  debug APK  : $OUTPUT_DIR/openme-${VERSION}-debug.apk"
+fi
+if [[ "$DO_SIGN" == true ]] && [[ "$SKIP_BUNDLE" == false ]]; then
+    echo "  release AAB: $OUTPUT_DIR/openme-${VERSION}.aab"
 fi
 echo "══════════════════════════════════════════════════"
