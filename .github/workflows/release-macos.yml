@@ -1,11 +1,11 @@
 # =============================================================================
-# release-app-macos.yml
+# release-macos-app.yml
 #
 # Builds, signs, notarizes and publishes the openme macOS menu-bar app.
 #
 # TRIGGER
-#   Push a tag matching  app-macos-v*  (e.g. app-macos-v0.1.0).
-#   The version number is derived by stripping the "app-macos-v" prefix.
+#   Push a tag matching  macos-app-v*  (e.g. macos-app-v0.1.0).
+#   The version number is derived by stripping the "macos-app-v" prefix.
 #
 # JOBS
 #   test    → Runs the Xcode test suite (openme-macos scheme, macOS destination)
@@ -59,7 +59,7 @@ name: Release — macOS App
 
 on:
   push:
-    tags: ['app-macos-v*']
+    tags: ['macos-app-v*']
 
 permissions:
   contents: write
@@ -92,7 +92,7 @@ jobs:
 
       - name: Get version
         id: ver
-        run: echo "VERSION=${GITHUB_REF_NAME#app-macos-v}" >> "$GITHUB_OUTPUT"
+        run: echo "VERSION=${GITHUB_REF_NAME#macos-app-v}" >> "$GITHUB_OUTPUT"
 
       # ── CI-only: import Developer ID cert into a short-lived keychain ────────
       # Locally the cert lives in the login keychain; on CI it comes from a secret.
@@ -164,7 +164,7 @@ jobs:
     steps:
       - name: Get version
         id: ver
-        run: echo "VERSION=${GITHUB_REF_NAME#app-macos-v}" >> "$GITHUB_OUTPUT"
+        run: echo "VERSION=${GITHUB_REF_NAME#macos-app-v}" >> "$GITHUB_OUTPUT"
       - uses: actions/download-artifact@v7
         with:
           name: macos-dmg
