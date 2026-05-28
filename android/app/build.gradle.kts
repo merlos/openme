@@ -26,6 +26,13 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            //ndk {
+            //    // Embed native debug symbols in the AAB/APK so Google Play
+            //    // can symbolicate crashes and ANRs automatically.
+            //    // SYMBOL_TABLE = function names only (smaller upload)
+            //    // FULL         = full DWARF info (needed for line numbers)
+            //    debugSymbolLevel = "SYMBOL_TABLE"
+            //}
         }
     }
 
