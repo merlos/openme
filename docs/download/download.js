@@ -30,7 +30,9 @@ const OM_URLS = {
   deb_i386:      `${GH}/${tp.cli}${v.cli}/openme_${v.cli}_i386.deb`,
   deb_riscv64:   `${GH}/${tp.cli}${v.cli}/openme_${v.cli}_riscv64.deb`,
   macos_cli:     `${GH}/${tp.cli}${v.cli}/openme-darwin-arm64`,
+  macos_cli_x64: `${GH}/${tp.cli}${v.cli}/openme-darwin-amd64`,
   win_cli_exe:   `${GH}/${tp.cli}${v.cli}/openme-windows-amd64.exe`,
+  win_cli_arm64: `${GH}/${tp.cli}${v.cli}/openme-windows-arm64.exe`,
   releases:     GH_REL
 };
 
