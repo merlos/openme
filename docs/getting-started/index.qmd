@@ -4,11 +4,31 @@ description-meta: "Set up openme Single Packet Authentication in five minutes â€
 keywords: [openme getting started, SPA quickstart, firewall knock setup, openme install, openme server setup]
 ---
 
+## What is this OpenMe?
+
+OpenMe is a Single Packet Authentication (SPA) server and client system.
+It lets you **open ports on your server's firewall temporarily** by sending a
+specially crafted "knock" encrypted packet containing a valid cryptographic signature.
+You keep your ports closed and invisible to the outside world until you need them. 
+This allows you to hide your services like SSH from port scans and brute-force attacks, while still being able to access them securely from your client devices.
+
+Openme is multi-platform, with a [GNU/Linux server](../server/index.qmd) and clients for [GNU/Linux](../clients/linux.qmd), [macOS](../clients/macos.qmd), [Windows](../clients/windows.qmd), [iOS](../clients/ios.qmd) and [Android](../clients/android.qmd). 
+
+## Who is it for?
+OpenMe is for anyone who wants to add an extra layer of security to their server by hiding open ports until they're needed. It's ideal for:
+
+- **Anyone running a home server** who want to protect their personal servers or IoT devices
+- **System administrators** who want to protect administration access to their servers but still access them remotely when needed.
+- **Developers**  who need to protect emote access to their development machines
+
+You can learn how it compares to traditional [VPNs](../faq/vs-vpn.qmd), [WireGuard](../faq/vs-wireguard.qmd), [Tailscale](../faq/vs-tailscale.qmd) or the traditional SPA [fwknop](../faq/vs-fwknop.qmd) in the [FAQ â†’](../faq/index.qmd).
+
+## What will you have after this guide?
 This guide gets you from zero to a working openme setup in about five minutes.
 You'll end up with:
 
 - A server daemon running on Linux, listening for knock packets
-- A client config on your local machine
+- A client config on your local machine (Linux, macOS or Windows)
 - A successful knock that temporarily opens SSH
 
 **Prerequisites:**
