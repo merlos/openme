@@ -1,0 +1,31 @@
+# =============================================================================
+# docs-on-release.yml
+#
+# Triggers the Docs workflow on main whenever any release is published.
+# The Docs workflow deploys to GitHub Pages, which only allows deployments
+# from protected refs (main).  This workflow runs under the tag ref but only
+# dispatches docs.yml on main — it never deploys anything itself.
+# gen-variables.sh inside the docs build fetches the latest release versions
+# via the GitHub API, so the new version is picked up automatically.
+# =============================================================================
+name: Trigger docs rebuild on release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  actions: write
+
+jobs:
+  trigger:
+    name: Re-trigger Docs workflow on main
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dispatch docs.yml on main
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh workflow run docs.yml \
+            --repo "$GITHUB_REPOSITORY" \
+            --ref main
