@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 	"time"
 
@@ -300,6 +301,67 @@ func TestEffectivePorts_NoProtoSpec(t *testing.T) {
 	}
 	if len(rules) != 2 {
 		t.Fatalf("got %d rules, want 2", len(rules))
+	}
+}
+
+// ─── ValidatePortSpec tests ───────────────────────────────────────────────────
+
+func TestValidatePortSpec_KnownGroup(t *testing.T) {
+	groups := map[string][]config.PortSpec{"default": {"22/tcp"}, "admin": {"443/tcp"}}
+
+	if _, err := config.ValidatePortSpec("default", groups); err != nil {
+		t.Errorf("expected no error for known group, got %v", err)
+	}
+	if _, err := config.ValidatePortSpec("admin", groups); err != nil {
+		t.Errorf("expected no error for known group, got %v", err)
+	}
+}
+
+func TestValidatePortSpec_UnknownGroup(t *testing.T) {
+	groups := map[string][]config.PortSpec{"default": {"22/tcp"}}
+
+	_, err := config.ValidatePortSpec("doesnotexist", groups)
+	if err == nil {
+		t.Fatal("expected error for unknown group, got nil")
+	}
+	// Error message should include the bad name and the list of valid groups.
+	if !strings.Contains(err.Error(), "doesnotexist") {
+		t.Errorf("error %q should mention the bad group name", err)
+	}
+	if !strings.Contains(err.Error(), "default") {
+		t.Errorf("error %q should list defined groups", err)
+	}
+}
+
+func TestValidatePortSpec_ValidInlineSpec(t *testing.T) {
+	groups := map[string][]config.PortSpec{}
+
+	cases := []config.PortSpec{"22/tcp", "53/udp", "8080", "80-82/tcp", "2000-2010"}
+	for _, spec := range cases {
+		if _, err := config.ValidatePortSpec(spec, groups); err != nil {
+			t.Errorf("spec %q: unexpected error: %v", spec, err)
+		}
+	}
+}
+
+func TestValidatePortSpec_InvalidInlineSpec(t *testing.T) {
+	groups := map[string][]config.PortSpec{}
+
+	cases := []config.PortSpec{"99999/tcp", "abc/tcp", "22/icmp", ""}
+	for _, spec := range cases {
+		if _, err := config.ValidatePortSpec(spec, groups); err == nil {
+			t.Errorf("spec %q: expected error, got nil", spec)
+		}
+	}
+}
+
+func TestValidatePortSpec_EmptyGroups(t *testing.T) {
+	// A named group reference against an empty groups map should fail.
+	groups := map[string][]config.PortSpec{}
+
+	_, err := config.ValidatePortSpec("default", groups)
+	if err == nil {
+		t.Fatal("expected error when no groups are defined, got nil")
 	}
 }
 

@@ -632,7 +632,9 @@ func buildClientRecords(cfg *config.ServerConfig) ([]*server.ClientRecord, error
 		}
 		ports, err := config.EffectivePorts(cfg.Ports, entry)
 		if err != nil {
-			return nil, fmt.Errorf("client %q: resolving ports: %w", name, err)
+			// Unknown port group — warn and skip this client so the server still starts.
+			fmt.Fprintf(os.Stderr, "warning: client %q skipped: %v\n", name, err)
+			continue
 		}
 		srvPorts := make([]server.PortRule, 0, len(ports)+1)
 
@@ -1023,6 +1025,13 @@ func runAdd(name string, showQR bool, qrOut string, omitPriv bool, expires, port
 			if part != "" {
 				portSpecs = append(portSpecs, config.PortSpec(part))
 			}
+		}
+	}
+
+	// Validate: named groups must exist in cfg.Ports; inline specs must parse.
+	for _, spec := range portSpecs {
+		if _, err := config.ValidatePortSpec(spec, cfg.Ports); err != nil {
+			return fmt.Errorf("invalid port spec %q: %w", spec, err)
 		}
 	}
 

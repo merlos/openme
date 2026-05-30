@@ -383,6 +383,40 @@ func EffectivePorts(groups map[string][]PortSpec, client *ClientEntry) ([]PortRu
 	return rules, nil
 }
 
+// ValidatePortSpec checks that a single PortSpec is either a valid inline port
+// spec (parseable by ExpandPortSpec) or a named group that exists in groups.
+// It returns nil on success, or a descriptive error on failure.
+//
+// Use this during client registration (openme add) to catch typos early.
+func ValidatePortSpec(spec PortSpec, groups map[string][]PortSpec) ([]PortRule, error) {
+	s := strings.TrimSpace(string(spec))
+	looksLikeGroup := !strings.Contains(s, "/") && !strings.Contains(s, "-") && !isAllDigits(s)
+	if looksLikeGroup {
+		if _, ok := groups[s]; !ok {
+			return nil, fmt.Errorf("unknown port group %q (defined groups: %s)",
+				s, joinGroupNames(groups))
+		}
+		return nil, nil // group exists; full expansion not needed here
+	}
+	return ExpandPortSpec(spec)
+}
+
+// joinGroupNames returns a comma-separated sorted list of group names for
+// inclusion in error messages.
+func joinGroupNames(groups map[string][]PortSpec) string {
+	names := make([]string, 0, len(groups))
+	for k := range groups {
+		names = append(names, k)
+	}
+	// Sort for deterministic output.
+	for i := 1; i < len(names); i++ {
+		for j := i; j > 0 && names[j] < names[j-1]; j-- {
+			names[j], names[j-1] = names[j-1], names[j]
+		}
+	}
+	return strings.Join(names, ", ")
+}
+
 // Duration is a wrapper around time.Duration that supports YAML marshalling
 // in human-readable form (e.g. "30s", "1m").
 type Duration struct {
