@@ -435,9 +435,13 @@ ports:
 #       allowed_ports: [default, 443/tcp] # default group + HTTPS
 #       expires: "2027-01-01T00:00:00Z"   # optional key expiry
 #
-# Manage clients with the CLI — comments anywhere in this file are preserved:
+# Manage clients with the CLI:
 #   openme add <name>     — register a new client
 #   openme revoke <name>  — remove a client
+#
+# NOTE: Comments above this line are preserved by 'openme add'/'openme revoke'.
+#       Comments inside the clients block below are NOT preserved — they will
+#       be removed the next time a client is added or revoked.
 clients: {}
 `
 	content := fmt.Sprintf(tmpl,
