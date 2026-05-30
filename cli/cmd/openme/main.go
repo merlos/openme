@@ -338,6 +338,8 @@ Example:
 		},
 	}
 
+	cmd.SilenceUsage = true
+
 	cmd.Flags().BoolVar(&force, "force", false, "overwrite existing config without prompting")
 	cmd.Flags().StringVar(&serverHost, "server", "", "public hostname or IP of this server (required)")
 	cmd.Flags().Uint16Var(&udpPort, "port", 54154, "UDP (and TCP health) port")
@@ -357,7 +359,7 @@ func runInit(force bool, serverHost string, udpPort uint16, firewallBackend stri
 	// Refuse to clobber an existing config unless explicitly asked.
 	if _, err := os.Stat(serverConfigPath); err == nil && !force {
 		return fmt.Errorf(
-			"config already exists at %s\nUse --force to overwrite, or 'openme add' to register new clients",
+			"config already exists at %s\nUse --force to overwrite, or 'openme add' to register new clients.\n\nRun 'openme init --help' for more details.",
 			serverConfigPath,
 		)
 	}
