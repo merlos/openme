@@ -329,6 +329,11 @@ Example:
   sudo openme init --server myserver.example.com
   sudo openme init --server 1.2.3.4 --firewall iptables --port 9999`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if serverHost == "" {
+				return fmt.Errorf(
+					"--server is required\n\nProvide the public hostname or IP address of this server:\n  openme init --server myserver.example.com\n  openme init --server 1.2.3.4\n\nRun 'openme init --help' for more details.",
+				)
+			}
 			return runInit(force, serverHost, udpPort, firewallBackend)
 		},
 	}
@@ -337,7 +342,6 @@ Example:
 	cmd.Flags().StringVar(&serverHost, "server", "", "public hostname or IP of this server (required)")
 	cmd.Flags().Uint16Var(&udpPort, "port", 54154, "UDP (and TCP health) port")
 	cmd.Flags().StringVar(&firewallBackend, "firewall", "nft", "firewall backend: nft or iptables")
-	_ = cmd.MarkFlagRequired("server")
 
 	return cmd
 }
