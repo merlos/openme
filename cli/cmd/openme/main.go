@@ -291,7 +291,11 @@ func inactiveLastSeen(st firewall.ServerState) map[string]time.Time {
 func formatPorts(ports []firewall.SessionPortRule) string {
 	parts := make([]string, len(ports))
 	for i, p := range ports {
-		parts[i] = fmt.Sprintf("%d/%s", p.Port, p.Proto)
+		if p.EndPort > 0 && p.EndPort != p.Port {
+			parts[i] = fmt.Sprintf("%d-%d/%s", p.Port, p.EndPort, p.Proto)
+		} else {
+			parts[i] = fmt.Sprintf("%d/%s", p.Port, p.Proto)
+		}
 	}
 	s := strings.Join(parts, ", ")
 	if len(s) > 17 {
@@ -395,6 +399,12 @@ server:
 
   # Set to false if your existing firewall already opens the knock port
   open_knock_port: true
+
+  # When true, installs DROP rules for all ports managed by openme so those
+  # ports are blocked by default. Per-client ACCEPT rules (added on each knock)
+  # take priority and allow authenticated clients through.
+  # Set to false (default) if your base firewall policy already drops these ports.
+  #drop_ports: false
 
   # Server Curve25519 keypair — keep private_key secret (chmod 600)
   private_key: %s
@@ -550,6 +560,23 @@ func runServe(stateFile string) error {
 	if err := fw.Setup(cfg.Server.UDPPort, openKnockPort); err != nil {
 		return fmt.Errorf("firewall setup: %w", err)
 	}
+
+	// If drop_ports is enabled, install DROP rules for every port managed by
+	// openme so those ports are blocked by default. Per-client ACCEPT rules
+	// (added by fwMgr.Open on each knock) appear before the DROPs in the chain
+	// and therefore take priority.
+	dropPorts := cfg.Server.DropPorts != nil && *cfg.Server.DropPorts
+	if dropPorts {
+		allPorts, err := allManagedPorts(cfg)
+		if err != nil {
+			return fmt.Errorf("computing managed ports for drop_ports: %w", err)
+		}
+		if err := fw.SetupDropRules(allPorts); err != nil {
+			return fmt.Errorf("firewall drop rules setup: %w", err)
+		}
+		log.Info("drop_ports enabled", "ports", len(allPorts))
+	}
+
 	fwMgr := firewall.NewManager(fw, cfg.Server.KnockTimeout.Duration, stateFile, log)
 
 	srv := server.New(&server.Options{
@@ -563,7 +590,7 @@ func runServe(stateFile string) error {
 			log.Info("firewall: IP added", "client", clientName, "ip", targetIP)
 			cfgPorts := make([]config.PortRule, len(ports))
 			for i, p := range ports {
-				cfgPorts[i] = config.PortRule{Port: p.Port, Proto: p.Proto}
+				cfgPorts[i] = config.PortRule{Port: p.Port, Proto: p.Proto, EndPort: p.EndPort}
 			}
 			if err := fwMgr.Open(clientName, targetIP, cfgPorts); err != nil {
 				log.Error("opening firewall", "err", err)
@@ -578,6 +605,14 @@ func runServe(stateFile string) error {
 		return fmt.Errorf("server error: %w", err)
 	}
 	fwMgr.CloseAll(context.Background())
+	if dropPorts {
+		allPorts, err := allManagedPorts(cfg)
+		if err != nil {
+			log.Warn("computing managed ports for drop_ports teardown", "err", err)
+		} else if err := fw.TeardownDropRules(allPorts); err != nil {
+			log.Warn("firewall drop rules teardown", "err", err)
+		}
+	}
 	if err := fw.Teardown(cfg.Server.UDPPort); err != nil {
 		log.Warn("firewall teardown", "err", err)
 	}
@@ -612,7 +647,7 @@ func buildClientRecords(cfg *config.ServerConfig) ([]*server.ClientRecord, error
 		}
 
 		for _, p := range ports {
-			srvPorts = append(srvPorts, server.PortRule{Port: p.Port, Proto: p.Proto})
+			srvPorts = append(srvPorts, server.PortRule{Port: p.Port, Proto: p.Proto, EndPort: p.EndPort})
 		}
 		records = append(records, &server.ClientRecord{
 			Name:          name,
@@ -622,6 +657,56 @@ func buildClientRecords(cfg *config.ServerConfig) ([]*server.ClientRecord, error
 		})
 	}
 	return records, nil
+}
+
+// allManagedPorts returns the deduplicated union of every port rule across all
+// named port groups and every client's inline port specs. This is used to
+// install DROP rules when drop_ports is enabled, ensuring every port that
+// openme can open is blocked by default.
+func allManagedPorts(cfg *config.ServerConfig) ([]config.PortRule, error) {
+	seen := make(map[string]struct{})
+	var result []config.PortRule
+
+	addRule := func(r config.PortRule) {
+		key := fmt.Sprintf("%d-%d/%s", r.Port, r.EndPort, r.Proto)
+		if _, ok := seen[key]; !ok {
+			seen[key] = struct{}{}
+			result = append(result, r)
+		}
+	}
+
+	// Expand every named port group.
+	for groupName, specs := range cfg.Ports {
+		for _, spec := range specs {
+			rules, err := config.ExpandPortSpec(spec)
+			if err != nil {
+				return nil, fmt.Errorf("port group %q spec %q: %w", groupName, spec, err)
+			}
+			for _, r := range rules {
+				addRule(r)
+			}
+		}
+	}
+
+	// Expand every client's inline port specs (group names are already covered above).
+	for _, entry := range cfg.Clients {
+		for _, spec := range entry.AllowedPorts {
+			// Skip group references — they're already expanded above.
+			if _, isGroup := cfg.Ports[string(spec)]; isGroup {
+				continue
+			}
+			rules, err := config.ExpandPortSpec(spec)
+			if err != nil {
+				// Non-fatal: skip malformed inline specs at serve time.
+				continue
+			}
+			for _, r := range rules {
+				addRule(r)
+			}
+		}
+	}
+
+	return result, nil
 }
 
 // ────────────────────────────────────────────────────────────────────────────

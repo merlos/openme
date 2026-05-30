@@ -136,17 +136,17 @@ func TestExpandPortSpec(t *testing.T) {
 		wantErr   bool
 	}{
 		// Single port, explicit tcp
-		{"22/tcp", []config.PortRule{{22, "tcp"}}, false},
+		{"22/tcp", []config.PortRule{{Port: 22, Proto: "tcp"}}, false},
 		// Single port, explicit udp
-		{"53/udp", []config.PortRule{{53, "udp"}}, false},
+		{"53/udp", []config.PortRule{{Port: 53, Proto: "udp"}}, false},
 		// Single port, no protocol → both tcp and udp
-		{"80", []config.PortRule{{80, "tcp"}, {80, "udp"}}, false},
-		// Range, explicit tcp
-		{"80-82/tcp", []config.PortRule{{80, "tcp"}, {81, "tcp"}, {82, "tcp"}}, false},
-		// Range, no protocol → both protos per port
-		{"80-81", []config.PortRule{{80, "tcp"}, {80, "udp"}, {81, "tcp"}, {81, "udp"}}, false},
-		// Single port range (lo == hi)
-		{"443-443/tcp", []config.PortRule{{443, "tcp"}}, false},
+		{"80", []config.PortRule{{Port: 80, Proto: "tcp"}, {Port: 80, Proto: "udp"}}, false},
+		// Range, explicit tcp → one rule with EndPort set
+		{"80-82/tcp", []config.PortRule{{Port: 80, Proto: "tcp", EndPort: 82}}, false},
+		// Range, no protocol → one rule per proto, both with EndPort set
+		{"80-81", []config.PortRule{{Port: 80, Proto: "tcp", EndPort: 81}, {Port: 80, Proto: "udp", EndPort: 81}}, false},
+		// Single port range (lo == hi) → treated as single port, no EndPort
+		{"443-443/tcp", []config.PortRule{{Port: 443, Proto: "tcp"}}, false},
 		// Errors
 		{"", nil, true},          // empty
 		{"0/tcp", nil, true},     // port 0 invalid
@@ -178,14 +178,6 @@ func TestExpandPortSpec(t *testing.T) {
 				t.Errorf("ExpandPortSpec(%q)[%d]: got %+v, want %+v", tt.spec, i, r, tt.wantPorts[i])
 			}
 		}
-	}
-}
-
-func TestExpandPortSpec_RangeCapExceeded(t *testing.T) {
-	// 1-1001 = 1001 ports — over the 1000 cap
-	_, err := config.ExpandPortSpec("1-1001/tcp")
-	if err == nil {
-		t.Error("expected error for range exceeding max, got nil")
 	}
 }
 

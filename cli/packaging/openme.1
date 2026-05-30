@@ -131,6 +131,19 @@ Set to
 .I false
 if the host\(cqs existing firewall configuration already opens that port,
 to prevent openme from installing a duplicate rule.
+.TP
+.B drop_ports
+(boolean, default
+.IR false .)
+When true, the server installs DROP rules for every port managed by openme
+(all named port groups and per-client inline port specs) at startup, and
+removes them at shutdown.
+Per-client ACCEPT rules inserted on each valid knock take priority over
+the DROP rules, so authenticated clients are still granted access.
+Set to
+.I true
+when you want openme to enforce the block itself rather than relying on
+an existing restrictive firewall policy.
 .
 .SS openme sessions
 .B openme sessions

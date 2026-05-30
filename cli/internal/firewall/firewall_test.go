@@ -13,17 +13,35 @@ import (
 	"github.com/merlos/openme/cli/internal/firewall"
 )
 
-// mockBackend records Open/Close calls for test assertions.
+// mockBackend records Open/Close/SetupDropRules/TeardownDropRules calls for test assertions.
 type mockBackend struct {
-	mu     sync.Mutex
-	opened []string
-	closed []string
+	mu                 sync.Mutex
+	opened             []string
+	closed             []string
+	setupDropCalled    bool
+	teardownDropCalled bool
+	dropPorts          []config.PortRule
 }
 
 func (m *mockBackend) Name() string { return "mock" }
 
 func (m *mockBackend) Setup(_ uint16, _ bool) error { return nil }
 func (m *mockBackend) Teardown(_ uint16) error      { return nil }
+
+func (m *mockBackend) SetupDropRules(ports []config.PortRule) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.setupDropCalled = true
+	m.dropPorts = append(m.dropPorts, ports...)
+	return nil
+}
+
+func (m *mockBackend) TeardownDropRules(_ []config.PortRule) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.teardownDropCalled = true
+	return nil
+}
 
 func (m *mockBackend) Open(srcIP net.IP, ports []config.PortRule) error {
 	m.mu.Lock()
@@ -114,5 +132,60 @@ func TestNewBackend_Valid(t *testing.T) {
 		if _, err := firewall.NewBackend(name, slog.Default()); err != nil {
 			t.Errorf("NewBackend(%q) error = %v", name, err)
 		}
+	}
+}
+
+func TestMockBackend_SetupDropRules(t *testing.T) {
+	mock := &mockBackend{}
+	ports := []config.PortRule{
+		{Port: 22, Proto: "tcp"},
+		{Port: 443, Proto: "tcp"},
+	}
+	if err := mock.SetupDropRules(ports); err != nil {
+		t.Fatalf("SetupDropRules error = %v", err)
+	}
+
+	mock.mu.Lock()
+	defer mock.mu.Unlock()
+	if !mock.setupDropCalled {
+		t.Error("SetupDropRules was not called")
+	}
+	if len(mock.dropPorts) != 2 {
+		t.Errorf("dropPorts = %v, want 2 entries", mock.dropPorts)
+	}
+}
+
+func TestMockBackend_TeardownDropRules(t *testing.T) {
+	mock := &mockBackend{}
+	if err := mock.TeardownDropRules(nil); err != nil {
+		t.Fatalf("TeardownDropRules error = %v", err)
+	}
+
+	mock.mu.Lock()
+	defer mock.mu.Unlock()
+	if !mock.teardownDropCalled {
+		t.Error("TeardownDropRules was not called")
+	}
+}
+
+func TestMockBackend_DropRulesIndependentOfOpenClose(t *testing.T) {
+	// Verifies that DROP rule calls do not affect Open/Close tracking.
+	mock := &mockBackend{}
+	ports := []config.PortRule{{Port: 80, Proto: "tcp"}}
+
+	_ = mock.SetupDropRules(ports)
+	_ = mock.Open(net.ParseIP("1.2.3.4"), ports)
+	_ = mock.TeardownDropRules(ports)
+
+	mock.mu.Lock()
+	defer mock.mu.Unlock()
+	if len(mock.opened) != 1 {
+		t.Errorf("opened = %v, want 1 entry", mock.opened)
+	}
+	if len(mock.closed) != 0 {
+		t.Errorf("closed = %v, want 0 entries", mock.closed)
+	}
+	if !mock.setupDropCalled || !mock.teardownDropCalled {
+		t.Error("expected both SetupDropRules and TeardownDropRules to be called")
 	}
 }

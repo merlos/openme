@@ -28,8 +28,9 @@ type SessionEntry struct {
 
 // SessionPortRule is the JSON-serialisable form of a port rule stored in state.
 type SessionPortRule struct {
-	Port  uint16 `json:"port"`
-	Proto string `json:"proto"`
+	Port    uint16 `json:"port"`
+	Proto   string `json:"proto"`
+	EndPort uint16 `json:"end_port,omitempty"` // non-zero when this represents a range [Port, EndPort]
 }
 
 // ServerState is the runtime snapshot written by `openme serve` and read by

@@ -27,6 +27,16 @@ type Backend interface {
 	// Should be called once when the server stops, after CloseAll.
 	Teardown(udpPort uint16) error
 
+	// SetupDropRules installs DROP rules for each port in ports so that those
+	// ports are blocked by default. Per-client ACCEPT rules inserted by Open
+	// appear before the DROP rules in the chain, so authenticated clients are
+	// still granted access. Should be called after Setup when drop_ports is true.
+	SetupDropRules(ports []config.PortRule) error
+
+	// TeardownDropRules removes the DROP rules previously installed by
+	// SetupDropRules. Should be called before Teardown on server shutdown.
+	TeardownDropRules(ports []config.PortRule) error
+
 	// Open adds a firewall rule allowing traffic from srcIP to the given ports.
 	Open(srcIP net.IP, ports []config.PortRule) error
 
@@ -92,7 +102,7 @@ func (m *Manager) Open(clientName string, srcIP net.IP, ports []config.PortRule)
 	// Build the session port list for state persistence.
 	sessionPorts := make([]SessionPortRule, len(ports))
 	for i, p := range ports {
-		sessionPorts[i] = SessionPortRule{Port: p.Port, Proto: p.Proto}
+		sessionPorts[i] = SessionPortRule{Port: p.Port, Proto: p.Proto, EndPort: p.EndPort}
 	}
 
 	m.mu.Lock()
@@ -227,6 +237,24 @@ func NewBackend(name string, log *slog.Logger) (Backend, error) {
 	}
 }
 
+// portDport returns the iptables --dport value for a PortRule:
+// a single port number ("22") for single-port rules, or "lo:hi" for ranges.
+func portDport(p config.PortRule) string {
+	if p.EndPort == 0 || p.EndPort == p.Port {
+		return fmt.Sprint(p.Port)
+	}
+	return fmt.Sprintf("%d:%d", p.Port, p.EndPort)
+}
+
+// nftPortDport returns the nft dport value for a PortRule:
+// a single port number ("22") for single-port rules, or "lo-hi" for ranges.
+func nftPortDport(p config.PortRule) string {
+	if p.EndPort == 0 || p.EndPort == p.Port {
+		return fmt.Sprint(p.Port)
+	}
+	return fmt.Sprintf("%d-%d", p.Port, p.EndPort)
+}
+
 // runCmd executes a command, logging it at Debug level, and returns a wrapped error on failure.
 func runCmd(log *slog.Logger, name string, args ...string) error {
 	log.Debug("running firewall command", "cmd", name, "args", args)
@@ -305,12 +333,44 @@ func (b *IPTablesBackend) Teardown(udpPort uint16) error {
 	return nil
 }
 
+// SetupDropRules appends a DROP rule for each port to the openme chain so that
+// the ports are blocked by default. Per-client ACCEPT rules (added by Open)
+// are appended before these DROP rules and therefore take priority.
+// All rules are tagged with "openme-drop" for reliable removal.
+func (b *IPTablesBackend) SetupDropRules(ports []config.PortRule) error {
+	for _, cmd := range []string{"iptables", "ip6tables"} {
+		for _, p := range ports {
+			if err := runCmd(b.Log, cmd, "-A", "openme",
+				"-p", p.Proto, "--dport", portDport(p), "-j", "DROP",
+				"-m", "comment", "--comment", "openme-drop"); err != nil {
+				return fmt.Errorf("iptables drop rule (%s) port %d/%s: %w", cmd, p.Port, p.Proto, err)
+			}
+		}
+	}
+	b.Log.Info("iptables drop rules installed", "ports", len(ports))
+	return nil
+}
+
+// TeardownDropRules removes all DROP rules previously added by SetupDropRules.
+// Operations are best-effort; missing rules are silently ignored.
+func (b *IPTablesBackend) TeardownDropRules(ports []config.PortRule) error {
+	for _, cmd := range []string{"iptables", "ip6tables"} {
+		for _, p := range ports {
+			_ = runCmd(b.Log, cmd, "-D", "openme",
+				"-p", p.Proto, "--dport", portDport(p), "-j", "DROP",
+				"-m", "comment", "--comment", "openme-drop")
+		}
+	}
+	b.Log.Info("iptables drop rules removed")
+	return nil
+}
+
 // Open inserts an ACCEPT rule for each port into the openme chain.
 func (b *IPTablesBackend) Open(srcIP net.IP, ports []config.PortRule) error {
 	cmd := ipTablesCmd(srcIP)
 	for _, p := range ports {
 		if err := runCmd(b.Log, cmd, "-A", "openme", "-s", srcIP.String(),
-			"-p", p.Proto, "--dport", fmt.Sprint(p.Port), "-j", "ACCEPT",
+			"-p", p.Proto, "--dport", portDport(p), "-j", "ACCEPT",
 			"-m", "comment", "--comment", "openme"); err != nil {
 			return err
 		}
@@ -324,7 +384,7 @@ func (b *IPTablesBackend) Close(srcIP net.IP, ports []config.PortRule) error {
 	for _, p := range ports {
 		// Best-effort: ignore errors (rule may already be gone).
 		_ = runCmd(b.Log, cmd, "-D", "openme", "-s", srcIP.String(),
-			"-p", p.Proto, "--dport", fmt.Sprint(p.Port), "-j", "ACCEPT",
+			"-p", p.Proto, "--dport", portDport(p), "-j", "ACCEPT",
 			"-m", "comment", "--comment", "openme")
 	}
 	return nil
@@ -413,6 +473,38 @@ func (b *NFTablesBackend) Teardown(_ uint16) error {
 	return nil
 }
 
+// SetupDropRules appends a DROP rule for each port to the openme chain.
+// Per-client ACCEPT rules (added by Open) appear before the DROP rules
+// because they are inserted with "insert rule" (position 0) rather than appended.
+// Rules are tagged "openme-drop" for reliable cleanup.
+func (b *NFTablesBackend) SetupDropRules(ports []config.PortRule) error {
+	if err := b.ensureChain(); err != nil {
+		return err
+	}
+	for _, p := range ports {
+		if err := runCmd(b.Log, "nft",
+			"add", "rule", "inet", "filter", "openme",
+			p.Proto, "dport", nftPortDport(p),
+			"drop", "comment", "openme-drop"); err != nil {
+			return fmt.Errorf("nft drop rule port %d/%s: %w", p.Port, p.Proto, err)
+		}
+	}
+	b.Log.Info("nft drop rules installed", "ports", len(ports))
+	return nil
+}
+
+// TeardownDropRules removes the DROP rules tagged "openme-drop" from the
+// openme chain. Operations are best-effort; missing rules are silently ignored.
+func (b *NFTablesBackend) TeardownDropRules(_ []config.PortRule) error {
+	script := `nft -a list chain inet filter openme 2>/dev/null | ` +
+		`grep 'comment "openme-drop"' | ` +
+		`awk '{print $NF}' | ` +
+		`xargs -r -I{} nft delete rule inet filter openme handle {}`
+	_ = runCmd(b.Log, "sh", "-c", script)
+	b.Log.Info("nft drop rules removed")
+	return nil
+}
+
 // Open adds nft accept rules for each port. Creates the chain on first use.
 func (b *NFTablesBackend) Open(srcIP net.IP, ports []config.PortRule) error {
 	// Ensure the table and chain exist (idempotent).
@@ -426,7 +518,7 @@ func (b *NFTablesBackend) Open(srcIP net.IP, ports []config.PortRule) error {
 		if err := runCmd(b.Log, "nft",
 			"add", "rule", "inet", "filter", "openme",
 			family, "saddr", srcIP.String(),
-			p.Proto, "dport", fmt.Sprint(p.Port),
+			p.Proto, "dport", nftPortDport(p),
 			"accept", "comment", "openme"); err != nil {
 			return err
 		}
@@ -444,10 +536,10 @@ func (b *NFTablesBackend) Close(srcIP net.IP, ports []config.PortRule) error {
 	for _, p := range ports {
 		script := fmt.Sprintf(
 			`nft -a list chain inet filter openme 2>/dev/null | `+
-				`grep 'saddr %s.*dport %d' | `+
+				`grep 'saddr %s.*dport %s' | `+
 				`awk '{print $NF}' | `+
 				`xargs -r -I{} nft delete rule inet filter openme handle {}`,
-			srcIP.String(), p.Port,
+			srcIP.String(), nftPortDport(p),
 		)
 		_ = runCmd(b.Log, "sh", "-c", script)
 	}
