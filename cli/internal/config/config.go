@@ -24,13 +24,11 @@ type PortRule struct {
 // PortSpec is a compact string representation of one or more port rules.
 // Accepted forms:
 //
-//	"22"          — port 22, both tcp and udp
-//	"22/tcp"      — port 22, tcp only
-//
-// . "22/udp"      — port 22, udp only
-//
-//	"80-82"       — ports 80, 81, 82 on both tcp and udp
-//	"80-82/tcp"   — ports 80, 81, 82 on tcp only
+//		"22"          — port 22, both tcp and udp
+//		"22/tcp"      — port 22, tcp only
+//	 "22/udp"      — port 22, udp only
+//		"80-82"       — ports 80, 81, 82 on both tcp and udp
+//		"80-82/tcp"   — ports 80, 81, 82 on tcp only
 //
 // A PortSpec may also be the name of a group defined in the top-level
 // ports map (e.g. "default", "admin"). Group names are resolved by

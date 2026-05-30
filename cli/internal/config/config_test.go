@@ -148,13 +148,13 @@ func TestExpandPortSpec(t *testing.T) {
 		// Single port range (lo == hi)
 		{"443-443/tcp", []config.PortRule{{443, "tcp"}}, false},
 		// Errors
-		{"", nil, true},            // empty
-		{"0/tcp", nil, true},       // port 0 invalid
-		{"65536/tcp", nil, true},   // port too high
-		{"abc/tcp", nil, true},     // non-numeric
-		{"80-70/tcp", nil, true},   // reversed range
-		{"22/icmp", nil, true},     // bad proto
-		{"22/", nil, true},         // missing proto
+		{"", nil, true},          // empty
+		{"0/tcp", nil, true},     // port 0 invalid
+		{"65536/tcp", nil, true}, // port too high
+		{"abc/tcp", nil, true},   // non-numeric
+		{"80-70/tcp", nil, true}, // reversed range
+		{"22/icmp", nil, true},   // bad proto
+		{"22/", nil, true},       // missing proto
 	}
 
 	for _, tt := range tests {
@@ -325,4 +325,3 @@ func TestClientEntry_Expiry(t *testing.T) {
 		t.Error("nil expiry should mean no expiry")
 	}
 }
-
