@@ -1,0 +1,565 @@
+---
+title: "Troubleshooting"
+description-meta: "Troubleshoot openme SPA — firewall rules not applying, knock not working, port closed after knock, nft/iptables diagnostics, stale rules, clock skew, and more."
+keywords: [openme troubleshooting, SPA debug, nftables debug, iptables debug, openme port not open, knock not working, firewall rules cleanup]
+---
+
+This page collects diagnostic commands and step-by-step fixes for the most
+common openme problems.  Commands marked with `sudo` require root privileges.
+
+---
+
+## Quick Orientation
+
+```
+Client                      Network                    Server
+  │                            │                          │
+  │─── UDP knock (54154) ──────┤──────────────────────>   │ openme daemon
+  │                            │                          │ verifies packet
+  │                            │                    adds firewall rule
+  │─── TCP 22 ─────────────────┤──────────────────────>   │ sshd
+```
+
+**Failure can happen at any of these points:**
+
+| Symptom | Likely cause |
+|---------|-------------|
+| No response after knock | UDP blocked, wrong port, openme not running |
+| Knock accepted (log shows it) but port still closed | Firewall backend error, rule not inserted |
+| Port open briefly then closes | Knock timeout elapsed; reconnect after next knock |
+| SSH connection refused | sshd not listening, or wrong port configured |
+| openme exits immediately | Config error, missing keys, permission denied |
+| Clock-related log message | Client/server clocks out of sync |
+
+---
+
+## Server-Side Diagnostics
+
+### Check whether openme is running
+
+```bash
+# systemd
+systemctl status openme
+
+# or directly
+pgrep -a openme
+```
+
+View the last 100 log lines:
+
+```bash
+journalctl -u openme -n 100
+```
+
+Follow logs in real time while you send a knock from the client:
+
+```bash
+journalctl -u openme -f
+```
+
+If openme is not running, start it:
+
+```bash
+sudo systemctl start openme
+# or manually:
+sudo openme serve --config /etc/openme/config.yaml
+```
+
+---
+
+### View current firewall rules
+
+#### nftables
+
+```bash
+# Full ruleset — shows all tables, chains, and rules
+sudo nft list ruleset
+
+# Only the openme chain (temporary per-knock allow rules)
+sudo nft list chain inet filter openme
+
+# Base input chain
+sudo nft list chain inet filter input
+
+# Count rules currently managed by openme
+sudo nft list chain inet filter openme | grep -c openme
+```
+
+#### iptables / ip6tables
+
+```bash
+# IPv4 — show INPUT chain with line numbers and no DNS lookups
+sudo iptables  -L INPUT -n -v --line-numbers
+
+# IPv6
+sudo ip6tables -L INPUT -n -v --line-numbers
+
+# Show only openme-tagged rules
+sudo iptables  -L INPUT -n | grep openme
+sudo ip6tables -L INPUT -n | grep openme
+```
+
+---
+
+### Clean up stale openme rules manually
+
+Use these commands if openme crashed and left rules behind, or if you want to
+reset the firewall to a clean state.
+
+#### nftables
+
+```bash
+# Remove all rules from the openme chain
+sudo nft flush chain inet filter openme
+
+# Remove the openme chain entirely
+sudo nft delete chain inet filter openme
+
+# Remove everything openme created (nuclear option — recreated on next start)
+sudo nft flush table inet filter
+```
+
+#### iptables / ip6tables
+
+```bash
+# Delete all rules containing the openme comment
+sudo iptables-save | grep -v openme | sudo iptables-restore
+sudo ip6tables-save | grep -v openme | sudo ip6tables-restore
+```
+
+::: {.callout-warning}
+`iptables-restore` replaces the entire ruleset.  Make sure the pipe above
+keeps all rules you care about.  Inspect the intermediate output first:
+
+```bash
+sudo iptables-save | grep -v openme
+```
+:::
+
+---
+
+### Restart openme cleanly
+
+Restarting tears down all managed rules and rebuilds them from config:
+
+```bash
+sudo systemctl restart openme
+
+# or kill + re-launch manually:
+sudo pkill openme
+sudo openme serve --config /etc/openme/config.yaml
+```
+
+---
+
+### Verify the configuration
+
+```bash
+# Print the effective config (redacts keys)
+sudo openme config show
+
+# Check that the config file is readable and has correct permissions
+ls -la /etc/openme/config.yaml
+# Expected: -rw------- (0600) owned by root or the openme user
+```
+
+A config file readable by other users will cause openme to refuse to start
+(the private key would be exposed).  Fix with:
+
+```bash
+sudo chmod 600 /etc/openme/config.yaml
+```
+
+---
+
+### Check which firewall backend is active
+
+```bash
+# Defined in config
+grep firewall /etc/openme/config.yaml
+
+# Verify the binary is present
+which nft && nft --version
+which iptables && iptables --version
+```
+
+---
+
+### Inspect the UDP knock port
+
+Confirm openme is bound to the knock port:
+
+```bash
+sudo ss -ulnp | grep 54154
+# or
+sudo netstat -ulnp | grep 54154
+```
+
+Expected output contains something like `0.0.0.0:54154` or `:::54154` and
+the `openme` process name.
+
+---
+
+## Client-Side Diagnostics
+
+### Check whether the knock port is reachable
+
+The knock port is UDP — most tools cannot confirm UDP reachability the way they
+can TCP.  The best check is to watch server logs while sending a knock.
+
+```bash
+# Send a test UDP packet (Linux/macOS — requires root for raw socket)
+# Replace SERVER and 54154 with your values
+echo "test" | sudo nc -u -w1 SERVER 54154
+```
+
+With **nmap** (requires nmap ≥ 7):
+
+```bash
+# UDP port scan — needs root; "open|filtered" is normal for SPA ports
+sudo nmap -sU -p 54154 SERVER
+```
+
+Expected result before a knock: `54154/udp  open|filtered` (no response is
+the correct SPA behavior — the server silently discards invalid packets).
+
+---
+
+### Send a knock and verify the port opens
+
+```bash
+# 1. Send the knock
+openme knock --config ~/.config/openme/client.yaml
+
+# 2. Within the knock_timeout window (default 30 s), check the target port
+#    Replace PORT and SERVER with your values
+nc -zv SERVER PORT
+
+# Or with nmap (TCP connect scan)
+nmap -sT -p PORT SERVER
+```
+
+Typical `nc` output when the port is open:
+
+```
+Connection to SERVER PORT port [tcp/*] succeeded!
+```
+
+---
+
+### Test SSH specifically after a knock
+
+```bash
+openme knock --config ~/.config/openme/client.yaml && ssh user@SERVER
+```
+
+The `&&` ensures SSH only runs if the knock command exits cleanly.  If the
+knock succeeds but SSH times out, see
+[Port open on server but connection refused](#port-open-on-server-but-connection-refused).
+
+---
+
+### Check your client configuration
+
+```bash
+# Verify server public key length (must decode to 32 bytes)
+grep server_public_key ~/.config/openme/client.yaml | \
+  awk '{print $2}' | base64 -d | wc -c
+# Expected: 32
+
+# Verify client private key
+grep private_key ~/.config/openme/client.yaml | \
+  awk '{print $2}' | base64 -d | wc -c
+# Expected: 32 (Ed25519 seed)
+```
+
+---
+
+## Scenario-by-Scenario Guide
+
+### Scenario 1 — openme starts but the knock has no effect
+
+**Symptoms:** Server logs show nothing when you send a knock.
+
+**Checklist:**
+
+1. **UDP is blocked upstream** — cloud providers (AWS, GCP, Hetzner, etc.)
+   often have a security-group / firewall layer in front of your VM.  Open
+   UDP port `54154` (or your configured port) in the cloud console.
+
+2. **Wrong port** — confirm client and server agree:
+
+   ```bash
+   # Server
+   grep udp_port /etc/openme/config.yaml
+
+   # Client
+   grep port ~/.config/openme/client.yaml
+   ```
+
+3. **openme not listening** — see
+   [Inspect the UDP knock port](#inspect-the-udp-knock-port).
+
+4. **Host firewall drops the knock before openme sees it** — if the server's
+   own firewall has a default-deny INPUT policy, the knock packet never
+   reaches the openme process.  Add an explicit allow rule:
+
+   ```bash
+   # nftables — allow the knock port in your base input chain
+   sudo nft add rule inet filter input udp dport 54154 accept comment "openme-knock"
+
+   # iptables
+   sudo iptables -I INPUT -p udp --dport 54154 -j ACCEPT -m comment --comment "openme-knock"
+   ```
+
+   openme normally adds this rule automatically (`open_knock_port: true` in
+   config).  Set that option to `false` only if you manage the rule yourself.
+
+---
+
+### Scenario 2 — Knock accepted in logs but port remains closed
+
+**Symptoms:** Server log shows `"knock accepted"` or `"opening ports"`, but
+`nc` / `nmap` still reports the target port as closed.
+
+**Check the firewall chain:**
+
+```bash
+# nftables
+sudo nft list chain inet filter openme
+
+# iptables
+sudo iptables -L INPUT -n | grep openme
+```
+
+If the rule is present but the port is still unreachable, the `input` chain
+may not be jumping into the `openme` chain:
+
+```bash
+sudo nft list chain inet filter input
+# Look for: jump openme  (or accept before the jump)
+```
+
+Add the jump if missing:
+
+```bash
+sudo nft add rule inet filter input jump openme
+```
+
+For **iptables**, openme inserts directly into `INPUT` — no jump needed.  If
+the rule is present but the port is filtered, check whether a later `DROP`
+rule is overriding it:
+
+```bash
+sudo iptables -L INPUT -n --line-numbers
+# The openme ACCEPT rule must appear before any DROP/REJECT rule for that port
+```
+
+---
+
+### Scenario 3 — Firewall setup error at startup
+
+**Symptom:** openme exits immediately with an error like:
+
+```
+Error: firewall setup: nft setup: adding knock accept rule:
+command nft [add rule inet filter input …]: exit status 1
+(output: Error: Could not process rule: No such file or directory)
+```
+
+This means the `inet filter input` chain does not exist on the system.
+openme creates it automatically on startup (since v0.0.2), but on older
+versions or minimal containers you may need to bootstrap it once:
+
+```bash
+# Create the table and input chain (nftables)
+sudo nft add table inet filter
+sudo nft -- add chain inet filter input '{ type filter hook input priority 0; }'
+
+# Then start openme normally
+sudo openme serve --config /etc/openme/config.yaml
+```
+
+---
+
+### Scenario 4 — Port open on server but connection refused
+
+**Symptoms:** The firewall rule is in place (`nft list chain inet filter openme`
+shows it), but the connection is refused or times out.
+
+Causes and fixes:
+
+| Cause | Fix |
+|-------|-----|
+| Service not running | `systemctl status sshd` / `systemctl start sshd` |
+| Service listening on wrong address | Check `ListenAddress` in `sshd_config` |
+| Service listening on different port | Align `sshd_config` port with openme client `port:` |
+| Knock timeout elapsed | Knock again immediately before connecting |
+
+Check what is listening on the target port:
+
+```bash
+sudo ss -tlnp | grep :22
+# or for a port-range check:
+sudo ss -tlnp | grep -E ':(22|443|8080)'
+```
+
+---
+
+### Scenario 5 — Clock skew / replay window rejection
+
+**Symptom:** Server log contains a message like `"knock rejected: timestamp out
+of range"` or `"replay window exceeded"`.
+
+openme requires client and server clocks to be within `replay_window`
+(default 60 s) of each other.
+
+```bash
+# Check server time
+date && timedatectl status
+
+# Sync immediately
+sudo timedatectl set-ntp true
+sudo systemctl restart systemd-timesyncd   # or ntpd / chrony
+```
+
+Also check the client machine's clock:
+
+```bash
+date      # macOS / Linux
+# On macOS: System Settings → General → Date & Time → Set automatically
+```
+
+The `replay_window` setting in the server config can be increased if the
+client clock cannot be synced (not recommended for production):
+
+```yaml
+server:
+  replay_window: 120s
+```
+
+---
+
+### Scenario 6 — Wrong keys
+
+**Symptom:** Server log shows `"signature verification failed"` or
+`"decryption failed"`.  Knock packets reach the server but are silently
+discarded with a verification error.
+
+The most common cause is a mismatch between the key in the client config and
+the actual server public key.
+
+```bash
+# Display the server public key
+sudo grep public_key /etc/openme/config.yaml
+
+# Display what the client has stored
+grep server_public_key ~/.config/openme/client.yaml
+```
+
+If they differ, regenerate the client config from the server:
+
+```bash
+# On the server — regenerate a client QR / config for user alice
+sudo openme add alice --print-qr
+# or export a client YAML
+sudo openme add alice > /tmp/alice-client.yaml
+```
+
+Then copy `/tmp/alice-client.yaml` to the client machine and import it.
+
+---
+
+### Scenario 7 — Stale rules after crash or unclean shutdown
+
+If openme is killed without a chance to run teardown, its temporary firewall
+rules may persist.
+
+**Detection:**
+
+```bash
+# nftables — look for openme comment
+sudo nft list chain inet filter openme
+
+# iptables
+sudo iptables  -L INPUT -n | grep openme
+sudo ip6tables -L INPUT -n | grep openme
+```
+
+**Cleanup:**
+
+```bash
+# nftables — flush all openme-managed rules
+sudo nft flush chain inet filter openme
+
+# iptables — remove all openme rules from INPUT
+for rule in $(sudo iptables -L INPUT -n --line-numbers | awk '/openme/{print $1}' | sort -rn); do
+  sudo iptables -D INPUT "$rule"
+done
+# Repeat for ip6tables if needed
+```
+
+Then restart the service cleanly:
+
+```bash
+sudo systemctl restart openme
+```
+
+---
+
+### Scenario 8 — openme running in a container or minimal OS
+
+openme requires `nft` or `iptables` to be available and the kernel `nf_tables`
+or `ip_tables` module to be loaded.
+
+```bash
+# Check nft availability
+nft --version
+
+# Check iptables
+iptables --version
+
+# Load nf_tables if missing (most distros load it automatically)
+sudo modprobe nf_tables
+
+# Verify
+lsmod | grep nf_tables
+```
+
+In Docker / Podman, the container must run with `--cap-add NET_ADMIN` (and
+`--cap-add NET_RAW` for raw sockets) and the host kernel must expose
+netfilter:
+
+```bash
+docker run --cap-add NET_ADMIN --cap-add NET_RAW ...
+```
+
+---
+
+## Collecting Diagnostics for a Bug Report
+
+If you are unable to resolve the issue and want to file a bug report at
+<https://github.com/merlos/openme/issues>, please include:
+
+```bash
+# openme version
+openme version
+
+# OS and kernel
+uname -a
+cat /etc/os-release
+
+# nft / iptables version
+nft --version 2>/dev/null
+iptables --version 2>/dev/null
+
+# Current firewall state (redact sensitive IPs if needed)
+sudo nft list ruleset 2>/dev/null
+sudo iptables -L -n -v 2>/dev/null
+
+# Last 50 openme log lines
+journalctl -u openme -n 50 --no-pager
+
+# Config (server keys and client keys are automatically redacted by openme)
+sudo openme config show
+```

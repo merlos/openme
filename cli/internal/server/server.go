@@ -34,8 +34,9 @@ type KnockHandler func(clientName string, srcIP, targetIP net.IP, ports []PortRu
 
 // PortRule mirrors config.PortRule to avoid a circular import.
 type PortRule struct {
-	Port  uint16
-	Proto string
+	Port    uint16
+	Proto   string
+	EndPort uint16 // non-zero when this represents a range [Port, EndPort]
 }
 
 // ClientRecord holds server-side data for a registered client.
