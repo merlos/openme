@@ -19,17 +19,46 @@ Output:
 ```
 Client "alice" added to server config.
 
-──── Client config for alice (copy to ~/.openme/config.yaml) ────
+──── Client config for alice — profile "default" (copy to ~/.openme/config.yaml) ────
 profiles:
-  alice:
-    server_host: myserver.example.com
-    server_udp_port: 54154
-    server_pubkey: "base64..."
-    private_key:   "base64..."
-    public_key:    "base64..."
+    default:
+        server_host: myserver.example.com
+        server_udp_port: 54154
+        server_pubkey: "base64..."
+        private_key:   "base64..."
+        public_key:    "base64..."
 ────────────────────────────────────────────────────────────────
 Key fingerprint: a3f1c2d4e5b60718
 ```
+
+The YAML block is ready to paste into `~/.openme/config.yaml` on the client machine.
+The key under `profiles:` is the **profile name** — by default `"default"`.
+
+## Profile Names
+
+The profile name is the key under `profiles:` in the generated client config. It
+is also the argument you pass to `openme knock <profile>`.
+
+By default the profile is named `"default"`. You can change this two ways:
+
+**Per-command** — pass `--profile NAME` to `openme add`:
+
+```bash
+sudo openme add alice --profile home
+# generates:  profiles:\n    home:\n        ...
+```
+
+**Server-wide** — set `default_profile` in `server:` block of `/etc/openme/config.yaml`:
+
+```yaml
+server:
+  host: myserver.example.com
+  default_profile: home   # every 'openme add' will use 'home' unless --profile overrides it
+```
+
+The `--profile` flag always takes precedence over `server.default_profile`.
+
+---
 
 ## Port Access Modes
 
