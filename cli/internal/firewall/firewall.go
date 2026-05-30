@@ -3,6 +3,7 @@
 package firewall
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"log/slog"
@@ -261,6 +262,19 @@ func runCmd(log *slog.Logger, name string, args ...string) error {
 	out, err := exec.Command(name, args...).CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("command %s %v: %w (output: %s)", name, args, err, out)
+	}
+	return nil
+}
+
+// runNftScript pipes an nft script to "nft -f -", which accepts the full nft
+// syntax including chain type declarations that cannot be passed as plain args.
+func runNftScript(log *slog.Logger, script string) error {
+	log.Debug("running nft script", "script", script)
+	cmd := exec.Command("nft", "-f", "-")
+	cmd.Stdin = bytes.NewBufferString(script)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("nft script: %w (output: %s)", err, out)
 	}
 	return nil
 }
@@ -546,16 +560,22 @@ func (b *NFTablesBackend) Close(srcIP net.IP, ports []config.PortRule) error {
 	return nil
 }
 
-// ensureChain creates the inet filter table and openme chain if they do not exist.
+// ensureChain creates the inet filter table, the base input chain (if absent),
+// and the openme chain if they do not exist. The input chain is created with
+// type filter hook input so rules added to it take effect immediately.
 func (b *NFTablesBackend) ensureChain() error {
-	// Each word must be a separate argument — exec.Command does not use a shell.
-	cmds := [][]string{
-		{"add", "table", "inet", "filter"},
-		{"add", "chain", "inet", "filter", "openme"},
-	}
-	for _, args := range cmds {
-		// Ignore "already exists" errors.
-		_ = runCmd(b.Log, "nft", args...)
+	// Create table and openme chain; ignore "already exists" errors.
+	_ = runCmd(b.Log, "nft", "add", "table", "inet", "filter")
+	_ = runCmd(b.Log, "nft", "add", "chain", "inet", "filter", "openme")
+
+	// Create the base input hook-chain only if it doesn't already exist.
+	// nft errors if you re-declare a base chain with type/hook/priority, so we
+	// probe first with "nft list chain" before attempting creation.
+	probe := exec.Command("nft", "list", "chain", "inet", "filter", "input")
+	if err := probe.Run(); err != nil {
+		// Chain absent — create it with a hook so rules can be added to it.
+		_ = runNftScript(b.Log,
+			"add chain inet filter input { type filter hook input priority 0; }\n")
 	}
 	return nil
 }

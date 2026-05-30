@@ -92,4 +92,3 @@ func TestAllManagedPorts_PortRange(t *testing.T) {
 		t.Errorf("unexpected rule: %+v, want {Port:8080 Proto:tcp EndPort:8082}", p)
 	}
 }
-

@@ -280,8 +280,12 @@ func TestEffectivePorts_RangeSpec(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(rules) != 3 {
-		t.Fatalf("got %d rules, want 3", len(rules))
+	// A range produces one rule with EndPort set.
+	if len(rules) != 1 {
+		t.Fatalf("got %d rules, want 1", len(rules))
+	}
+	if rules[0].Port != 80 || rules[0].EndPort != 82 || rules[0].Proto != "tcp" {
+		t.Errorf("unexpected rule: %+v", rules[0])
 	}
 }
 
