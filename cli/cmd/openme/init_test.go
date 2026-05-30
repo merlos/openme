@@ -31,8 +31,8 @@ func TestRunInit_CreatesConfig(t *testing.T) {
 		t.Fatalf("LoadServerConfig after init: %v", err)
 	}
 
-	if cfg.Defaults.Server != "test.example.com" {
-		t.Errorf("Server = %q, want test.example.com", cfg.Defaults.Server)
+	if cfg.Server.Host != "test.example.com" {
+		t.Errorf("Server = %q, want test.example.com", cfg.Server.Host)
 	}
 	if cfg.Server.UDPPort != 54154 {
 		t.Errorf("UDPPort = %d, want 54154", cfg.Server.UDPPort)
@@ -96,8 +96,8 @@ func TestRunInit_ForceOverwrite(t *testing.T) {
 	}
 
 	cfg, _ := config.LoadServerConfig(path)
-	if cfg.Defaults.Server != "second.example.com" {
-		t.Errorf("Server after force = %q, want second.example.com", cfg.Defaults.Server)
+	if cfg.Server.Host != "second.example.com" {
+		t.Errorf("Server after force = %q, want second.example.com", cfg.Server.Host)
 	}
 	if cfg.Server.UDPPort != 8888 {
 		t.Errorf("UDPPort after force = %d, want 8888", cfg.Server.UDPPort)

@@ -370,7 +370,7 @@ func runInit(force bool, serverHost string, udpPort uint16, firewallBackend stri
 	cfg.Server.Firewall = firewallBackend
 	cfg.Server.PrivateKey = internlcrypto.EncodeKey(kp.PrivateKey[:])
 	cfg.Server.PublicKey = internlcrypto.EncodeKey(kp.PublicKey[:])
-	cfg.Defaults.Server = serverHost
+	cfg.Server.Host = serverHost
 
 	if err := config.SaveServerConfig(serverConfigPath, cfg); err != nil {
 		return fmt.Errorf("writing server config: %w", err)
@@ -498,7 +498,10 @@ func buildClientRecords(cfg *config.ServerConfig) ([]*server.ClientRecord, error
 		if err != nil {
 			return nil, fmt.Errorf("client %q: decoding ed25519 pubkey: %w", name, err)
 		}
-		ports := config.EffectivePorts(cfg.Defaults.Ports, entry)
+		ports, err := config.EffectivePorts(cfg.Ports, entry)
+		if err != nil {
+			return nil, fmt.Errorf("client %q: resolving ports: %w", name, err)
+		}
 		srvPorts := make([]server.PortRule, 0, len(ports)+1)
 
 		// Prepend the health port so it opens alongside the client's other ports.
@@ -788,8 +791,7 @@ func newAddCmd() *cobra.Command {
 		qrOutputPath   string
 		omitPrivateKey bool
 		expires        string
-		portMode       string
-		extraPorts     []string
+		portsCSV       string
 	)
 
 	cmd := &cobra.Command{
@@ -798,7 +800,7 @@ func newAddCmd() *cobra.Command {
 		Short:   "Register a new client and generate their config",
 		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runAdd(args[0], showQR, qrOutputPath, omitPrivateKey, expires, portMode, extraPorts)
+			return runAdd(args[0], showQR, qrOutputPath, omitPrivateKey, expires, portsCSV)
 		},
 	}
 
@@ -806,13 +808,12 @@ func newAddCmd() *cobra.Command {
 	cmd.Flags().StringVar(&qrOutputPath, "qr-out", "", "write QR PNG to this file path")
 	cmd.Flags().BoolVar(&omitPrivateKey, "no-privkey", false, "omit private key from QR (mobile generates its own)")
 	cmd.Flags().StringVar(&expires, "expires", "", "key expiry date (RFC3339, e.g. 2027-01-01T00:00:00Z)")
-	cmd.Flags().StringVar(&portMode, "port-mode", "default", "port mode: default | only | default_plus")
-	cmd.Flags().StringArrayVar(&extraPorts, "port", nil, "extra port rules, e.g. 2222/tcp (used with default_plus or only)")
+	cmd.Flags().StringVar(&portsCSV, "ports", "", "comma-separated port groups and specs, e.g. default,443/tcp,2000-2010/tcp (default: \"default\")")
 
 	return cmd
 }
 
-func runAdd(name string, showQR bool, qrOut string, omitPriv bool, expires, portMode string, extraPortStrs []string) error {
+func runAdd(name string, showQR bool, qrOut string, omitPriv bool, expires, portsCSV string) error {
 	cfg, err := config.LoadServerConfig(serverConfigPath)
 	if err != nil {
 		return fmt.Errorf("loading server config: %w", err)
@@ -828,21 +829,22 @@ func runAdd(name string, showQR bool, qrOut string, omitPriv bool, expires, port
 		return fmt.Errorf("generating client keypair: %w", err)
 	}
 
-	entry := &config.ClientEntry{
-		Ed25519PubKey: internlcrypto.EncodeKey(kp.PublicKey),
-		AllowedPorts: config.AllowedPorts{
-			Mode: config.AllowedPortsMode(portMode),
-		},
+	// Parse --ports into []PortSpec.
+	var portSpecs []config.PortSpec
+	if portsCSV == "" {
+		portSpecs = []config.PortSpec{"default"}
+	} else {
+		for _, part := range strings.Split(portsCSV, ",") {
+			part = strings.TrimSpace(part)
+			if part != "" {
+				portSpecs = append(portSpecs, config.PortSpec(part))
+			}
+		}
 	}
 
-	// Parse extra port rules.
-	for _, ps := range extraPortStrs {
-		var port uint16
-		var proto string
-		if _, err := fmt.Sscanf(ps, "%d/%s", &port, &proto); err != nil {
-			return fmt.Errorf("invalid port rule %q (expected e.g. 2222/tcp): %w", ps, err)
-		}
-		entry.AllowedPorts.Ports = append(entry.AllowedPorts.Ports, config.PortRule{Port: port, Proto: proto})
+	entry := &config.ClientEntry{
+		Ed25519PubKey: internlcrypto.EncodeKey(kp.PublicKey),
+		AllowedPorts:  portSpecs,
 	}
 
 	// Parse optional expiry.
@@ -865,7 +867,7 @@ func runAdd(name string, showQR bool, qrOut string, omitPriv bool, expires, port
 	clientCfg := &config.ClientConfig{
 		Profiles: map[string]*config.Profile{
 			name: {
-				ServerHost:    cfg.Defaults.Server,
+				ServerHost:    cfg.Server.Host,
 				ServerUDPPort: cfg.Server.UDPPort,
 				ServerPubKey:  cfg.Server.PublicKey,
 				PrivateKey:    internlcrypto.EncodeKey(kp.PrivateKey),
@@ -887,7 +889,7 @@ func runAdd(name string, showQR bool, qrOut string, omitPriv bool, expires, port
 	if showQR || qrOut != "" {
 		payload := &qr.Payload{
 			ProfileName:   name,
-			ServerHost:    cfg.Defaults.Server,
+			ServerHost:    cfg.Server.Host,
 			ServerUDPPort: cfg.Server.UDPPort,
 			ServerPubKey:  cfg.Server.PublicKey,
 			ClientPrivKey: internlcrypto.EncodeKey(kp.PrivateKey),
@@ -931,8 +933,8 @@ func runList(cmd *cobra.Command, args []string) error {
 		fmt.Println("No clients registered.")
 		return nil
 	}
-	fmt.Printf("%-20s %-18s %-12s %s\n", "NAME", "FINGERPRINT", "PORT MODE", "EXPIRES")
-	fmt.Println("─────────────────────────────────────────────────────────────")
+	fmt.Printf("%-20s %-18s %-30s %s\n", "NAME", "FINGERPRINT", "PORTS", "EXPIRES")
+	fmt.Println("──────────────────────────────────────────────────────────────────────────")
 	for name, entry := range cfg.Clients {
 		fp := "invalid"
 		if b, err := internlcrypto.DecodeKey(entry.Ed25519PubKey); err == nil {
@@ -942,7 +944,15 @@ func runList(cmd *cobra.Command, args []string) error {
 		if entry.Expires != nil {
 			exp = entry.Expires.Format("2006-01-02")
 		}
-		fmt.Printf("%-20s %-18s %-12s %s\n", name, fp, entry.AllowedPorts.Mode, exp)
+		ports := "default"
+		if len(entry.AllowedPorts) > 0 {
+			parts := make([]string, len(entry.AllowedPorts))
+			for i, p := range entry.AllowedPorts {
+				parts[i] = string(p)
+			}
+			ports = strings.Join(parts, ",")
+		}
+		fmt.Printf("%-20s %-18s %-30s %s\n", name, fp, ports, exp)
 	}
 	return nil
 }

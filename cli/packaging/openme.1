@@ -190,29 +190,24 @@ Optional key expiry timestamp in RFC\~3339 format (e.g.\&
 .IR 2027\-01\-01T00:00:00Z ).
 Knocks from this client after the expiry time are rejected.
 .TP
-.BI \-\-port\-mode " MODE"
-Port access mode.
-One of
-.IR default " (inherit server defaults), " only " (client ports only), or"
-.IR default_plus " (defaults plus extra ports)."
-Default:
-.IR default .
-.TP
-.BI \-\-port " PORT/PROTO"
-Add an extra port rule (e.g.\ \fI2222/tcp\fR).
-May be specified multiple times.
-Used with
-.I default_plus
-or
-.IR only .
+.BI \-\-ports " SPECS"
+Comma-separated port group names and/or inline port specs to open for
+this client.
+Examples:
+.IR default ,
+.IR 443/tcp ,
+.IR 2000\-2010/tcp ,
+.IR default,443/tcp .
+When omitted, defaults to
+.I default
+(the server\(cqs default port group).
 .
 .SS openme list
 .B openme list
 .PP
 List all registered clients in the server config.
-Output includes the client name, Ed25519 key fingerprint, port mode, and
+Output includes the client name, Ed25519 key fingerprint, allowed ports, and
 expiry date.
-.
 .SS openme revoke \fINAME\fR
 .B openme revoke
 .I NAME
@@ -380,17 +375,11 @@ openme status \-\-knock
 .SS Client: advanced registration
 .nf
 # Grant alice only ports 22 and 443
-sudo openme add alice \-\-port\-mode only \-\-port 22/tcp \-\-port 443/tcp
+sudo openme add alice \-\-ports 22/tcp,443/tcp
 
 # Grant bob the defaults plus an extra port; expire the key at end of year
-sudo openme add bob \-\-port\-mode default_plus \-\-port 2222/tcp \e
+sudo openme add bob \-\-ports default,2222/tcp \e
      \-\-expires 2026\-12\-31T23:59:59Z
-
-# Revoke alice's access immediately
-sudo openme revoke alice
-.fi
-.
-.SH PROTOCOL
 Each knock is a single UDP datagram of exactly
 .B 165 bytes:
 .PP
@@ -576,29 +565,25 @@ Optional key expiry timestamp in RFC\~3339 format (e.g.\&
 .IR 2027\-01\-01T00:00:00Z ).
 Knocks from this client after the expiry time are rejected.
 .TP
-.BI \-\-port\-mode " MODE"
-Port access mode.
-One of
-.IR default " (inherit server defaults), " only " (client ports only), or"
-.IR default_plus " (defaults plus extra ports)."
-Default:
-.IR default .
 .TP
-.BI \-\-port " PORT/PROTO"
-Add an extra port rule (e.g.\ \fI2222/tcp\fR).
-May be specified multiple times.
-Used with
-.I default_plus
-or
-.IR only .
+.BI \-\-ports " SPECS"
+Comma-separated port group names and/or inline port specs to open for
+this client.
+Examples:
+.IR default ,
+.IR 443/tcp ,
+.IR 2000\-2010/tcp ,
+.IR default,443/tcp .
+When omitted, defaults to
+.I default
+(the server\(cqs default port group).
 .
 .SS openme list
 .B openme list
 .PP
 List all registered clients in the server config.
-Output includes the client name, Ed25519 key fingerprint, port mode, and
+Output includes the client name, Ed25519 key fingerprint, allowed ports, and
 expiry date.
-.
 .SS openme revoke \fINAME\fR
 .B openme revoke
 .I NAME
@@ -715,12 +700,11 @@ openme connect \-\-ip 10.0.0.5
 .SS Client: advanced registration
 .nf
 # Grant alice only ports 22 and 443
-sudo openme add alice \-\-port\-mode only \-\-port 22/tcp \-\-port 443/tcp
+sudo openme add alice \-\-ports 22/tcp,443/tcp
 
 # Grant bob the defaults plus an extra port; expire the key at end of year
-sudo openme add bob \-\-port\-mode default_plus \-\-port 2222/tcp \e
+sudo openme add bob \-\-ports default,2222/tcp \e
      \-\-expires 2026\-12\-31T23:59:59Z
-
 # Revoke alice's access immediately
 sudo openme revoke alice
 .fi

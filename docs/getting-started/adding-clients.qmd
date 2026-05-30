@@ -36,14 +36,14 @@ Key fingerprint: a3f1c2d4e5b60718
 By default, a client can open only the server's default ports (SSH on 22).
 
 ```bash
-# Default only — just SSH
+# Default ports only — just SSH
 sudo openme add alice
 
 # Default + extra ports — SSH plus custom ports
-sudo openme add bob --port-mode default_plus --port 2222/tcp --port 8080/tcp
+sudo openme add bob --ports default,2222/tcp,8080/tcp
 
 # Only custom ports — no SSH
-sudo openme add ci-runner --port-mode only --port 443/tcp
+sudo openme add ci-runner --ports 443/tcp
 ```
 
 ## Key Expiry
