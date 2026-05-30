@@ -18,8 +18,9 @@ func TestDefaultServerConfig(t *testing.T) {
 	if cfg.Server.Firewall != "nft" {
 		t.Errorf("Firewall = %q, want nft", cfg.Server.Firewall)
 	}
-	if len(cfg.Defaults.Ports) == 0 {
-		t.Error("default ports should not be empty")
+	defaultGroup, ok := cfg.Ports["default"]
+	if !ok || len(defaultGroup) == 0 {
+		t.Error("default port group should be defined and non-empty")
 	}
 }
 
@@ -30,12 +31,10 @@ func TestSaveLoadServerConfig(t *testing.T) {
 	cfg := config.DefaultServerConfig()
 	cfg.Server.PrivateKey = "testprivkey=="
 	cfg.Server.PublicKey = "testpubkey=="
-	cfg.Defaults.Server = "myserver.example.com"
+	cfg.Server.Host = "myserver.example.com"
 	cfg.Clients["alice"] = &config.ClientEntry{
 		Ed25519PubKey: "alicepub==",
-		AllowedPorts: config.AllowedPorts{
-			Mode: config.ModeDefault,
-		},
+		AllowedPorts:  []config.PortSpec{"default"},
 	}
 
 	if err := config.SaveServerConfig(path, cfg); err != nil {
@@ -47,8 +46,8 @@ func TestSaveLoadServerConfig(t *testing.T) {
 		t.Fatalf("LoadServerConfig error = %v", err)
 	}
 
-	if loaded.Defaults.Server != "myserver.example.com" {
-		t.Errorf("Server = %q, want myserver.example.com", loaded.Defaults.Server)
+	if loaded.Server.Host != "myserver.example.com" {
+		t.Errorf("Host = %q, want myserver.example.com", loaded.Server.Host)
 	}
 	if _, ok := loaded.Clients["alice"]; !ok {
 		t.Error("client 'alice' not found after reload")
@@ -128,32 +127,183 @@ func TestGetProfile_NotFound(t *testing.T) {
 	}
 }
 
-func TestEffectivePorts(t *testing.T) {
-	defaults := []config.PortRule{{Port: 22, Proto: "tcp"}}
-	extra := []config.PortRule{{Port: 2222, Proto: "tcp"}}
+// ─── ExpandPortSpec tests ────────────────────────────────────────────────────
 
+func TestExpandPortSpec(t *testing.T) {
 	tests := []struct {
-		mode     config.AllowedPortsMode
-		extra    []config.PortRule
-		wantLen  int
-		wantPort uint16
+		spec      config.PortSpec
+		wantPorts []config.PortRule
+		wantErr   bool
 	}{
-		{config.ModeDefault, nil, 1, 22},
-		{config.ModeOnly, extra, 1, 2222},
-		{config.ModeDefaultPlus, extra, 2, 22},
+		// Single port, explicit tcp
+		{"22/tcp", []config.PortRule{{22, "tcp"}}, false},
+		// Single port, explicit udp
+		{"53/udp", []config.PortRule{{53, "udp"}}, false},
+		// Single port, no protocol → both tcp and udp
+		{"80", []config.PortRule{{80, "tcp"}, {80, "udp"}}, false},
+		// Range, explicit tcp
+		{"80-82/tcp", []config.PortRule{{80, "tcp"}, {81, "tcp"}, {82, "tcp"}}, false},
+		// Range, no protocol → both protos per port
+		{"80-81", []config.PortRule{{80, "tcp"}, {80, "udp"}, {81, "tcp"}, {81, "udp"}}, false},
+		// Single port range (lo == hi)
+		{"443-443/tcp", []config.PortRule{{443, "tcp"}}, false},
+		// Errors
+		{"", nil, true},          // empty
+		{"0/tcp", nil, true},     // port 0 invalid
+		{"65536/tcp", nil, true}, // port too high
+		{"abc/tcp", nil, true},   // non-numeric
+		{"80-70/tcp", nil, true}, // reversed range
+		{"22/icmp", nil, true},   // bad proto
+		{"22/", nil, true},       // missing proto
 	}
 
 	for _, tt := range tests {
-		client := &config.ClientEntry{
-			AllowedPorts: config.AllowedPorts{Mode: tt.mode, Ports: tt.extra},
+		rules, err := config.ExpandPortSpec(tt.spec)
+		if tt.wantErr {
+			if err == nil {
+				t.Errorf("ExpandPortSpec(%q): expected error, got nil", tt.spec)
+			}
+			continue
 		}
-		ports := config.EffectivePorts(defaults, client)
-		if len(ports) != tt.wantLen {
-			t.Errorf("mode=%s: got %d ports, want %d", tt.mode, len(ports), tt.wantLen)
+		if err != nil {
+			t.Errorf("ExpandPortSpec(%q): unexpected error: %v", tt.spec, err)
+			continue
 		}
-		if ports[0].Port != tt.wantPort {
-			t.Errorf("mode=%s: first port = %d, want %d", tt.mode, ports[0].Port, tt.wantPort)
+		if len(rules) != len(tt.wantPorts) {
+			t.Errorf("ExpandPortSpec(%q): got %d rules, want %d", tt.spec, len(rules), len(tt.wantPorts))
+			continue
 		}
+		for i, r := range rules {
+			if r != tt.wantPorts[i] {
+				t.Errorf("ExpandPortSpec(%q)[%d]: got %+v, want %+v", tt.spec, i, r, tt.wantPorts[i])
+			}
+		}
+	}
+}
+
+func TestExpandPortSpec_RangeCapExceeded(t *testing.T) {
+	// 1-1001 = 1001 ports — over the 1000 cap
+	_, err := config.ExpandPortSpec("1-1001/tcp")
+	if err == nil {
+		t.Error("expected error for range exceeding max, got nil")
+	}
+}
+
+// ─── EffectivePorts tests ────────────────────────────────────────────────────
+
+func TestEffectivePorts_NamedGroup(t *testing.T) {
+	groups := map[string][]config.PortSpec{
+		"default": {"22/tcp"},
+		"admin":   {"22/tcp", "443/tcp"},
+	}
+
+	client := &config.ClientEntry{AllowedPorts: []config.PortSpec{"admin"}}
+	rules, err := config.EffectivePorts(groups, client)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(rules) != 2 {
+		t.Fatalf("got %d rules, want 2", len(rules))
+	}
+	if rules[0].Port != 22 || rules[1].Port != 443 {
+		t.Errorf("unexpected rules: %+v", rules)
+	}
+}
+
+func TestEffectivePorts_InlineSpec(t *testing.T) {
+	groups := map[string][]config.PortSpec{"default": {"22/tcp"}}
+
+	client := &config.ClientEntry{AllowedPorts: []config.PortSpec{"443/tcp", "8080/tcp"}}
+	rules, err := config.EffectivePorts(groups, client)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(rules) != 2 || rules[0].Port != 443 || rules[1].Port != 8080 {
+		t.Errorf("unexpected rules: %+v", rules)
+	}
+}
+
+func TestEffectivePorts_MixedGroupAndInline(t *testing.T) {
+	groups := map[string][]config.PortSpec{
+		"default": {"22/tcp"},
+	}
+
+	client := &config.ClientEntry{AllowedPorts: []config.PortSpec{"default", "443/tcp"}}
+	rules, err := config.EffectivePorts(groups, client)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	// default expands to 22/tcp; then 443/tcp → 2 rules total
+	if len(rules) != 2 {
+		t.Fatalf("got %d rules, want 2", len(rules))
+	}
+	if rules[0].Port != 22 || rules[1].Port != 443 {
+		t.Errorf("unexpected rules: %+v", rules)
+	}
+}
+
+func TestEffectivePorts_EmptyFallsBackToDefault(t *testing.T) {
+	groups := map[string][]config.PortSpec{
+		"default": {"22/tcp"},
+	}
+
+	client := &config.ClientEntry{AllowedPorts: nil}
+	rules, err := config.EffectivePorts(groups, client)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(rules) != 1 || rules[0].Port != 22 {
+		t.Errorf("unexpected rules: %+v", rules)
+	}
+}
+
+func TestEffectivePorts_EmptyWithNoDefaultGroup(t *testing.T) {
+	groups := map[string][]config.PortSpec{} // no "default" group
+
+	client := &config.ClientEntry{AllowedPorts: nil}
+	rules, err := config.EffectivePorts(groups, client)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(rules) != 0 {
+		t.Errorf("expected empty rules, got %+v", rules)
+	}
+}
+
+func TestEffectivePorts_UnknownGroup(t *testing.T) {
+	groups := map[string][]config.PortSpec{"default": {"22/tcp"}}
+
+	client := &config.ClientEntry{AllowedPorts: []config.PortSpec{"nonexistent"}}
+	_, err := config.EffectivePorts(groups, client)
+	if err == nil {
+		t.Error("expected error for unknown group, got nil")
+	}
+}
+
+func TestEffectivePorts_RangeSpec(t *testing.T) {
+	groups := map[string][]config.PortSpec{}
+
+	client := &config.ClientEntry{AllowedPorts: []config.PortSpec{"80-82/tcp"}}
+	rules, err := config.EffectivePorts(groups, client)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(rules) != 3 {
+		t.Fatalf("got %d rules, want 3", len(rules))
+	}
+}
+
+func TestEffectivePorts_NoProtoSpec(t *testing.T) {
+	groups := map[string][]config.PortSpec{}
+
+	// "8080" with no protocol → both tcp and udp
+	client := &config.ClientEntry{AllowedPorts: []config.PortSpec{"8080"}}
+	rules, err := config.EffectivePorts(groups, client)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(rules) != 2 {
+		t.Fatalf("got %d rules, want 2", len(rules))
 	}
 }
 
@@ -166,7 +316,6 @@ func TestClientEntry_Expiry(t *testing.T) {
 	noExpiry := &config.ClientEntry{}
 
 	if !expired.Expires.Before(time.Now()) {
-		// Should be expired
 		t.Error("expired entry should be before now")
 	}
 	if valid.Expires.Before(time.Now()) {

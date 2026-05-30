@@ -192,7 +192,7 @@ individual service port(s) to the server:
 |-----------|----------|--------------|-------------|--------------|
 | Inbound | TCP | 22 | `<server-LAN-IP>` | 22 |
 
-Repeat for every port listed under `defaults.ports` (or client-specific ports)
+Repeat for every port listed under `ports.default` (or client-specific ports)
 in the server config.
 
 ::: {.callout-note}
@@ -209,7 +209,7 @@ valid knock.
   You may need to request a public static IP from your ISP or use a VPS/relay
   as the openme server instead.
 * **Dynamic public IP** — most home connections have a changing public IP.
-  Pair the server hostname (`defaults.server`) with a dynamic DNS (DDNS)
+  Pair the server hostname (`server.host`) with a dynamic DNS (DDNS)
   service so clients always resolve the correct address.
 * **Health-check port** — `openme status` uses a TCP connection to
   `health_port` (defaults to the same value as `udp_port`). If you use the

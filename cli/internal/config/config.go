@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 	"time"
 
 	"gopkg.in/yaml.v3"
@@ -19,24 +21,104 @@ type PortRule struct {
 	Proto string `yaml:"proto"` // "tcp" or "udp"
 }
 
-// AllowedPortsMode controls how a client's allowed_ports relates to the server defaults.
-type AllowedPortsMode string
+// PortSpec is a compact string representation of one or more port rules.
+// Accepted forms:
+//
+//		"22"          — port 22, both tcp and udp
+//		"22/tcp"      — port 22, tcp only
+//	 "22/udp"      — port 22, udp only
+//		"80-82"       — ports 80, 81, 82 on both tcp and udp
+//		"80-82/tcp"   — ports 80, 81, 82 on tcp only
+//
+// A PortSpec may also be the name of a group defined in the top-level
+// ports map (e.g. "default", "admin"). Group names are resolved by
+// EffectivePorts and must not contain a "/" character.
+type PortSpec string
 
-const (
-	// ModeDefault opens only the server's default ports.
-	ModeDefault AllowedPortsMode = "default"
+// maxPortRangeSize is a safety cap on the number of ports a single range
+// spec may expand to, preventing accidental exhaustion of firewall rule slots.
+const maxPortRangeSize = 1000
 
-	// ModeOnly opens only the ports listed in the client's ports field.
-	ModeOnly AllowedPortsMode = "only"
+// ExpandPortSpec parses a single inline PortSpec into one or more PortRule
+// values. It does not resolve group names — call EffectivePorts for that.
+//
+// See PortSpec for accepted syntax.
+//
+// Returns an error if the spec is malformed or the range exceeds
+// maxPortRangeSize (1000 ports).
+func ExpandPortSpec(spec PortSpec) ([]PortRule, error) {
+	s := strings.TrimSpace(string(spec))
+	if s == "" {
+		return nil, fmt.Errorf("empty port spec")
+	}
 
-	// ModeDefaultPlus opens the server's default ports plus the client's extra ports.
-	ModeDefaultPlus AllowedPortsMode = "default_plus"
-)
+	// Split optional protocol suffix.
+	var protos []string
+	portPart := s
+	if idx := strings.LastIndex(s, "/"); idx >= 0 {
+		proto := strings.ToLower(s[idx+1:])
+		if proto != "tcp" && proto != "udp" {
+			return nil, fmt.Errorf("invalid protocol %q in port spec %q (expected tcp or udp)", proto, spec)
+		}
+		protos = []string{proto}
+		portPart = s[:idx]
+	} else {
+		protos = []string{"tcp", "udp"}
+	}
 
-// AllowedPorts defines which ports a client is permitted to open.
-type AllowedPorts struct {
-	Mode  AllowedPortsMode `yaml:"mode"`
-	Ports []PortRule       `yaml:"ports,omitempty"`
+	// Parse port or range.
+	var startPort, endPort uint16
+	if dashIdx := strings.Index(portPart, "-"); dashIdx >= 0 {
+		lo, err := parsePort(portPart[:dashIdx], spec)
+		if err != nil {
+			return nil, err
+		}
+		hi, err := parsePort(portPart[dashIdx+1:], spec)
+		if err != nil {
+			return nil, err
+		}
+		if lo > hi {
+			return nil, fmt.Errorf("invalid port range %q: start port %d is greater than end port %d", spec, lo, hi)
+		}
+		if int(hi)-int(lo)+1 > maxPortRangeSize {
+			return nil, fmt.Errorf("port range %q spans %d ports, exceeding the maximum of %d", spec, int(hi)-int(lo)+1, maxPortRangeSize)
+		}
+		startPort, endPort = lo, hi
+	} else {
+		p, err := parsePort(portPart, spec)
+		if err != nil {
+			return nil, err
+		}
+		startPort, endPort = p, p
+	}
+
+	var rules []PortRule
+	for port := startPort; port <= endPort; port++ {
+		for _, proto := range protos {
+			rules = append(rules, PortRule{Port: port, Proto: proto})
+		}
+	}
+	return rules, nil
+}
+
+func parsePort(s string, spec PortSpec) (uint16, error) {
+	n, err := strconv.ParseUint(strings.TrimSpace(s), 10, 16)
+	if err != nil || n == 0 || n > 65535 {
+		return 0, fmt.Errorf("invalid port %q in spec %q", s, spec)
+	}
+	return uint16(n), nil
+}
+
+func isAllDigits(s string) bool {
+	if s == "" {
+		return false
+	}
+	for _, c := range s {
+		if c < '0' || c > '9' {
+			return false
+		}
+	}
+	return true
 }
 
 // ClientEntry represents a registered client on the server.
@@ -44,8 +126,17 @@ type ClientEntry struct {
 	// Ed25519PubKey is the base64-encoded Ed25519 public key of the client.
 	Ed25519PubKey string `yaml:"ed25519_pubkey"`
 
-	// AllowedPorts controls which ports this client may open.
-	AllowedPorts AllowedPorts `yaml:"allowed_ports"`
+	// AllowedPorts is a list of port group names and/or inline port specs
+	// that define which ports this client may open after a successful knock.
+	//
+	// Examples:
+	//   allowed_ports: [default]            # use the "default" port group
+	//   allowed_ports: [default, 443/tcp]   # default group plus HTTPS
+	//   allowed_ports: [22/tcp, 8080-8090]  # explicit ports only
+	//
+	// If the list is empty the server falls back to the "default" group
+	// (ports.default) when it exists.
+	AllowedPorts []PortSpec `yaml:"allowed_ports,omitempty"`
 
 	// Expires is an optional RFC3339 date after which the client key is rejected.
 	// Omit or leave zero to never expire.
@@ -57,20 +148,13 @@ type ClientEntry struct {
 	DisableHealthPort bool `yaml:"disable_health_port,omitempty"`
 }
 
-// ServerDefaults holds server-wide default settings.
-type ServerDefaults struct {
-	// Server is the public hostname or IP address of this server,
-	// used when generating client config files via `openme add`.
-	Server string `yaml:"server"`
-
-	// Ports is the list of ports opened for every authenticated client
-	// unless overridden by the client's AllowedPorts mode.
-	Ports []PortRule `yaml:"ports"`
-}
-
 // ServerConfig is the top-level structure for /etc/openme/config.yaml.
 type ServerConfig struct {
 	Server struct {
+		// Host is the public hostname or IP address of this server,
+		// used when generating client config files via `openme add`.
+		Host string `yaml:"host"`
+
 		// UDPPort is the port the server listens on for SPA knock packets.
 		UDPPort uint16 `yaml:"udp_port"`
 
@@ -102,9 +186,21 @@ type ServerConfig struct {
 		OpenKnockPort *bool `yaml:"open_knock_port,omitempty"`
 	} `yaml:"server"`
 
-	Defaults ServerDefaults `yaml:"defaults"`
+	// Ports defines named groups of port specs available to clients.
+	// The group named "default" is used as a fallback for clients whose
+	// allowed_ports list is empty.
+	//
+	// Example:
+	//   ports:
+	//     default:
+	//       - 22/tcp
+	//     admin:
+	//       - 22/tcp
+	//       - 443/tcp
+	//       - 8080-8090/tcp
+	Ports map[string][]PortSpec `yaml:"ports,omitempty"`
 
-	// Clients maps a client name (e.g. "rayan") to its configuration.
+	// Clients maps a client name (e.g. "alice") to its configuration.
 	Clients map[string]*ClientEntry `yaml:"clients"`
 }
 
@@ -116,7 +212,7 @@ func DefaultServerConfig() *ServerConfig {
 	cfg.Server.Firewall = "nft"
 	cfg.Server.KnockTimeout = Duration{30 * time.Second}
 	cfg.Server.ReplayWindow = Duration{60 * time.Second}
-	cfg.Defaults.Ports = []PortRule{{Port: 22, Proto: "tcp"}}
+	cfg.Ports = map[string][]PortSpec{"default": {"22/tcp"}}
 	cfg.Clients = make(map[string]*ClientEntry)
 	return cfg
 }
@@ -222,20 +318,52 @@ func GetProfile(cfg *ClientConfig, name string) (*Profile, error) {
 	return p, nil
 }
 
-// EffectivePorts returns the list of ports to open for a client, considering
-// the client's AllowedPorts mode and the server's defaults.
-func EffectivePorts(defaults []PortRule, client *ClientEntry) []PortRule {
-	switch client.AllowedPorts.Mode {
-	case ModeOnly:
-		return client.AllowedPorts.Ports
-	case ModeDefaultPlus:
-		combined := make([]PortRule, 0, len(defaults)+len(client.AllowedPorts.Ports))
-		combined = append(combined, defaults...)
-		combined = append(combined, client.AllowedPorts.Ports...)
-		return combined
-	default: // ModeDefault or unset
-		return defaults
+// EffectivePorts resolves the full list of PortRule values for a client.
+//
+// Each item in client.AllowedPorts is either a named group (looked up in
+// groups) or an inline PortSpec (e.g. "443/tcp", "80-82"). If the client's
+// AllowedPorts list is empty, the "default" group is used as a fallback when
+// it exists.
+//
+// Returns an error if a spec is malformed or a named group is not found.
+func EffectivePorts(groups map[string][]PortSpec, client *ClientEntry) ([]PortRule, error) {
+	specs := client.AllowedPorts
+	if len(specs) == 0 {
+		specs = []PortSpec{"default"}
 	}
+
+	var rules []PortRule
+	for _, spec := range specs {
+		s := strings.TrimSpace(string(spec))
+		// A spec is treated as a named group when it contains no "/" and no "-"
+		// and is not a pure decimal number (port numbers are all digits).
+		looksLikeGroup := !strings.Contains(s, "/") && !strings.Contains(s, "-") && !isAllDigits(s)
+		if looksLikeGroup {
+			group, ok := groups[s]
+			if !ok {
+				if spec == "default" {
+					// No default group defined — return empty list (no ports opened).
+					continue
+				}
+				return nil, fmt.Errorf("unknown port group %q", s)
+			}
+			for _, gs := range group {
+				expanded, err := ExpandPortSpec(gs)
+				if err != nil {
+					return nil, fmt.Errorf("group %q: %w", s, err)
+				}
+				rules = append(rules, expanded...)
+			}
+			continue
+		}
+		// Treat as an inline port spec.
+		expanded, err := ExpandPortSpec(spec)
+		if err != nil {
+			return nil, err
+		}
+		rules = append(rules, expanded...)
+	}
+	return rules, nil
 }
 
 // Duration is a wrapper around time.Duration that supports YAML marshalling

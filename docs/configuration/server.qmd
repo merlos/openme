@@ -11,8 +11,9 @@ Override with: `openme --config /path/to/config.yaml serve`
 
 ```yaml
 server:
-  udp_port: 54154 # udp knock port
-  health_port: 54154 # tcp
+  host: "myserver.example.com"  # public hostname or IP (used when generating client configs)
+  udp_port: 54154               # udp knock port
+  health_port: 54154            # tcp health-check port
   firewall: nft
   knock_timeout: 30s
   replay_window: 60s
@@ -20,34 +21,35 @@ server:
   private_key: "base64-encoded-curve25519-private-key=="
   public_key:  "base64-encoded-curve25519-public-key=="
 
-defaults:
-  server: "myserver.example.com"
-  ports:
-    - port: 22
-      proto: tcp
+ports:
+  default:
+    - 22/tcp          # SSH
+  devops:
+    - 22/tcp
+    - 443/tcp
+    - 8080-8090/tcp   # port range
+  readonly:
+    - 443/tcp
+    - 443/udp
 
 clients:
   alice:
     ed25519_pubkey: "base64-encoded-ed25519-public-key=="
-    allowed_ports:
-      mode: default # just the defaults (SSH in this case)
+    # empty allowed_ports → falls back to the "default" port group
+
   bob:
     ed25519_pubkey: "base64-encoded-ed25519-public-key=="
-    allowed_ports: 
-      mode: default_plus # defaults plus these extra ports
-      ports:
-        - port: 2222
-          proto: tcp
+    allowed_ports:
+      - default    # the "default" group (SSH)
+      - 2222/tcp   # plus an extra port
     expires: "2026-12-31T23:59:59Z"
 
   joe:
     ed25519_pubkey: "base64-encoded-ed25519-public-key=="
     allowed_ports:
-      mode: only # only the specified ports below, not the defaults
-      ports:
-        - port: 443
-          proto: tcp
-  
+      - devops          # named group
+      - 1994/tcp        # inline spec
+      - 2000-2010/tcp   # range
 ```
 
 ---
@@ -56,6 +58,7 @@ clients:
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
+| `host` | string | — | Public hostname or IP of this server. Used when generating client configs with `openme add`. |
 | `udp_port` | uint16 | `54154` | UDP port to listen for knock packets. |
 | `health_port` | uint16 | same as `udp_port` | TCP port for health checks (`openme status`). |
 | `firewall` | string | `"nft"` | Firewall backend. One of `"nft"` or `"iptables"`. |
@@ -121,19 +124,35 @@ when run via the systemd unit) can read it.
 
 ---
 
-## `defaults` Block
+## `ports` Block
 
-| Key | Type | Description |
-|-----|------|-------------|
-| `server` | string | Public hostname or IP of this server. Used when generating client configs with `openme add`. |
-| `ports` | list | Default list of ports opened for every client whose `allowed_ports.mode` is `default` or `default_plus`. |
-
-### Port entry
+The top-level `ports` map defines named groups of port specs. Clients reference
+these groups by name in their `allowed_ports` list.
 
 ```yaml
-- port: 22
-  proto: tcp   # "tcp" or "udp"
+ports:
+  default:        # built-in fallback name — used when a client has no allowed_ports
+    - 22/tcp
+  admin:
+    - 22/tcp
+    - 443/tcp
+    - 8080-8090/tcp
 ```
+
+### Port spec syntax
+
+Each entry in a group (or in a client's `allowed_ports` list) is a compact
+string in the form `PORT[-END][/PROTO]`:
+
+| Spec | Expands to |
+|------|-----------|
+| `22/tcp` | port 22, TCP only |
+| `53/udp` | port 53, UDP only |
+| `80` | port 80, both TCP and UDP |
+| `80-82/tcp` | ports 80, 81, 82 — TCP only |
+| `80-82` | ports 80, 81, 82 — both TCP and UDP |
+
+The range span must not exceed 1000 ports.
 
 ---
 
@@ -144,14 +163,23 @@ Each key under `clients` is a client name (e.g. `alice`).
 | Key | Type | Required | Description |
 |-----|------|----------|-------------|
 | `ed25519_pubkey` | base64 | ✅ | Client's Ed25519 public key (32 bytes). |
-| `allowed_ports.mode` | string | ✅ | Port access mode. See below. |
-| `allowed_ports.ports` | list | — | Extra ports (used with `default_plus` or `only` modes). |
+| `allowed_ports` | list | — | Port group names and/or inline port specs. Omit to use the `default` group. |
 | `expires` | RFC3339 | — | Key expiry date. Omit for no expiry. |
+| `disable_health_port` | bool | — | When `true`, the health port is not opened for this client. `openme status` will not work after knocking. |
 
-### Port Modes
+### `allowed_ports` list
 
-| Mode | Opens |
-|------|-------|
-| `default` | Only the `defaults.ports` list. |
-| `only` | Only the client's own `ports` list. |
-| `default_plus` | `defaults.ports` **plus** the client's `ports` list. |
+Each item is either a **named group** (defined in `ports:`) or an **inline port
+spec** (see syntax table above). Items are processed in order and their results
+merged.
+
+```yaml
+allowed_ports:
+  - default          # reference the "default" group
+  - 443/tcp          # inline spec — HTTPS only
+  - 2000-2010/tcp    # inline range
+```
+
+If `allowed_ports` is omitted or empty, the client falls back to the `default`
+group when it exists. If no `default` group is defined, no ports are opened.
+
