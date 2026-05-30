@@ -5,6 +5,7 @@
 package config
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -284,11 +285,110 @@ func LoadServerConfig(path string) (*ServerConfig, error) {
 	return cfg, nil
 }
 
+// clientsOnly is used to marshal only the clients map into YAML.
+type clientsOnly struct {
+	Clients map[string]*ClientEntry `yaml:"clients"`
+}
+
+// clientsMapToNode marshals clients into a *yaml.Node representing the value
+// of the "clients" mapping key. This node can be spliced into an existing AST.
+func clientsMapToNode(clients map[string]*ClientEntry) (*yaml.Node, error) {
+	if clients == nil {
+		clients = make(map[string]*ClientEntry)
+	}
+	data, err := yaml.Marshal(clientsOnly{Clients: clients})
+	if err != nil {
+		return nil, fmt.Errorf("marshalling clients: %w", err)
+	}
+	var tmpDoc yaml.Node
+	if err := yaml.Unmarshal(data, &tmpDoc); err != nil {
+		return nil, fmt.Errorf("parsing clients node: %w", err)
+	}
+	if tmpDoc.Kind != yaml.DocumentNode || len(tmpDoc.Content) == 0 {
+		return nil, fmt.Errorf("unexpected clients marshal structure")
+	}
+	mapping := tmpDoc.Content[0]
+	for i := 0; i+1 < len(mapping.Content); i += 2 {
+		if mapping.Content[i].Value == "clients" {
+			return mapping.Content[i+1], nil
+		}
+	}
+	// Fallback: return an empty mapping node (clients: {}).
+	return &yaml.Node{Kind: yaml.MappingNode, Tag: "!!map"}, nil
+}
+
+// updateClientsInAST parses existing YAML bytes into an AST, replaces (or
+// appends) the "clients" value node with one freshly marshalled from clients,
+// and returns the re-serialised YAML. All comments and non-clients content are
+// preserved exactly.
+func updateClientsInAST(existing []byte, clients map[string]*ClientEntry) ([]byte, error) {
+	var doc yaml.Node
+	if err := yaml.Unmarshal(existing, &doc); err != nil {
+		return nil, fmt.Errorf("parsing config AST: %w", err)
+	}
+	if doc.Kind != yaml.DocumentNode || len(doc.Content) == 0 {
+		return nil, fmt.Errorf("config is not a YAML document")
+	}
+	root := doc.Content[0]
+	if root.Kind != yaml.MappingNode {
+		return nil, fmt.Errorf("config top-level value is not a mapping")
+	}
+
+	newValNode, err := clientsMapToNode(clients)
+	if err != nil {
+		return nil, err
+	}
+
+	found := false
+	for i := 0; i+1 < len(root.Content); i += 2 {
+		keyNode := root.Content[i]
+		if keyNode.Kind == yaml.ScalarNode && keyNode.Value == "clients" {
+			// Preserve any foot comment on the old value node (e.g. trailing comments).
+			newValNode.FootComment = root.Content[i+1].FootComment
+			root.Content[i+1] = newValNode
+			found = true
+			break
+		}
+	}
+	if !found {
+		// Append a new "clients:" key-value pair if the key does not exist.
+		keyNode := &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: "clients"}
+		root.Content = append(root.Content, keyNode, newValNode)
+	}
+
+	var buf bytes.Buffer
+	enc := yaml.NewEncoder(&buf)
+	enc.SetIndent(2)
+	if err := enc.Encode(&doc); err != nil {
+		return nil, fmt.Errorf("encoding updated config: %w", err)
+	}
+	if err := enc.Close(); err != nil {
+		return nil, fmt.Errorf("closing yaml encoder: %w", err)
+	}
+	return buf.Bytes(), nil
+}
+
 // SaveServerConfig writes the server config to path, creating directories as needed.
+//
+// When the file already exists its YAML AST is parsed and only the "clients"
+// mapping is replaced — all other content (comments, custom port groups,
+// custom formatting) is preserved. Falls back to a full marshal when the
+// existing file cannot be parsed or when the file does not yet exist.
 func SaveServerConfig(path string, cfg *ServerConfig) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o750); err != nil {
 		return fmt.Errorf("creating config directory: %w", err)
 	}
+
+	// Try AST-surgical update when the file already exists.
+	if existing, err := os.ReadFile(path); err == nil {
+		updated, err := updateClientsInAST(existing, cfg.Clients)
+		if err == nil {
+			return os.WriteFile(path, updated, 0o600)
+		}
+		// AST update failed (e.g. corrupt YAML) — fall through to full marshal.
+	}
+
+	// New file or unrecoverable AST: full marshal (comments not preserved).
 	data, err := yaml.Marshal(cfg)
 	if err != nil {
 		return fmt.Errorf("marshalling server config: %w", err)
