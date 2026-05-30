@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/merlos/openme/cli/internal/config"
+	"gopkg.in/yaml.v3"
 )
 
 // initServerConfig runs openme init into a temp file, sets the global
@@ -105,12 +106,12 @@ func TestRunAdd_ProfileFlagOverridesDefault(t *testing.T) {
 func TestRunAdd_ServerDefaultProfile(t *testing.T) {
 	path := initServerConfig(t, "server.example.com")
 
-	// Set default_profile in the server config.
+	// Set default_profile — this is a server-level field so we write it with a
+	// full yaml.Marshal (not SaveServerConfig which only rewrites clients).
 	cfg, _ := config.LoadServerConfig(path)
 	cfg.Server.DefaultProfile = "work"
-	if err := config.SaveServerConfig(path, cfg); err != nil {
-		t.Fatalf("SaveServerConfig: %v", err)
-	}
+	data, _ := yaml.Marshal(cfg)
+	_ = os.WriteFile(path, data, 0o600)
 
 	collect := captureStdout(t)
 	// No --profile flag → must use server.default_profile = "work".
@@ -130,9 +131,8 @@ func TestRunAdd_ProfileFlagTakesPrecedenceOverServerDefault(t *testing.T) {
 
 	cfg, _ := config.LoadServerConfig(path)
 	cfg.Server.DefaultProfile = "work"
-	if err := config.SaveServerConfig(path, cfg); err != nil {
-		t.Fatalf("SaveServerConfig: %v", err)
-	}
+	data, _ := yaml.Marshal(cfg)
+	_ = os.WriteFile(path, data, 0o600)
 
 	collect := captureStdout(t)
 	// --profile home must win over server.default_profile = "work".

@@ -383,3 +383,269 @@ func TestClientEntry_Expiry(t *testing.T) {
 		t.Error("nil expiry should mean no expiry")
 	}
 }
+
+// ─── SaveServerConfig AST comment-preservation tests ─────────────────────────
+
+// annotatedConfig writes a minimal server config with comments scattered in
+// the header, server block, ports block, and directly above clients — no
+// special markers needed. Returns the file path.
+func annotatedConfig(t *testing.T, dir string) string {
+	t.Helper()
+	path := filepath.Join(dir, "config.yaml")
+	content := "# openme server configuration\n" +
+		"# my precious header comment\n" +
+		"server:\n" +
+		"  # server host comment\n" +
+		"  host: testserver\n" +
+		"  udp_port: 54154\n" +
+		"  firewall: nft\n" +
+		"  knock_timeout: 30s\n" +
+		"  replay_window: 1m0s\n" +
+		"  private_key: priv==\n" +
+		"  public_key:  pub==\n" +
+		"ports:\n" +
+		"  # ports section comment\n" +
+		"  default:\n" +
+		"    - 22/tcp # SSH\n" +
+		"# clients comment — use openme add to manage\n" +
+		"clients: {}\n"
+	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
+		t.Fatalf("writing annotated config: %v", err)
+	}
+	return path
+}
+
+func TestSaveServerConfig_ASTPreservesAllComments(t *testing.T) {
+	dir := t.TempDir()
+	path := annotatedConfig(t, dir)
+
+	cfg, err := config.LoadServerConfig(path)
+	if err != nil {
+		t.Fatalf("LoadServerConfig: %v", err)
+	}
+	cfg.Clients["alice"] = &config.ClientEntry{
+		Ed25519PubKey: "alicepub==",
+		AllowedPorts:  []config.PortSpec{"default"},
+	}
+
+	if err := config.SaveServerConfig(path, cfg); err != nil {
+		t.Fatalf("SaveServerConfig: %v", err)
+	}
+
+	raw, _ := os.ReadFile(path)
+	content := string(raw)
+
+	for _, comment := range []string{
+		"my precious header comment",
+		"server host comment",
+		"ports section comment",
+		"clients comment",
+	} {
+		if !strings.Contains(content, comment) {
+			t.Errorf("comment %q was lost after SaveServerConfig", comment)
+		}
+	}
+	if !strings.Contains(content, "alice") {
+		t.Error("client 'alice' not found in saved file")
+	}
+	// Server settings must not be corrupted.
+	loaded, err := config.LoadServerConfig(path)
+	if err != nil {
+		t.Fatalf("LoadServerConfig after save: %v", err)
+	}
+	if loaded.Server.Host != "testserver" {
+		t.Errorf("Host = %q, want testserver", loaded.Server.Host)
+	}
+}
+
+func TestSaveServerConfig_ASTRoundTrip(t *testing.T) {
+	// Three saves: add alice, add bob, revoke alice — comments survive throughout.
+	dir := t.TempDir()
+	path := annotatedConfig(t, dir)
+
+	cfg, _ := config.LoadServerConfig(path)
+	cfg.Clients["alice"] = &config.ClientEntry{Ed25519PubKey: "alicepub=="}
+	_ = config.SaveServerConfig(path, cfg)
+
+	cfg2, _ := config.LoadServerConfig(path)
+	cfg2.Clients["bob"] = &config.ClientEntry{Ed25519PubKey: "bobpub=="}
+	_ = config.SaveServerConfig(path, cfg2)
+
+	cfg3, _ := config.LoadServerConfig(path)
+	delete(cfg3.Clients, "alice")
+	if err := config.SaveServerConfig(path, cfg3); err != nil {
+		t.Fatalf("SaveServerConfig (revoke): %v", err)
+	}
+
+	raw, _ := os.ReadFile(path)
+	content := string(raw)
+
+	if !strings.Contains(content, "my precious header comment") {
+		t.Error("header comment lost after multi-step round-trip")
+	}
+	if strings.Contains(content, "alice") {
+		t.Error("revoked client 'alice' still present")
+	}
+	if !strings.Contains(content, "bob") {
+		t.Error("client 'bob' missing after round-trip")
+	}
+	// Clients key must not be duplicated.
+	if count := strings.Count(content, "\nclients:"); count != 1 {
+		t.Errorf("expected 1 'clients:' key, found %d", count)
+	}
+}
+
+func TestSaveServerConfig_ASTNoClientsKey(t *testing.T) {
+	// A file without a "clients:" key gets the key appended cleanly.
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.yaml")
+	content := "# top comment\n" +
+		"server:\n" +
+		"  host: x\n" +
+		"  udp_port: 54154\n" +
+		"  firewall: nft\n" +
+		"  knock_timeout: 30s\n" +
+		"  replay_window: 1m0s\n" +
+		"  private_key: p==\n" +
+		"  public_key: q==\n"
+	_ = os.WriteFile(path, []byte(content), 0o600)
+
+	cfg, _ := config.LoadServerConfig(path)
+	cfg.Clients["alice"] = &config.ClientEntry{Ed25519PubKey: "alicepub=="}
+	if err := config.SaveServerConfig(path, cfg); err != nil {
+		t.Fatalf("SaveServerConfig: %v", err)
+	}
+
+	loaded, err := config.LoadServerConfig(path)
+	if err != nil {
+		t.Fatalf("LoadServerConfig after add: %v", err)
+	}
+	if _, ok := loaded.Clients["alice"]; !ok {
+		t.Error("client 'alice' not found after add")
+	}
+	raw, _ := os.ReadFile(path)
+	if !strings.Contains(string(raw), "top comment") {
+		t.Error("top comment lost when clients key was absent")
+	}
+}
+
+func TestSaveServerConfig_ASTEmptyClients(t *testing.T) {
+	// Saving an empty clients map produces valid YAML that round-trips correctly.
+	dir := t.TempDir()
+	path := annotatedConfig(t, dir)
+
+	cfg, _ := config.LoadServerConfig(path)
+	cfg.Clients = make(map[string]*config.ClientEntry)
+	if err := config.SaveServerConfig(path, cfg); err != nil {
+		t.Fatalf("SaveServerConfig: %v", err)
+	}
+	loaded, err := config.LoadServerConfig(path)
+	if err != nil {
+		t.Fatalf("LoadServerConfig: %v", err)
+	}
+	if len(loaded.Clients) != 0 {
+		t.Errorf("expected 0 clients, got %d", len(loaded.Clients))
+	}
+}
+
+func TestSaveServerConfig_ASTFallbackOnCorrupt(t *testing.T) {
+	// A corrupt YAML file silently falls back to a full marshal — no error,
+	// data is preserved (comments are lost, which is the acceptable trade-off).
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.yaml")
+	_ = os.WriteFile(path, []byte("{{{{ not valid yaml"), 0o600)
+
+	cfg := config.DefaultServerConfig()
+	cfg.Server.Host = "recovered"
+	cfg.Clients["alice"] = &config.ClientEntry{Ed25519PubKey: "alicepub=="}
+	if err := config.SaveServerConfig(path, cfg); err != nil {
+		t.Fatalf("SaveServerConfig on corrupt file: %v", err)
+	}
+	loaded, err := config.LoadServerConfig(path)
+	if err != nil {
+		t.Fatalf("LoadServerConfig after fallback: %v", err)
+	}
+	if loaded.Server.Host != "recovered" {
+		t.Errorf("Host = %q, want recovered", loaded.Server.Host)
+	}
+	if _, ok := loaded.Clients["alice"]; !ok {
+		t.Error("client 'alice' not found after fallback save")
+	}
+}
+
+func TestSaveServerConfig_ASTNewFile(t *testing.T) {
+	// Saving to a path that does not exist creates dirs and the file via full marshal.
+	dir := t.TempDir()
+	path := filepath.Join(dir, "subdir", "config.yaml")
+
+	cfg := config.DefaultServerConfig()
+	cfg.Server.Host = "newserver"
+	cfg.Clients["bob"] = &config.ClientEntry{Ed25519PubKey: "bobpub=="}
+	if err := config.SaveServerConfig(path, cfg); err != nil {
+		t.Fatalf("SaveServerConfig: %v", err)
+	}
+	loaded, err := config.LoadServerConfig(path)
+	if err != nil {
+		t.Fatalf("LoadServerConfig: %v", err)
+	}
+	if loaded.Server.Host != "newserver" {
+		t.Errorf("Host = %q, want newserver", loaded.Server.Host)
+	}
+	if _, ok := loaded.Clients["bob"]; !ok {
+		t.Error("client 'bob' not found")
+	}
+}
+
+func TestSaveServerConfig_ASTPreservesPortsGroup(t *testing.T) {
+	// A custom ports group added by the user is not removed by SaveServerConfig.
+	dir := t.TempDir()
+	path := annotatedConfig(t, dir)
+
+	// Manually add a custom ports group to the on-disk file.
+	raw, _ := os.ReadFile(path)
+	raw = []byte(strings.Replace(string(raw),
+		"  default:\n    - 22/tcp # SSH\n",
+		"  default:\n    - 22/tcp # SSH\n  admin:\n    - 22/tcp\n    - 443/tcp\n", 1))
+	_ = os.WriteFile(path, raw, 0o600)
+
+	cfg, _ := config.LoadServerConfig(path)
+	cfg.Clients["alice"] = &config.ClientEntry{Ed25519PubKey: "alicepub=="}
+	if err := config.SaveServerConfig(path, cfg); err != nil {
+		t.Fatalf("SaveServerConfig: %v", err)
+	}
+
+	loaded, err := config.LoadServerConfig(path)
+	if err != nil {
+		t.Fatalf("LoadServerConfig: %v", err)
+	}
+	if _, ok := loaded.Ports["admin"]; !ok {
+		t.Error("custom 'admin' port group was removed by SaveServerConfig")
+	}
+	if _, ok := loaded.Clients["alice"]; !ok {
+		t.Error("client 'alice' not found")
+	}
+}
+
+func TestSaveServerConfig_ASTMultipleClients(t *testing.T) {
+	// Save several clients, verify all survive a reload.
+	dir := t.TempDir()
+	path := annotatedConfig(t, dir)
+
+	cfg, _ := config.LoadServerConfig(path)
+	for _, name := range []string{"alice", "bob", "carol", "dave"} {
+		cfg.Clients[name] = &config.ClientEntry{
+			Ed25519PubKey: name + "pub==",
+			AllowedPorts:  []config.PortSpec{"default"},
+		}
+	}
+	if err := config.SaveServerConfig(path, cfg); err != nil {
+		t.Fatalf("SaveServerConfig: %v", err)
+	}
+
+	loaded, _ := config.LoadServerConfig(path)
+	for _, name := range []string{"alice", "bob", "carol", "dave"} {
+		if _, ok := loaded.Clients[name]; !ok {
+			t.Errorf("client %q missing after save", name)
+		}
+	}
+}

@@ -434,6 +434,10 @@ ports:
 #       ed25519_pubkey: "<base64-encoded-public-key>"
 #       allowed_ports: [default, 443/tcp] # default group + HTTPS
 #       expires: "2027-01-01T00:00:00Z"   # optional key expiry
+#
+# Manage clients with the CLI — comments anywhere in this file are preserved:
+#   openme add <name>     — register a new client
+#   openme revoke <name>  — remove a client
 clients: {}
 `
 	content := fmt.Sprintf(tmpl,
