@@ -88,6 +88,9 @@ website:
                 href: api/csharp/index.html
               - text: "C Doxygen Reference"
                 href: api/c/index.html
+      - section: "Troubleshooting"
+        contents:
+          - troubleshooting/index.qmd
       - section: "FAQ"
         contents:
           - faq/index.qmd
