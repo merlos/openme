@@ -94,6 +94,12 @@ to securely and stealthily open firewall ports.`,
 		newProfilesCmd(),
 	)
 
+	// Silence the usage block on every error. Each command's RunE is wrapped
+	// with withHelpHint which appends a concise --help hint instead.
+	for _, sub := range root.Commands() {
+		sub.SilenceUsage = true
+	}
+
 	if err := root.Execute(); err != nil {
 		os.Exit(1)
 	}
@@ -113,6 +119,18 @@ func newLogger() *slog.Logger {
 		level = slog.LevelInfo
 	}
 	return slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: level}))
+}
+
+// withHelpHint wraps a cobra RunE function so that every returned error is
+// annotated with a concise --help hint. SilenceUsage is set on all subcommands
+// in main() so cobra never dumps the full usage block on failure.
+func withHelpHint(runE func(*cobra.Command, []string) error) func(*cobra.Command, []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		if err := runE(cmd, args); err != nil {
+			return fmt.Errorf("%w\n\nFor more details run: openme %s --help", err, cmd.Name())
+		}
+		return nil
+	}
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -141,9 +159,9 @@ Examples:
   openme sessions
   openme sessions --state-file /run/openme/sessions.json
   openme sessions --watch`,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: withHelpHint(func(cmd *cobra.Command, args []string) error {
 			return runSessions(stateFile, watch)
-		},
+		}),
 	}
 	cmd.Flags().StringVar(&stateFile, "state-file", defaultStateFilePath,
 		"path to the session state file written by 'openme serve'")
@@ -329,17 +347,15 @@ Use --config to override the path.
 Example:
   sudo openme init --server myserver.example.com
   sudo openme init --server 1.2.3.4 --firewall iptables --port 9999`,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: withHelpHint(func(cmd *cobra.Command, args []string) error {
 			if serverHost == "" {
 				return fmt.Errorf(
-					"--server is required\n\nProvide the public hostname or IP address of this server:\n  openme init --server myserver.example.com\n  openme init --server 1.2.3.4\n\nRun 'openme init --help' for more details.",
+					"--server is required\n\nProvide the public hostname or IP address of this server:\n  openme init --server myserver.example.com\n  openme init --server 1.2.3.4",
 				)
 			}
 			return runInit(force, serverHost, udpPort, firewallBackend)
-		},
+		}),
 	}
-
-	cmd.SilenceUsage = true
 
 	cmd.Flags().BoolVar(&force, "force", false, "overwrite existing config without prompting")
 	cmd.Flags().StringVar(&serverHost, "server", "", "public hostname or IP of this server (required)")
@@ -495,9 +511,9 @@ func newServeCmd() *cobra.Command {
 		Use:     "serve",
 		GroupID: "server",
 		Short:   "Start the openme SPA server",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: withHelpHint(func(cmd *cobra.Command, args []string) error {
 			return runServe(stateFile)
-		},
+		}),
 	}
 	cmd.Flags().StringVar(&stateFile, "state-file", defaultStateFilePath,
 		"path to write live session state (read by 'openme sessions')")
@@ -642,7 +658,7 @@ Examples:
   openme knock home --continuous --interval 30s --check  # knock + health-check every 30 s
   openme knock --ip 203.0.113.5             # open firewall for a specific IP`,
 		Args: cobra.MaximumNArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: withHelpHint(func(cmd *cobra.Command, args []string) error {
 			profileName := ""
 			if len(args) > 0 {
 				profileName = args[0]
@@ -657,7 +673,7 @@ Examples:
 				return runPostKnockCheck(profileName)
 			}
 			return nil
-		},
+		}),
 	}
 	cmd.Flags().StringVar(&targetIP, "ip", "0.0.0.0", "target IP to open the firewall for (0.0.0.0 = source IP)")
 	cmd.Flags().BoolVar(&continuous, "continuous", false, "keep knocking at regular intervals until Ctrl-C")
@@ -810,13 +826,13 @@ knocked (within the knock_timeout window).
 Use --knock to perform a knock first, then check the health port. This
 validates the full authentication round trip end-to-end.`,
 		Args: cobra.MaximumNArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: withHelpHint(func(cmd *cobra.Command, args []string) error {
 			profileName := ""
 			if len(args) > 0 {
 				profileName = args[0]
 			}
 			return runStatus(profileName, knockFirst)
-		},
+		}),
 	}
 	cmd.Flags().BoolVar(&knockFirst, "knock", false, "knock first, then check the health port")
 	return cmd
@@ -881,9 +897,9 @@ func newAddCmd() *cobra.Command {
 		GroupID: "server",
 		Short:   "Register a new client and generate their config",
 		Args:    cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: withHelpHint(func(cmd *cobra.Command, args []string) error {
 			return runAdd(args[0], showQR, qrOutputPath, omitPrivateKey, expires, portsCSV, profileName)
-		},
+		}),
 	}
 
 	cmd.Flags().BoolVar(&showQR, "qr", false, "display QR code in terminal")
@@ -1011,7 +1027,7 @@ func newListCmd() *cobra.Command {
 		Use:     "list",
 		GroupID: "server",
 		Short:   "List all registered clients",
-		RunE:    runList,
+		RunE:    withHelpHint(runList),
 	}
 }
 
@@ -1058,9 +1074,9 @@ func newRevokeCmd() *cobra.Command {
 		GroupID: "server",
 		Short:   "Revoke a client's key (removes it from the server config)",
 		Args:    cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: withHelpHint(func(cmd *cobra.Command, args []string) error {
 			return runRevoke(args[0])
-		},
+		}),
 	}
 }
 
@@ -1097,13 +1113,13 @@ Examples:
   openme profiles               # list all profiles
   openme profiles home          # show details for the 'home' profile`,
 		Args: cobra.MaximumNArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: withHelpHint(func(cmd *cobra.Command, args []string) error {
 			name := ""
 			if len(args) > 0 {
 				name = args[0]
 			}
 			return runProfiles(name)
-		},
+		}),
 	}
 }
 
