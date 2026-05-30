@@ -873,6 +873,7 @@ func newAddCmd() *cobra.Command {
 		omitPrivateKey bool
 		expires        string
 		portsCSV       string
+		profileName    string
 	)
 
 	cmd := &cobra.Command{
@@ -881,7 +882,7 @@ func newAddCmd() *cobra.Command {
 		Short:   "Register a new client and generate their config",
 		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runAdd(args[0], showQR, qrOutputPath, omitPrivateKey, expires, portsCSV)
+			return runAdd(args[0], showQR, qrOutputPath, omitPrivateKey, expires, portsCSV, profileName)
 		},
 	}
 
@@ -890,11 +891,12 @@ func newAddCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&omitPrivateKey, "no-privkey", false, "omit private key from QR (mobile generates its own)")
 	cmd.Flags().StringVar(&expires, "expires", "", "key expiry date (RFC3339, e.g. 2027-01-01T00:00:00Z)")
 	cmd.Flags().StringVar(&portsCSV, "ports", "", "comma-separated port groups and specs, e.g. default,443/tcp,2000-2010/tcp (default: \"default\")")
+	cmd.Flags().StringVar(&profileName, "profile", "", "profile name in the generated client config (default: server.default_profile or \"default\")")
 
 	return cmd
 }
 
-func runAdd(name string, showQR bool, qrOut string, omitPriv bool, expires, portsCSV string) error {
+func runAdd(name string, showQR bool, qrOut string, omitPriv bool, expires, portsCSV, profileName string) error {
 	cfg, err := config.LoadServerConfig(serverConfigPath)
 	if err != nil {
 		return fmt.Errorf("loading server config: %w", err)
@@ -944,10 +946,18 @@ func runAdd(name string, showQR bool, qrOut string, omitPriv bool, expires, port
 	}
 	fmt.Printf("Client %q added to server config.\n\n", name)
 
+	// Resolve profile name: --profile flag > server.default_profile > "default".
+	if profileName == "" {
+		profileName = cfg.Server.DefaultProfile
+	}
+	if profileName == "" {
+		profileName = "default"
+	}
+
 	// Build and print client config.
 	clientCfg := &config.ClientConfig{
 		Profiles: map[string]*config.Profile{
-			name: {
+			profileName: {
 				ServerHost:    cfg.Server.Host,
 				ServerUDPPort: cfg.Server.UDPPort,
 				ServerPubKey:  cfg.Server.PublicKey,
@@ -961,7 +971,7 @@ func runAdd(name string, showQR bool, qrOut string, omitPriv bool, expires, port
 	if err != nil {
 		return err
 	}
-	fmt.Printf("──── Client config for %s (copy to ~/.openme/config.yaml) ────\n", name)
+	fmt.Printf("──── Client config for %s — profile %q (copy to ~/.openme/config.yaml) ────\n", name, profileName)
 	fmt.Println(clientYAML)
 	fmt.Println("────────────────────────────────────────────────────────────────")
 	fmt.Printf("Key fingerprint: %s\n", internlcrypto.FingerprintKey(kp.PublicKey))
@@ -969,7 +979,7 @@ func runAdd(name string, showQR bool, qrOut string, omitPriv bool, expires, port
 	// QR code.
 	if showQR || qrOut != "" {
 		payload := &qr.Payload{
-			ProfileName:   name,
+			ProfileName:   profileName,
 			ServerHost:    cfg.Server.Host,
 			ServerUDPPort: cfg.Server.UDPPort,
 			ServerPubKey:  cfg.Server.PublicKey,
