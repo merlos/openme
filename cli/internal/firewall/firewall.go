@@ -379,11 +379,13 @@ func (b *IPTablesBackend) TeardownDropRules(ports []config.PortRule) error {
 	return nil
 }
 
-// Open inserts an ACCEPT rule for each port into the openme chain.
+// Open inserts an ACCEPT rule for each port at the top of the openme chain
+// (position 1) so it takes priority over any DROP rules added by SetupDropRules.
 func (b *IPTablesBackend) Open(srcIP net.IP, ports []config.PortRule) error {
 	cmd := ipTablesCmd(srcIP)
 	for _, p := range ports {
-		if err := runCmd(b.Log, cmd, "-A", "openme", "-s", srcIP.String(),
+		// -I inserts at position 1 (top of chain), before any DROP rules.
+		if err := runCmd(b.Log, cmd, "-I", "openme", "1", "-s", srcIP.String(),
 			"-p", p.Proto, "--dport", portDport(p), "-j", "ACCEPT",
 			"-m", "comment", "--comment", "openme"); err != nil {
 			return err
@@ -519,7 +521,8 @@ func (b *NFTablesBackend) TeardownDropRules(_ []config.PortRule) error {
 	return nil
 }
 
-// Open adds nft accept rules for each port. Creates the chain on first use.
+// Open adds nft accept rules for each port at the top of the openme chain
+// ("insert rule") so they take priority over any DROP rules added by SetupDropRules.
 func (b *NFTablesBackend) Open(srcIP net.IP, ports []config.PortRule) error {
 	// Ensure the table and chain exist (idempotent).
 	if err := b.ensureChain(); err != nil {
@@ -527,10 +530,10 @@ func (b *NFTablesBackend) Open(srcIP net.IP, ports []config.PortRule) error {
 	}
 	family := nftFamily(srcIP)
 	for _, p := range ports {
-		// Each word must be a separate argument — exec.Command does not use a shell
-		// and will not split a single string on spaces.
+		// "insert rule" prepends at position 0, before any existing DROP rules.
+		// Each word must be a separate argument — exec.Command does not use a shell.
 		if err := runCmd(b.Log, "nft",
-			"add", "rule", "inet", "filter", "openme",
+			"insert", "rule", "inet", "filter", "openme",
 			family, "saddr", srcIP.String(),
 			p.Proto, "dport", nftPortDport(p),
 			"accept", "comment", "openme"); err != nil {
