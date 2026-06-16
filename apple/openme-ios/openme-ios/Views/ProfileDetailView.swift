@@ -15,6 +15,7 @@ struct ProfileDetailView: View {
     @State private var isSaving     = false
     @State private var showPrivateKey = false
     @State private var countdown: Int = 20
+    @State private var saveStatus: String = ""
 
     var body: some View {
         Group {
@@ -32,6 +33,11 @@ struct ProfileDetailView: View {
                     // ── Status ─────────────────────────────────────────
                     Section {
                         knockControls
+                        if !saveStatus.isEmpty {
+                            Text(saveStatus)
+                                .font(.caption)
+                                .foregroundStyle(.green)
+                        }
                     }
 
                     // ── Server ─────────────────────────────────────────
@@ -124,6 +130,10 @@ struct ProfileDetailView: View {
                             try? store.update(p)
                             isSaving = false
                             if p.name != profileName { dismiss() }
+                            if p.name == profileName {
+                                saveStatus = "Saved ✓"
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 2) { saveStatus = "" }
+                            }
                         }
                         .disabled(isSaving)
                     }
