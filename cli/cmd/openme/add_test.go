@@ -22,7 +22,7 @@ func initServerConfig(t *testing.T, host string) string {
 	orig := serverConfigPath
 	serverConfigPath = path
 	t.Cleanup(func() { serverConfigPath = orig })
-	if err := runInit(false, host, 54154, "nft"); err != nil {
+	if err := runInit(false, host, 54154, "nft", ""); err != nil {
 		t.Fatalf("runInit: %v", err)
 	}
 	return path

@@ -227,15 +227,46 @@ func ruleKey(ip net.IP, ports []config.PortRule) string {
 }
 
 // NewBackend creates a firewall backend by name ("iptables" or "nft").
-func NewBackend(name string, log *slog.Logger) (Backend, error) {
+// iface restricts all generated firewall rules to packets arriving on the named
+// network interface (e.g. "eth0"). Pass an empty string to apply rules to all
+// interfaces (the default behaviour).
+//
+// See https://openme.merlos.org/docs/configuration/server.html
+func NewBackend(name string, log *slog.Logger, iface string) (Backend, error) {
 	switch name {
 	case "iptables":
-		return &IPTablesBackend{Log: log}, nil
+		return &IPTablesBackend{Log: log, Interface: iface}, nil
 	case "nft":
-		return &NFTablesBackend{Log: log}, nil
+		return &NFTablesBackend{Log: log, Interface: iface}, nil
 	default:
 		return nil, fmt.Errorf("unknown firewall backend %q (use 'iptables' or 'nft')", name)
 	}
+}
+
+// ifaceArgs returns []string{"-i", iface} when iface is non-empty, or nil.
+// Used to add incoming-interface matching to iptables commands.
+func ifaceArgs(iface string) []string {
+	if iface == "" {
+		return nil
+	}
+	return []string{"-i", iface}
+}
+
+// nftIfaceArgs returns []string{"iifname", iface} when iface is non-empty, or nil.
+// Used to add incoming-interface matching to nft rules.
+func nftIfaceArgs(iface string) []string {
+	if iface == "" {
+		return nil
+	}
+	return []string{"iifname", iface}
+}
+
+// ifaceLogVal returns iface or "(all)" for use in log messages.
+func ifaceLogVal(iface string) string {
+	if iface == "" {
+		return "(all)"
+	}
+	return iface
 }
 
 // portDport returns the iptables --dport value for a PortRule:
@@ -286,6 +317,9 @@ func runNftScript(log *slog.Logger, script string) error {
 // IPTablesBackend implements Backend using iptables/ip6tables.
 type IPTablesBackend struct {
 	Log *slog.Logger
+	// Interface restricts rules to packets arriving on this interface.
+	// When empty all interfaces are matched.
+	Interface string
 }
 
 func (b *IPTablesBackend) Name() string { return "iptables" }
@@ -309,21 +343,23 @@ func (b *IPTablesBackend) Setup(udpPort uint16, openKnockPort bool) error {
 
 		// Optionally accept knock packets on the SPA UDP port.
 		if openKnockPort {
-			if err := runCmd(b.Log, cmd, "-I", "INPUT",
-				"-p", "udp", "--dport", port, "-j", "ACCEPT",
-				"-m", "comment", "--comment", "openme-knock"); err != nil {
+			args := append([]string{"-I", "INPUT"}, ifaceArgs(b.Interface)...)
+			args = append(args, "-p", "udp", "--dport", port, "-j", "ACCEPT",
+				"-m", "comment", "--comment", "openme-knock")
+			if err := runCmd(b.Log, cmd, args...); err != nil {
 				return fmt.Errorf("iptables setup (%s): adding knock accept rule: %w", cmd, err)
 			}
 		}
 
 		// Jump from INPUT into the openme chain.
-		if err := runCmd(b.Log, cmd, "-A", "INPUT", "-j", "openme",
-			"-m", "comment", "--comment", "openme-jump"); err != nil {
+		args := append([]string{"-A", "INPUT"}, ifaceArgs(b.Interface)...)
+		args = append(args, "-j", "openme", "-m", "comment", "--comment", "openme-jump")
+		if err := runCmd(b.Log, cmd, args...); err != nil {
 			return fmt.Errorf("iptables setup (%s): adding jump rule: %w", cmd, err)
 		}
 	}
 	b.Log.Info("iptables infrastructure rules installed",
-		"udp_port", udpPort, "open_knock_port", openKnockPort)
+		"udp_port", udpPort, "open_knock_port", openKnockPort, "interface", ifaceLogVal(b.Interface))
 	return nil
 }
 
@@ -335,11 +371,15 @@ func (b *IPTablesBackend) Setup(udpPort uint16, openKnockPort bool) error {
 func (b *IPTablesBackend) Teardown(udpPort uint16) error {
 	port := fmt.Sprint(udpPort)
 	for _, cmd := range []string{"iptables", "ip6tables"} {
-		_ = runCmd(b.Log, cmd, "-D", "INPUT", "-j", "openme",
-			"-m", "comment", "--comment", "openme-jump")
-		_ = runCmd(b.Log, cmd, "-D", "INPUT",
-			"-p", "udp", "--dport", port, "-j", "ACCEPT",
+		jumpArgs := append([]string{"-D", "INPUT", "-j", "openme"}, ifaceArgs(b.Interface)...)
+		jumpArgs = append(jumpArgs, "-m", "comment", "--comment", "openme-jump")
+		_ = runCmd(b.Log, cmd, jumpArgs...)
+
+		knockArgs := append([]string{"-D", "INPUT"}, ifaceArgs(b.Interface)...)
+		knockArgs = append(knockArgs, "-p", "udp", "--dport", port, "-j", "ACCEPT",
 			"-m", "comment", "--comment", "openme-knock")
+		_ = runCmd(b.Log, cmd, knockArgs...)
+
 		_ = runCmd(b.Log, cmd, "-F", "openme")
 		_ = runCmd(b.Log, cmd, "-X", "openme")
 	}
@@ -354,9 +394,10 @@ func (b *IPTablesBackend) Teardown(udpPort uint16) error {
 func (b *IPTablesBackend) SetupDropRules(ports []config.PortRule) error {
 	for _, cmd := range []string{"iptables", "ip6tables"} {
 		for _, p := range ports {
-			if err := runCmd(b.Log, cmd, "-A", "openme",
-				"-p", p.Proto, "--dport", portDport(p), "-j", "DROP",
-				"-m", "comment", "--comment", "openme-drop"); err != nil {
+			args := append([]string{"-A", "openme"}, ifaceArgs(b.Interface)...)
+			args = append(args, "-p", p.Proto, "--dport", portDport(p), "-j", "DROP",
+				"-m", "comment", "--comment", "openme-drop")
+			if err := runCmd(b.Log, cmd, args...); err != nil {
 				return fmt.Errorf("iptables drop rule (%s) port %d/%s: %w", cmd, p.Port, p.Proto, err)
 			}
 		}
@@ -370,9 +411,10 @@ func (b *IPTablesBackend) SetupDropRules(ports []config.PortRule) error {
 func (b *IPTablesBackend) TeardownDropRules(ports []config.PortRule) error {
 	for _, cmd := range []string{"iptables", "ip6tables"} {
 		for _, p := range ports {
-			_ = runCmd(b.Log, cmd, "-D", "openme",
-				"-p", p.Proto, "--dport", portDport(p), "-j", "DROP",
+			args := append([]string{"-D", "openme"}, ifaceArgs(b.Interface)...)
+			args = append(args, "-p", p.Proto, "--dport", portDport(p), "-j", "DROP",
 				"-m", "comment", "--comment", "openme-drop")
+			_ = runCmd(b.Log, cmd, args...)
 		}
 	}
 	b.Log.Info("iptables drop rules removed")
@@ -385,9 +427,11 @@ func (b *IPTablesBackend) Open(srcIP net.IP, ports []config.PortRule) error {
 	cmd := ipTablesCmd(srcIP)
 	for _, p := range ports {
 		// -I inserts at position 1 (top of chain), before any DROP rules.
-		if err := runCmd(b.Log, cmd, "-I", "openme", "1", "-s", srcIP.String(),
+		args := append([]string{"-I", "openme", "1"}, ifaceArgs(b.Interface)...)
+		args = append(args, "-s", srcIP.String(),
 			"-p", p.Proto, "--dport", portDport(p), "-j", "ACCEPT",
-			"-m", "comment", "--comment", "openme"); err != nil {
+			"-m", "comment", "--comment", "openme")
+		if err := runCmd(b.Log, cmd, args...); err != nil {
 			return err
 		}
 	}
@@ -399,9 +443,11 @@ func (b *IPTablesBackend) Close(srcIP net.IP, ports []config.PortRule) error {
 	cmd := ipTablesCmd(srcIP)
 	for _, p := range ports {
 		// Best-effort: ignore errors (rule may already be gone).
-		_ = runCmd(b.Log, cmd, "-D", "openme", "-s", srcIP.String(),
+		args := append([]string{"-D", "openme"}, ifaceArgs(b.Interface)...)
+		args = append(args, "-s", srcIP.String(),
 			"-p", p.Proto, "--dport", portDport(p), "-j", "ACCEPT",
 			"-m", "comment", "--comment", "openme")
+		_ = runCmd(b.Log, cmd, args...)
 	}
 	return nil
 }
@@ -422,6 +468,9 @@ func ipTablesCmd(ip net.IP) string {
 // Rules are added to the "openme" chain inside the "inet filter" table.
 type NFTablesBackend struct {
 	Log *slog.Logger
+	// Interface restricts rules to packets arriving on this interface.
+	// When empty all interfaces are matched.
+	Interface string
 }
 
 func (b *NFTablesBackend) Name() string { return "nft" }
@@ -445,24 +494,22 @@ func (b *NFTablesBackend) Setup(udpPort uint16, openKnockPort bool) error {
 
 	// Optionally allow knock packets to reach the server's UDP listener.
 	if openKnockPort {
-		if err := runCmd(b.Log, "nft",
-			"add", "rule", "inet", "filter", "input",
-			"udp", "dport", fmt.Sprint(udpPort), "accept",
-			"comment", "openme-knock"); err != nil {
+		args := append([]string{"add", "rule", "inet", "filter", "input"}, nftIfaceArgs(b.Interface)...)
+		args = append(args, "udp", "dport", fmt.Sprint(udpPort), "accept", "comment", "openme-knock")
+		if err := runCmd(b.Log, "nft", args...); err != nil {
 			return fmt.Errorf("nft setup: adding knock accept rule: %w", err)
 		}
 	}
 
 	// Route INPUT traffic through the per-client openme chain.
-	if err := runCmd(b.Log, "nft",
-		"add", "rule", "inet", "filter", "input",
-		"jump", "openme",
-		"comment", "openme-jump"); err != nil {
+	args := append([]string{"add", "rule", "inet", "filter", "input"}, nftIfaceArgs(b.Interface)...)
+	args = append(args, "jump", "openme", "comment", "openme-jump")
+	if err := runCmd(b.Log, "nft", args...); err != nil {
 		return fmt.Errorf("nft setup: adding jump rule: %w", err)
 	}
 
 	b.Log.Info("nft infrastructure rules installed",
-		"udp_port", udpPort, "open_knock_port", openKnockPort)
+		"udp_port", udpPort, "open_knock_port", openKnockPort, "interface", ifaceLogVal(b.Interface))
 	return nil
 }
 
@@ -498,10 +545,9 @@ func (b *NFTablesBackend) SetupDropRules(ports []config.PortRule) error {
 		return err
 	}
 	for _, p := range ports {
-		if err := runCmd(b.Log, "nft",
-			"add", "rule", "inet", "filter", "openme",
-			p.Proto, "dport", nftPortDport(p),
-			"drop", "comment", "openme-drop"); err != nil {
+		args := append([]string{"add", "rule", "inet", "filter", "openme"}, nftIfaceArgs(b.Interface)...)
+		args = append(args, p.Proto, "dport", nftPortDport(p), "drop", "comment", "openme-drop")
+		if err := runCmd(b.Log, "nft", args...); err != nil {
 			return fmt.Errorf("nft drop rule port %d/%s: %w", p.Port, p.Proto, err)
 		}
 	}
@@ -532,11 +578,10 @@ func (b *NFTablesBackend) Open(srcIP net.IP, ports []config.PortRule) error {
 	for _, p := range ports {
 		// "insert rule" prepends at position 0, before any existing DROP rules.
 		// Each word must be a separate argument — exec.Command does not use a shell.
-		if err := runCmd(b.Log, "nft",
-			"insert", "rule", "inet", "filter", "openme",
-			family, "saddr", srcIP.String(),
-			p.Proto, "dport", nftPortDport(p),
-			"accept", "comment", "openme"); err != nil {
+		args := append([]string{"insert", "rule", "inet", "filter", "openme"}, nftIfaceArgs(b.Interface)...)
+		args = append(args, family, "saddr", srcIP.String(),
+			p.Proto, "dport", nftPortDport(p), "accept", "comment", "openme")
+		if err := runCmd(b.Log, "nft", args...); err != nil {
 			return err
 		}
 	}
@@ -551,12 +596,19 @@ func (b *NFTablesBackend) Close(srcIP net.IP, ports []config.PortRule) error {
 	// For simplicity we use a shell pipeline here; a full nft library
 	// (e.g. google/nftables) would be used in production.
 	for _, p := range ports {
+		var grepPat string
+		if b.Interface != "" {
+			grepPat = fmt.Sprintf(`iifname.*%s.*saddr %s.*dport %s`,
+				b.Interface, srcIP.String(), nftPortDport(p))
+		} else {
+			grepPat = fmt.Sprintf(`saddr %s.*dport %s`, srcIP.String(), nftPortDport(p))
+		}
 		script := fmt.Sprintf(
 			`nft -a list chain inet filter openme 2>/dev/null | `+
-				`grep 'saddr %s.*dport %s' | `+
+				`grep '%s' | `+
 				`awk '{print $NF}' | `+
 				`xargs -r -I{} nft delete rule inet filter openme handle {}`,
-			srcIP.String(), nftPortDport(p),
+			grepPat,
 		)
 		_ = runCmd(b.Log, "sh", "-c", script)
 	}

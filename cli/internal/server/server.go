@@ -77,6 +77,12 @@ type Options struct {
 	// OnKnock is called for each successfully verified knock.
 	OnKnock KnockHandler
 
+	// Interface is the optional network interface name the server is bound to.
+	// When non-empty this is included in startup log messages.
+	// Firewall rules are restricted to this interface by the Backend.
+	// When empty all interfaces are used.
+	Interface string
+
 	// Log is the structured logger.
 	Log *slog.Logger
 }
@@ -109,6 +115,7 @@ func (s *Server) Run(ctx context.Context) error {
 	s.opts.Log.Info("openme server listening",
 		"udp_port", s.opts.UDPPort,
 		"health_port", s.opts.HealthPort,
+		"interface", ifaceLogVal(s.opts.Interface),
 		"note", "health port is closed until a client authenticates",
 	)
 
@@ -217,6 +224,14 @@ func (s *Server) findClient(sigMsg, sig []byte) *ClientRecord {
 		}
 	}
 	return nil
+}
+
+// ifaceLogVal returns iface or "(all)" for use in log messages.
+func ifaceLogVal(iface string) string {
+	if iface == "" {
+		return "(all)"
+	}
+	return iface
 }
 
 // extractIP parses the IP address from a net.Addr (UDP remote address).

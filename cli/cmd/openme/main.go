@@ -330,6 +330,29 @@ func formatDuration(d time.Duration) string {
 // openme init
 // ────────────────────────────────────────────────────────────────────────────
 
+// validateInterface checks whether iface is a known network interface on this host.
+// When iface is empty it returns nil (the server will apply rules to all interfaces).
+// On failure it returns an error listing the currently available interface names.
+func validateInterface(iface string) error {
+	if iface == "" {
+		return nil
+	}
+	ifaces, err := net.Interfaces()
+	if err != nil {
+		return fmt.Errorf("listing network interfaces: %w", err)
+	}
+	var names []string
+	for _, i := range ifaces {
+		if i.Name == iface {
+			return nil
+		}
+		names = append(names, i.Name)
+	}
+	sort.Strings(names)
+	return fmt.Errorf("network interface %q not found\nAvailable interfaces: %s",
+		iface, strings.Join(names, ", "))
+}
+
 // newInitCmd creates the `openme init` command.
 func newInitCmd() *cobra.Command {
 	var (
@@ -337,6 +360,7 @@ func newInitCmd() *cobra.Command {
 		serverHost      string
 		udpPort         uint16
 		firewallBackend string
+		iface           string
 	)
 
 	cmd := &cobra.Command{
@@ -350,14 +374,15 @@ Use --config to override the path.
 
 Example:
   sudo openme init --server myserver.example.com
-  sudo openme init --server 1.2.3.4 --firewall iptables --port 9999`,
+  sudo openme init --server 1.2.3.4 --firewall iptables --port 9999
+  sudo openme init --server 1.2.3.4 --interface eth0`,
 		RunE: withHelpHint(func(cmd *cobra.Command, args []string) error {
 			if serverHost == "" {
 				return fmt.Errorf(
 					"--server is required\n\nProvide the public hostname or IP address of this server:\n  openme init --server myserver.example.com\n  openme init --server 1.2.3.4",
 				)
 			}
-			return runInit(force, serverHost, udpPort, firewallBackend)
+			return runInit(force, serverHost, udpPort, firewallBackend, iface)
 		}),
 	}
 
@@ -365,6 +390,7 @@ Example:
 	cmd.Flags().StringVar(&serverHost, "server", "", "public hostname or IP of this server (required)")
 	cmd.Flags().Uint16Var(&udpPort, "port", 54154, "UDP (and TCP health) port")
 	cmd.Flags().StringVar(&firewallBackend, "firewall", "nft", "firewall backend: nft or iptables")
+	cmd.Flags().StringVar(&iface, "interface", "", "restrict firewall rules to this network interface (default: all interfaces)")
 
 	return cmd
 }
@@ -376,6 +402,14 @@ func saveAnnotatedServerConfig(path string, cfg *config.ServerConfig) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o750); err != nil {
 		return fmt.Errorf("creating config directory: %w", err)
 	}
+
+	// Build the interface line: uncommented when an interface is configured,
+	// otherwise show a commented-out example.
+	ifaceLine := "  # interface: eth0  # If not specified, defaults to all interfaces."
+	if cfg.Server.Interface != "" {
+		ifaceLine = "  interface: " + cfg.Server.Interface + "  # Network interface for firewall rules."
+	}
+
 	tmpl := `# openme server configuration
 # Reference: https://openme.merlos.org/docs/configuration/server.html
 
@@ -405,6 +439,8 @@ server:
   # take priority and allow authenticated clients through.
   # Set to false (default) if your base firewall policy already drops these ports.
   #drop_ports: false
+
+%s
 
   # Server Curve25519 keypair — keep private_key secret (chmod 600)
   private_key: %s
@@ -451,6 +487,7 @@ clients: {}
 		cfg.Server.Firewall,
 		cfg.Server.KnockTimeout.String(),
 		cfg.Server.ReplayWindow.String(),
+		ifaceLine,
 		cfg.Server.PrivateKey,
 		cfg.Server.PublicKey,
 	)
@@ -459,9 +496,14 @@ clients: {}
 
 // runInit generates a new server config with fresh cryptographic keys.
 // It refuses to overwrite an existing config unless --force is given.
-func runInit(force bool, serverHost string, udpPort uint16, firewallBackend string) error {
+func runInit(force bool, serverHost string, udpPort uint16, firewallBackend, iface string) error {
 	// Validate firewall backend early so we fail before writing anything.
-	if _, err := firewall.NewBackend(firewallBackend, slog.Default()); err != nil {
+	if _, err := firewall.NewBackend(firewallBackend, slog.Default(), ""); err != nil {
+		return err
+	}
+
+	// Validate the interface (if specified) before writing anything.
+	if err := validateInterface(iface); err != nil {
 		return err
 	}
 
@@ -483,6 +525,7 @@ func runInit(force bool, serverHost string, udpPort uint16, firewallBackend stri
 	cfg.Server.UDPPort = udpPort
 	cfg.Server.HealthPort = udpPort
 	cfg.Server.Firewall = firewallBackend
+	cfg.Server.Interface = iface
 	cfg.Server.PrivateKey = internlcrypto.EncodeKey(kp.PrivateKey[:])
 	cfg.Server.PublicKey = internlcrypto.EncodeKey(kp.PublicKey[:])
 	cfg.Server.Host = serverHost
@@ -491,12 +534,17 @@ func runInit(force bool, serverHost string, udpPort uint16, firewallBackend stri
 		return fmt.Errorf("writing server config: %w", err)
 	}
 
+	ifaceDesc := "all (no interface filter)"
+	if iface != "" {
+		ifaceDesc = iface
+	}
 	fmt.Printf(`openme server initialised successfully!
 
   Config:    %s
   Server:    %s
   UDP port:  %d
   Firewall:  %s
+  Interface: %s
 
   Public key (share with clients):
     %s
@@ -511,7 +559,7 @@ Next steps:
   3. (Optional) Install as a systemd service:
        sudo systemctl enable --now openme
 
-`, serverConfigPath, serverHost, udpPort, firewallBackend, cfg.Server.PublicKey)
+`, serverConfigPath, serverHost, udpPort, firewallBackend, ifaceDesc, cfg.Server.PublicKey)
 
 	return nil
 }
@@ -523,27 +571,43 @@ Next steps:
 const defaultStateFilePath = "/run/openme/sessions.json"
 
 func newServeCmd() *cobra.Command {
-	var stateFile string
+	var (
+		stateFile string
+		iface     string
+	)
 
 	cmd := &cobra.Command{
 		Use:     "serve",
 		GroupID: "server",
 		Short:   "Start the openme SPA server",
 		RunE: withHelpHint(func(cmd *cobra.Command, args []string) error {
-			return runServe(stateFile)
+			return runServe(stateFile, iface)
 		}),
 	}
 	cmd.Flags().StringVar(&stateFile, "state-file", defaultStateFilePath,
 		"path to write live session state (read by 'openme sessions')")
+	cmd.Flags().StringVar(&iface, "interface", "",
+		"restrict firewall rules to this network interface (overrides config; default: all interfaces)")
 	return cmd
 }
 
-func runServe(stateFile string) error {
+func runServe(stateFile, ifaceOverride string) error {
 	log := newLogger()
 
 	cfg, err := config.LoadServerConfig(serverConfigPath)
 	if err != nil {
 		return fmt.Errorf("loading server config: %w", err)
+	}
+
+	// Resolve effective interface: CLI flag overrides config file.
+	iface := cfg.Server.Interface
+	if ifaceOverride != "" {
+		iface = ifaceOverride
+	}
+
+	// Validate the interface exists before doing anything else.
+	if err := validateInterface(iface); err != nil {
+		return err
 	}
 
 	privKeyBytes, err := internlcrypto.DecodeKey(cfg.Server.PrivateKey)
@@ -560,7 +624,7 @@ func runServe(stateFile string) error {
 	}
 
 	// Set up firewall manager.
-	fw, err := firewall.NewBackend(cfg.Server.Firewall, log)
+	fw, err := firewall.NewBackend(cfg.Server.Firewall, log, iface)
 	if err != nil {
 		return err
 	}
@@ -593,6 +657,7 @@ func runServe(stateFile string) error {
 		ServerPrivKey: privKey,
 		ReplayWindow:  cfg.Server.ReplayWindow.Duration,
 		Clients:       clients,
+		Interface:     iface,
 		Log:           log,
 		OnKnock: func(clientName string, srcIP, targetIP net.IP, ports []server.PortRule) {
 			log.Info("firewall: IP added", "client", clientName, "ip", targetIP)

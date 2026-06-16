@@ -55,6 +55,7 @@ sudo openme init --server myserver.example.com
 | `--server` | *(required)* | Public hostname or IP — used in generated client configs |
 | `--port` | `54154` | UDP knock port and TCP health port |
 | `--firewall` | `nft` | Firewall backend: `nft` or `iptables` |
+| `--interface` | *(all interfaces)* | Restrict firewall rules to this network interface (e.g. `eth0`). Useful when the server has multiple NICs and you only want openme to guard the internet-facing one. The server will fail to start if the interface does not exist. Leave unset to apply rules to all interfaces. |
 | `--force` | `false` | Overwrite an existing config |
 
 The command prints the server's Curve25519 public key.
