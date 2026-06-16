@@ -36,6 +36,17 @@ CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 \
     go build -ldflags="-s -w" -o "${BINARY_MACOS}" ./cmd/openme
 echo "    Built ${BINARY_MACOS} ($(du -sh "${BINARY_MACOS}" | cut -f1))"
 
+# ── Local version check ───────────────────────────────────────────────────────
+echo "==> Checking local binary version …"
+_OS="$(uname -s)"
+case "${_OS}" in
+    Darwin) _LOCAL_BIN="${BINARY_MACOS}" ;;
+    Linux)  _LOCAL_BIN="${BINARY}" ;;
+    *)      _LOCAL_BIN="${BINARY}" ;;  # best-effort fallback
+esac
+echo "    Platform: ${_OS} (using ${_LOCAL_BIN})"
+"./${_LOCAL_BIN}" --version
+
 # ── Upload ────────────────────────────────────────────────────────────────────
 SCP_OPTS="-i ${SSH_KEY} -o StrictHostKeyChecking=no -o ConnectTimeout=10"
 
