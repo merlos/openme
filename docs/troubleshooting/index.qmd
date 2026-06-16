@@ -1,7 +1,7 @@
 ---
 title: "Troubleshooting"
-description-meta: "Troubleshoot openme SPA — firewall rules not applying, knock not working, port closed after knock, nft/iptables diagnostics, stale rules, clock skew, and more."
-keywords: [openme troubleshooting, SPA debug, nftables debug, iptables debug, openme port not open, knock not working, firewall rules cleanup]
+description-meta: "Troubleshoot openme SPA — firewall rules not applying, knock not working, port closed after knock, connection dropped after knock timeout, nft/iptables diagnostics, stale rules, clock skew, and more."
+keywords: [openme troubleshooting, SPA debug, nftables debug, iptables debug, openme port not open, knock not working, firewall rules cleanup, connection drops after timeout, knock_timeout SSH drop]
 ---
 
 This page collects diagnostic commands and step-by-step fixes for the most
@@ -27,6 +27,7 @@ Client                      Network                    Server
 | No response after knock | UDP blocked, wrong port, openme not running |
 | Knock accepted (log shows it) but port still closed | Firewall backend error, rule not inserted |
 | Port open briefly then closes | Knock timeout elapsed; reconnect after next knock |
+| Established connection is forcibly closed mid-session | `knock_timeout` expired while the session was still active — firewall rule removed** |
 | SSH connection refused | sshd not listening, or wrong port configured |
 | openme exits immediately | Config error, missing keys, permission denied |
 | Clock-related log message | Client/server clocks out of sync |
@@ -155,9 +156,8 @@ sudo openme serve --config /etc/openme/config.yaml
 ### Verify the configuration
 
 ```bash
-# Print the effective config (redacts keys)
-sudo openme config show
-
+# Display the current config 
+cat /etc/openme/config.yaml
 # Check that the config file is readable and has correct permissions
 ls -la /etc/openme/config.yaml
 # Expected: -rw------- (0600) owned by root or the openme user
@@ -507,8 +507,7 @@ sudo systemctl restart openme
 
 ---
 
-### Scenario 8 — openme running in a container or minimal OS
-
+### Scenarop 8 - openme running in a container or minimal 
 openme requires `nft` or `iptables` to be available and the kernel `nf_tables`
 or `ip_tables` module to be loaded.
 
@@ -533,6 +532,111 @@ netfilter:
 ```bash
 docker run --cap-add NET_ADMIN --cap-add NET_RAW ...
 ```
+
+
+
+### Scenario 9 — Established connection dropped mid-session after `knock_timeout`
+
+**Symptom:** An SSH session (or any long-lived TCP connection) is
+abruptly terminated a short time after connecting — typically 30 seconds
+after the last knock.  The server logs will contain a line such as:
+
+```
+INFO IP removed from firewall client=alice ip=203.0.113.4
+```
+
+**Root cause:** openme removes the firewall `ACCEPT` rule exactly
+`knock_timeout` seconds after the last successful knock.  If the firewall
+policy drops traffic to the port by default (e.g. the chain has a `DROP`
+rule, or the base policy is `DROP`), the kernel immediately starts dropping
+new packets from the client IP — which terminates any active TCP connection.
+
+There are three ways to fix this, depending on your security requirements:
+
+#### Option A — Increase `knock_timeout` (simplest)
+
+Set `knock_timeout` to a value longer than your typical session:
+
+```yaml
+server:
+  knock_timeout: 3600s   # 1 hour
+  replay_window: 7200s   # must be ≥ knock_timeout
+```
+
+Simple to configure, but the firewall window stays open for the full
+duration even if the session ends early.
+
+#### Option B — Use continuous knock mode (recommended for interactive sessions)
+
+Re-knock at a regular interval shorter than `knock_timeout` so the rule
+is continually refreshed.  openme's `--continuous` flag does this
+automatically:
+
+```bash
+# Knock every 25 s in the background, then open an SSH session
+openme knock --continuous --interval 25s &
+KNOCK_PID=$!
+ssh user@server
+kill $KNOCK_PID
+```
+
+Or use the built-in `post_knock` script in the client profile:
+
+```yaml
+# ~/.openme/config.yaml
+profiles:
+  default:
+    server_host: myserver.example.com
+    server_udp_port: 54154
+    server_pubkey: "..."
+    private_key: "..."
+    post_knock: "ssh user@myserver.example.com"
+```
+
+Then run:
+
+```bash
+# In one terminal — keep re-knocking every 25 s
+openme knock --continuous --interval 25s
+```
+
+```bash
+# In another terminal — SSH normally
+ssh user@myserver.example.com
+```
+
+#### Option C — Use `ConnTrack` to preserve established connections (advanced)
+
+If you need the firewall rule to expire without disturbing active
+connections, add a conntrack rule **before** the openme chain that accepts
+already-established and related traffic.  This is independent of openme
+and applied at the base `input` chain level.
+
+**nftables:**
+
+```bash
+sudo nft insert rule inet filter input ct state established,related accept comment "conntrack-accept"
+```
+
+**iptables:**
+
+```bash
+sudo iptables -I INPUT 1 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT -m comment --comment "conntrack-accept"
+sudo ip6tables -I INPUT 1 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT -m comment --comment "conntrack-accept"
+```
+
+With this rule in place, openme's timeout only affects *new* connection
+attempts.  Active sessions (packets belonging to already-established TCP
+connections) continue to be accepted by the conntrack rule even after
+openme removes the per-client ACCEPT rule.
+
+::: {.callout-note}
+Most Linux distributions ship with a conntrack accept rule already in
+place. Run `sudo nft list chain inet filter input` (or
+`sudo iptables -L INPUT -n`) and look for `ct state established,related
+accept` near the top of the chain.  If it is already there you do not
+need to add it again.
+:::
 
 ---
 
