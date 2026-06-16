@@ -649,3 +649,61 @@ func TestSaveServerConfig_ASTMultipleClients(t *testing.T) {
 		}
 	}
 }
+
+// TestDefaultServerConfig_InterfaceEmpty verifies that the default server
+// config leaves the interface field empty (meaning: all interfaces).
+func TestDefaultServerConfig_InterfaceEmpty(t *testing.T) {
+	cfg := config.DefaultServerConfig()
+	if cfg.Server.Interface != "" {
+		t.Errorf("Interface = %q, want empty string (all interfaces)", cfg.Server.Interface)
+	}
+}
+
+// TestSaveLoadServerConfig_Interface verifies that the interface field is
+// persisted and reloaded correctly.
+func TestSaveLoadServerConfig_Interface(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.yaml")
+
+	cfg := config.DefaultServerConfig()
+	cfg.Server.PrivateKey = "testprivkey=="
+	cfg.Server.PublicKey = "testpubkey=="
+	cfg.Server.Interface = "eth0"
+
+	if err := config.SaveServerConfig(path, cfg); err != nil {
+		t.Fatalf("SaveServerConfig error = %v", err)
+	}
+
+	loaded, err := config.LoadServerConfig(path)
+	if err != nil {
+		t.Fatalf("LoadServerConfig error = %v", err)
+	}
+
+	if loaded.Server.Interface != "eth0" {
+		t.Errorf("Interface = %q after reload, want eth0", loaded.Server.Interface)
+	}
+}
+
+// TestSaveLoadServerConfig_InterfaceOmittedWhenEmpty verifies that an empty
+// interface field is omitted from the YAML output (omitempty).
+func TestSaveLoadServerConfig_InterfaceOmittedWhenEmpty(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.yaml")
+
+	cfg := config.DefaultServerConfig()
+	cfg.Server.PrivateKey = "testprivkey=="
+	cfg.Server.PublicKey = "testpubkey=="
+	// Interface left as empty string.
+
+	if err := config.SaveServerConfig(path, cfg); err != nil {
+		t.Fatalf("SaveServerConfig error = %v", err)
+	}
+
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(raw), "interface:") {
+		t.Error("interface key should be omitted from YAML when empty")
+	}
+}

@@ -122,14 +122,14 @@ func TestManager_CloseAll(t *testing.T) {
 }
 
 func TestNewBackend_Invalid(t *testing.T) {
-	if _, err := firewall.NewBackend("unknown", slog.Default()); err == nil {
+	if _, err := firewall.NewBackend("unknown", slog.Default(), ""); err == nil {
 		t.Error("NewBackend with unknown name should return error")
 	}
 }
 
 func TestNewBackend_Valid(t *testing.T) {
 	for _, name := range []string{"iptables", "nft"} {
-		if _, err := firewall.NewBackend(name, slog.Default()); err != nil {
+		if _, err := firewall.NewBackend(name, slog.Default(), ""); err != nil {
 			t.Errorf("NewBackend(%q) error = %v", name, err)
 		}
 	}
@@ -187,5 +187,81 @@ func TestMockBackend_DropRulesIndependentOfOpenClose(t *testing.T) {
 	}
 	if !mock.setupDropCalled || !mock.teardownDropCalled {
 		t.Error("expected both SetupDropRules and TeardownDropRules to be called")
+	}
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Interface field tests
+// ────────────────────────────────────────────────────────────────────────────
+
+// TestNewBackend_InterfaceStoredOnNFT verifies that NewBackend stores the
+// requested interface name on the returned NFTablesBackend concrete type.
+func TestNewBackend_InterfaceStoredOnNFT(t *testing.T) {
+	b, err := firewall.NewBackend("nft", slog.Default(), "eth0")
+	if err != nil {
+		t.Fatalf("NewBackend error = %v", err)
+	}
+	nftB, ok := b.(*firewall.NFTablesBackend)
+	if !ok {
+		t.Fatalf("expected *firewall.NFTablesBackend, got %T", b)
+	}
+	if nftB.Interface != "eth0" {
+		t.Errorf("NFTablesBackend.Interface = %q, want eth0", nftB.Interface)
+	}
+}
+
+// TestNewBackend_InterfaceStoredOnIPTables verifies that NewBackend stores the
+// requested interface name on the returned IPTablesBackend concrete type.
+func TestNewBackend_InterfaceStoredOnIPTables(t *testing.T) {
+	b, err := firewall.NewBackend("iptables", slog.Default(), "eth0")
+	if err != nil {
+		t.Fatalf("NewBackend error = %v", err)
+	}
+	iptB, ok := b.(*firewall.IPTablesBackend)
+	if !ok {
+		t.Fatalf("expected *firewall.IPTablesBackend, got %T", b)
+	}
+	if iptB.Interface != "eth0" {
+		t.Errorf("IPTablesBackend.Interface = %q, want eth0", iptB.Interface)
+	}
+}
+
+// TestNewBackend_EmptyInterfaceMeansAllInterfaces verifies that an empty
+// interface string is stored as-is (signifying all interfaces).
+func TestNewBackend_EmptyInterfaceMeansAllInterfaces(t *testing.T) {
+	b, err := firewall.NewBackend("nft", slog.Default(), "")
+	if err != nil {
+		t.Fatalf("NewBackend error = %v", err)
+	}
+	nftB, ok := b.(*firewall.NFTablesBackend)
+	if !ok {
+		t.Fatalf("expected *firewall.NFTablesBackend, got %T", b)
+	}
+	if nftB.Interface != "" {
+		t.Errorf("NFTablesBackend.Interface = %q, want empty (all interfaces)", nftB.Interface)
+	}
+}
+
+// TestIPTablesBackend_InterfaceField verifies the IPTablesBackend Interface
+// field can be set directly and is read back correctly.
+func TestIPTablesBackend_InterfaceField(t *testing.T) {
+	b := &firewall.IPTablesBackend{
+		Log:       slog.Default(),
+		Interface: "wlan0",
+	}
+	if b.Interface != "wlan0" {
+		t.Errorf("Interface = %q, want wlan0", b.Interface)
+	}
+}
+
+// TestNFTablesBackend_InterfaceField verifies the NFTablesBackend Interface
+// field can be set directly and is read back correctly.
+func TestNFTablesBackend_InterfaceField(t *testing.T) {
+	b := &firewall.NFTablesBackend{
+		Log:       slog.Default(),
+		Interface: "wlan0",
+	}
+	if b.Interface != "wlan0" {
+		t.Errorf("Interface = %q, want wlan0", b.Interface)
 	}
 }

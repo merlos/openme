@@ -202,6 +202,11 @@ type ServerConfig struct {
 		// traffic on the managed ports and you do not want openme to add
 		// duplicate rules.
 		DropPorts *bool `yaml:"drop_ports,omitempty"`
+
+		// Interface is the optional network interface name on which to apply
+		// firewall rules and listen for knock packets (e.g. "eth0").
+		// When empty (default) rules apply to all interfaces.
+		Interface string `yaml:"interface,omitempty"`
 	} `yaml:"server"`
 
 	// Ports defines named groups of port specs available to clients.

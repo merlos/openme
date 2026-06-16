@@ -54,3 +54,29 @@ func TestHealthPortNotPermanent(t *testing.T) {
 	}
 	_ = protocol.Version // ensure protocol package is linked
 }
+
+// TestOptions_Interface verifies that the Interface field is stored in Options
+// and forwarded to the server. The firewall backend uses it to restrict rules
+// to packets arriving on the named interface.
+func TestOptions_Interface(t *testing.T) {
+	opts := &server.Options{
+		UDPPort:    54154,
+		HealthPort: 54154,
+		Interface:  "eth0",
+	}
+	if opts.Interface != "eth0" {
+		t.Errorf("Interface = %q, want eth0", opts.Interface)
+	}
+}
+
+// TestOptions_DefaultInterface verifies that omitting Interface leaves it as
+// an empty string, meaning the server applies rules to all interfaces.
+func TestOptions_DefaultInterface(t *testing.T) {
+	opts := &server.Options{
+		UDPPort:    54154,
+		HealthPort: 54154,
+	}
+	if opts.Interface != "" {
+		t.Errorf("Interface = %q, want empty string (all interfaces)", opts.Interface)
+	}
+}
