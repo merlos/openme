@@ -17,7 +17,7 @@ struct ProfileManagerView: View {
                 List(store.profiles, id: \.name, selection: $selection) { entry in
                     VStack(alignment: .leading, spacing: 2) {
                         Text(entry.name).fontWeight(.medium)
-                        Text("\(entry.serverHost):\(entry.serverUDPPort)")
+                        Text("\(entry.serverHost):\(entry.serverUDPPort, format: .number.grouping(.never))")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -143,7 +143,7 @@ private struct ProfileDetailView: View {
                             TextField("server.example.com", text: $profile.serverHost)
                         }
                         FieldRow(label: "UDP Port", hint: "54154") {
-                            TextField("54154", value: $profile.serverUDPPort, format: .number)
+                            TextField("54154", value: $profile.serverUDPPort, format: .number.grouping(.never))
                                 .frame(maxWidth: 100)
                         }
                         FieldRow(label: "Server public key", hint: "base64 Curve25519 key") {
