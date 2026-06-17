@@ -4,9 +4,11 @@ import OpenMeKit
 /// Shows all configured profiles in a list with inline editing and deletion.
 struct ProfileManagerView: View {
     @EnvironmentObject var store: ProfileStore
+    @EnvironmentObject var profileManagerConfig: ProfileManagerConfig
     @State private var selection: String?
     @State private var editingProfile: Profile?
     @State private var errorMessage: String?
+    @State private var successMessage: String?
 
     var body: some View {
         HSplitView {
@@ -15,7 +17,7 @@ struct ProfileManagerView: View {
                 List(store.profiles, id: \.name, selection: $selection) { entry in
                     VStack(alignment: .leading, spacing: 2) {
                         Text(entry.name).fontWeight(.medium)
-                        Text("\(entry.serverHost):\(entry.serverUDPPort)")
+                        Text("\(entry.serverHost):\(entry.serverUDPPort, format: .number.grouping(.never))")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -51,6 +53,10 @@ struct ProfileManagerView: View {
                         }
                         try store.update(updated)
                         errorMessage = nil
+                        successMessage = "Saved ✓"
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                            if successMessage == "Saved ✓" { successMessage = nil }
+                        }
                     } catch {
                         errorMessage = error.localizedDescription
                     }
@@ -72,8 +78,16 @@ struct ProfileManagerView: View {
             }
         }
         .frame(minWidth: 480, minHeight: 360)
+        .onAppear {
+            // Apply a pending selection requested by the "Edit…" menu item.
+            if let pending = profileManagerConfig.pendingSelection {
+                selection = pending
+                profileManagerConfig.pendingSelection = nil
+            }
+        }
         .onChange(of: selection) {
             errorMessage = nil
+            successMessage = nil
         }
         .overlay(alignment: .bottom) {
             if let msg = errorMessage {
@@ -81,6 +95,17 @@ struct ProfileManagerView: View {
                     .foregroundStyle(.red)
                     .font(.caption)
                     .padding(8)
+                    .background(.thinMaterial)
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                    .padding(.bottom, 8)
+            } else if let ok = successMessage {
+                Text(ok)
+                    .foregroundStyle(.green)
+                    .font(.caption)
+                    .padding(8)
+                    .background(.thinMaterial)
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                    .padding(.bottom, 8)
             }
         }
     }
@@ -118,7 +143,7 @@ private struct ProfileDetailView: View {
                             TextField("server.example.com", text: $profile.serverHost)
                         }
                         FieldRow(label: "UDP Port", hint: "54154") {
-                            TextField("54154", value: $profile.serverUDPPort, format: .number)
+                            TextField("54154", value: $profile.serverUDPPort, format: .number.grouping(.never))
                                 .frame(maxWidth: 100)
                         }
                         FieldRow(label: "Server public key", hint: "base64 Curve25519 key") {
@@ -201,3 +226,4 @@ private struct FieldRow<Field: View>: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
+

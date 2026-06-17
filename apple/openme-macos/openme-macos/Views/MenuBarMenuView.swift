@@ -110,6 +110,49 @@ struct MenuBarMenuView: View {
                     }
                 }
             }
+
+            Divider()
+
+            Button("Edit…") {
+                NotificationCenter.default.post(
+                    name: .openProfileManager,
+                    object: entry.id
+                )
+            }
+
+            Button("Delete…") {
+                confirmDelete(entry: entry)
+            }
+        }
+    }
+
+    // MARK: - Delete confirmation
+
+    /// Shows a modal NSAlert asking the user to confirm deletion of `entry`.
+    /// NSAlert is used instead of SwiftUI confirmationDialog because the menu
+    /// view is torn down as soon as a menu item is selected, which prevents
+    /// SwiftUI sheet/alert modifiers from presenting reliably.
+    private func confirmDelete(entry: ProfileEntry) {
+        let alert = NSAlert()
+        alert.messageText = "Delete \"\(entry.name)\"?"
+        alert.informativeText = "This profile will be permanently removed. This action cannot be undone."
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: "Delete")
+        alert.addButton(withTitle: "Cancel")
+        // Make Delete the destructive (first) button red.
+        alert.buttons.first?.hasDestructiveAction = true
+
+        let response = alert.runModal()
+        if response == .alertFirstButtonReturn {
+            do {
+                try store.delete(name: entry.id)
+            } catch {
+                let err = NSAlert()
+                err.messageText = "Could not delete profile"
+                err.informativeText = error.localizedDescription
+                err.alertStyle = .critical
+                err.runModal()
+            }
         }
     }
 
