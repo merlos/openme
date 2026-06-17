@@ -195,7 +195,9 @@ struct MenuBarMenuView: View {
             case .success:
                 showFeedbackText("✓ Knocked \(entry.name) • post-knock launched")
             case .failure(let err):
-                showFeedbackText("✓ Knocked \(entry.name) • post-knock failed: \(err.localizedDescription)")
+                let msg = err.localizedDescription
+                print("[OpenMe] post-knock failed for '\(entry.name)': \(msg)")
+                showFeedbackText("✓ Knocked \(entry.name) • post-knock failed: \(msg)")
             }
         }
     }
@@ -210,61 +212,26 @@ struct MenuBarMenuView: View {
         }
     }
 
-    /// Runs a post-knock action as either a URL or a shell command.
+    /// Opens a URL after a successful knock using the default macOS handler.
     ///
-    /// URL mode:
-    /// - If `action` is a valid URL with a non-empty scheme (e.g. ssh://, http://),
-    ///   it is opened with the default macOS handler.
+    /// Supported schemes include anything registered with macOS — for example:
+    /// `ssh://`, `http://`, `https://`, `vnc://`, `rdp://`, `ftp://`.
     ///
-    /// Command mode:
-    /// - Otherwise, the action is executed in Terminal.app via AppleScript
-    ///   (e.g. `ssh user@host`).
+    /// Returns a failure if no application is registered for the scheme or if
+    /// `NSWorkspace` cannot open the URL.
     private func runPostKnockAction(_ action: String) -> Result<Void, PostKnockError> {
-        // Treat explicit URL schemas as URL actions.
-        if let url = URL(string: action),
-           let scheme = url.scheme,
-           !scheme.isEmpty,
-           !action.contains(" ") {
-            if NSWorkspace.shared.urlForApplication(toOpen: url) == nil {
-                return .failure(PostKnockError("No app can open URL scheme '\(scheme)'."))
-            }
-            guard NSWorkspace.shared.open(url) else {
-                return .failure(PostKnockError("Could not open URL: \(action)"))
-            }
-            return .success(())
+        guard let url = URL(string: action),
+              let scheme = url.scheme,
+              !scheme.isEmpty else {
+            return .failure(PostKnockError("'\(action)' is not a valid URL. Use a URL scheme such as ssh://, https://, or vnc://."))
         }
 
-        // Fallback: run as shell command in Terminal.app.
-        let escaped = action
-            .replacingOccurrences(of: "\\", with: "\\\\")
-            .replacingOccurrences(of: "\"", with: "\\\"")
-
-        let appleScript = "tell application \"Terminal\" to activate\n" +
-            "tell application \"Terminal\" to do script \"\(escaped)\""
-
-        let proc = Process()
-        proc.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
-        proc.arguments = ["-e", appleScript]
-
-        let errPipe = Pipe()
-        proc.standardError = errPipe
-
-        do {
-            try proc.run()
-            proc.waitUntilExit()
-        } catch {
-            return .failure(PostKnockError("Failed to launch command: \(error.localizedDescription)"))
+        if NSWorkspace.shared.urlForApplication(toOpen: url) == nil {
+            return .failure(PostKnockError("No app is registered for the '\(scheme)://' URL scheme."))
         }
-
-        guard proc.terminationStatus == 0 else {
-            let errData = errPipe.fileHandleForReading.readDataToEndOfFile()
-            let errText = String(data: errData, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines)
-            if let errText, !errText.isEmpty {
-                return .failure(PostKnockError(errText))
-            }
-            return .failure(PostKnockError("Command launcher exited with code \(proc.terminationStatus)"))
+        guard NSWorkspace.shared.open(url) else {
+            return .failure(PostKnockError("Could not open URL: \(action)"))
         }
-
         return .success(())
     }
 

@@ -174,13 +174,17 @@ private struct ProfileDetailView: View {
                 .frame(maxWidth: .infinity)
 
                 // ── Post-knock ────────────────────────────────────────────────
-                GroupBox("Post-knock command (optional)") {
-                    FieldRow(label: "Shell command", hint: "open ssh://server.example.com") {
-                        TextField("ssh user@server.example.com", text: $profile.postKnock)
+                GroupBox("Post-knock URL (optional)") {
+                    FieldRow(label: "URL", hint: "ssh://user@server.example.com") {
+                        TextField("ssh://user@server.example.com", text: $profile.postKnock)
                             .font(.system(.caption, design: .monospaced))
                     }
                     .padding(.top, 4)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    Text("Opened after a successful knock. Supports any registered URL scheme: ssh://, https://, vnc://, rdp://, etc.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.top, 4)
                 }
                 .frame(maxWidth: .infinity)
             }
