@@ -12,6 +12,10 @@ struct MenuBarMenuView: View {
     @State private var feedbackMessage: String? = nil
     @State private var feedbackTimer: Timer? = nil
 
+    // Tracks which profiles have already had their post-knock action run during
+    // the current continuous knock session. Cleared when continuous knock stops.
+    @State private var continuousPostKnockFired: Set<String> = []
+
     private var appVersion: String {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.0.1-dev"
     }
@@ -94,19 +98,21 @@ struct MenuBarMenuView: View {
         Menu(entry.name) {
             Button("Knock") {
                 knockManager.knock(profile: entry.id) { result in
-                    showFeedback(for: result, profile: entry.name)
+                    handleKnockResult(result, entry: entry)
                 }
             }
 
             if isContinuous {
                 Button("Stop Continuous Knock") {
+                    continuousPostKnockFired.remove(entry.id)
                     knockManager.stopContinuousKnock()
                 }
                 .foregroundStyle(.orange)
             } else {
                 Button("Start Continuous Knock") {
+                    continuousPostKnockFired.remove(entry.id)
                     knockManager.startContinuousKnock(profile: entry.id) { result in
-                        showFeedback(for: result, profile: entry.name)
+                        handleKnockResult(result, entry: entry, isContinuous: true)
                     }
                 }
             }
@@ -158,6 +164,77 @@ struct MenuBarMenuView: View {
 
     // MARK: - Feedback
 
+    private func handleKnockResult(_ result: KnockResult, entry: ProfileEntry, isContinuous: Bool = false) {
+        switch result {
+        case .failure(let msg):
+            showFeedbackText("✗ \(entry.name): \(msg)")
+
+        case .success:
+            guard let profile = store.profile(named: entry.id) else {
+                showFeedbackText("✓ Knocked \(entry.name)")
+                return
+            }
+
+            let action = profile.postKnock.trimmingCharacters(in: .whitespacesAndNewlines)
+
+            // In continuous mode only run the post-knock action on the first
+            // successful knock; subsequent re-knocks just refresh the firewall rule.
+            let shouldRunAction = !action.isEmpty &&
+                (!isContinuous || !continuousPostKnockFired.contains(entry.id))
+
+            guard shouldRunAction else {
+                showFeedbackText("✓ Knocked \(entry.name)")
+                return
+            }
+
+            if isContinuous {
+                continuousPostKnockFired.insert(entry.id)
+            }
+
+            switch runPostKnockAction(action) {
+            case .success:
+                showFeedbackText("✓ Knocked \(entry.name) • post-knock launched")
+            case .failure(let err):
+                let msg = err.localizedDescription
+                print("[OpenMe] post-knock failed for '\(entry.name)': \(msg)")
+                showFeedbackText("✓ Knocked \(entry.name) • post-knock failed: \(msg)")
+            }
+        }
+    }
+
+    private func showFeedbackText(_ text: String) {
+        feedbackTimer?.invalidate()
+        feedbackMessage = text
+        feedbackTimer = Timer.scheduledTimer(withTimeInterval: 4, repeats: false) { _ in
+            Task { @MainActor in
+                self.feedbackMessage = nil
+            }
+        }
+    }
+
+    /// Opens a URL after a successful knock using the default macOS handler.
+    ///
+    /// Supported schemes include anything registered with macOS — for example:
+    /// `ssh://`, `http://`, `https://`, `vnc://`, `rdp://`, `ftp://`.
+    ///
+    /// Returns a failure if no application is registered for the scheme or if
+    /// `NSWorkspace` cannot open the URL.
+    private func runPostKnockAction(_ action: String) -> Result<Void, PostKnockError> {
+        guard let url = URL(string: action),
+              let scheme = url.scheme,
+              !scheme.isEmpty else {
+            return .failure(PostKnockError("'\(action)' is not a valid URL. Use a URL scheme such as ssh://, https://, or vnc://."))
+        }
+
+        if NSWorkspace.shared.urlForApplication(toOpen: url) == nil {
+            return .failure(PostKnockError("No app is registered for the '\(scheme)://' URL scheme."))
+        }
+        guard NSWorkspace.shared.open(url) else {
+            return .failure(PostKnockError("Could not open URL: \(action)"))
+        }
+        return .success(())
+    }
+
     private func showFeedback(for result: KnockResult, profile: String) {
         feedbackTimer?.invalidate()
         switch result {
@@ -172,4 +249,14 @@ struct MenuBarMenuView: View {
             }
         }
     }
+}
+
+// MARK: - PostKnockError
+
+/// Lightweight `Error` wrapper for post-knock action failures.
+/// Used as the `Failure` type in `Result<Void, PostKnockError>` so that
+/// `Result` satisfies the `Error`-conforming constraint on its `Failure` type.
+private struct PostKnockError: LocalizedError {
+    let errorDescription: String?
+    init(_ message: String) { errorDescription = message }
 }
