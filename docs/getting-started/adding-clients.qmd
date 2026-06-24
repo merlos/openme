@@ -94,16 +94,10 @@ sudo openme add alice --qr
 
 # Write QR to a PNG file
 sudo openme add alice --qr-out /tmp/alice.png
-
-# QR without private key (mobile app generates its own keypair)
-sudo openme add alice-mobile --qr --no-privkey
 ```
 
 ::: {.callout-warning}
-A QR code with the private key included must be treated as a secret. Show it
-briefly to the user and do not store the image. Use `--no-privkey` if you
-prefer the mobile device to generate its own keypair — the user then sends
-you their public key to register separately.
+A QR code with the private key included must be treated as a secret. Show it briefly to the user and do not store the image. 
 :::
 
 ## Managing Clients

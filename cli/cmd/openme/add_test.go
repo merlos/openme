@@ -51,7 +51,7 @@ func captureStdout(t *testing.T) func() string {
 func TestRunAdd_AddsClientToConfig(t *testing.T) {
 	initServerConfig(t, "server.example.com")
 
-	if err := runAdd("alice", false, "", false, "", "", ""); err != nil {
+	if err := runAdd("alice", false, "", "", "", ""); err != nil {
 		t.Fatalf("runAdd error = %v", err)
 	}
 
@@ -73,7 +73,7 @@ func TestRunAdd_DefaultProfileName(t *testing.T) {
 	initServerConfig(t, "server.example.com")
 	collect := captureStdout(t)
 
-	if err := runAdd("alice", false, "", false, "", "", ""); err != nil {
+	if err := runAdd("alice", false, "", "", "", ""); err != nil {
 		collect()
 		t.Fatalf("runAdd error = %v", err)
 	}
@@ -89,7 +89,7 @@ func TestRunAdd_ProfileFlagOverridesDefault(t *testing.T) {
 	initServerConfig(t, "server.example.com")
 	collect := captureStdout(t)
 
-	if err := runAdd("alice", false, "", false, "", "", "home"); err != nil {
+	if err := runAdd("alice", false, "", "", "", "home"); err != nil {
 		collect()
 		t.Fatalf("runAdd error = %v", err)
 	}
@@ -115,7 +115,7 @@ func TestRunAdd_ServerDefaultProfile(t *testing.T) {
 
 	collect := captureStdout(t)
 	// No --profile flag → must use server.default_profile = "work".
-	if err := runAdd("alice", false, "", false, "", "", ""); err != nil {
+	if err := runAdd("alice", false, "", "", "", ""); err != nil {
 		collect()
 		t.Fatalf("runAdd error = %v", err)
 	}
@@ -136,7 +136,7 @@ func TestRunAdd_ProfileFlagTakesPrecedenceOverServerDefault(t *testing.T) {
 
 	collect := captureStdout(t)
 	// --profile home must win over server.default_profile = "work".
-	if err := runAdd("alice", false, "", false, "", "", "home"); err != nil {
+	if err := runAdd("alice", false, "", "", "", "home"); err != nil {
 		collect()
 		t.Fatalf("runAdd error = %v", err)
 	}
@@ -153,10 +153,10 @@ func TestRunAdd_ProfileFlagTakesPrecedenceOverServerDefault(t *testing.T) {
 func TestRunAdd_DuplicateClientRejected(t *testing.T) {
 	initServerConfig(t, "server.example.com")
 
-	if err := runAdd("alice", false, "", false, "", "", ""); err != nil {
+	if err := runAdd("alice", false, "", "", "", ""); err != nil {
 		t.Fatalf("first runAdd error = %v", err)
 	}
-	if err := runAdd("alice", false, "", false, "", "", ""); err == nil {
+	if err := runAdd("alice", false, "", "", "", ""); err == nil {
 		t.Error("second runAdd for same client should return an error")
 	}
 }
@@ -164,7 +164,7 @@ func TestRunAdd_DuplicateClientRejected(t *testing.T) {
 func TestRunAdd_PortsCSV(t *testing.T) {
 	path := initServerConfig(t, "server.example.com")
 
-	if err := runAdd("bob", false, "", false, "", "default,443/tcp", ""); err != nil {
+	if err := runAdd("bob", false, "", "", "default,443/tcp", ""); err != nil {
 		t.Fatalf("runAdd error = %v", err)
 	}
 

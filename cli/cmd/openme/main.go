@@ -1044,12 +1044,11 @@ func runStatus(profileName string, knockFirst bool) error {
 
 func newAddCmd() *cobra.Command {
 	var (
-		showQR         bool
-		qrOutputPath   string
-		omitPrivateKey bool
-		expires        string
-		portsCSV       string
-		profileName    string
+		showQR       bool
+		qrOutputPath string
+		expires      string
+		portsCSV     string
+		profileName  string
 	)
 
 	cmd := &cobra.Command{
@@ -1058,13 +1057,12 @@ func newAddCmd() *cobra.Command {
 		Short:   "Register a new client and generate their config",
 		Args:    cobra.ExactArgs(1),
 		RunE: withHelpHint(func(cmd *cobra.Command, args []string) error {
-			return runAdd(args[0], showQR, qrOutputPath, omitPrivateKey, expires, portsCSV, profileName)
+			return runAdd(args[0], showQR, qrOutputPath, expires, portsCSV, profileName)
 		}),
 	}
 
 	cmd.Flags().BoolVar(&showQR, "qr", false, "display QR code in terminal")
 	cmd.Flags().StringVar(&qrOutputPath, "qr-out", "", "write QR PNG to this file path")
-	cmd.Flags().BoolVar(&omitPrivateKey, "no-privkey", false, "omit private key from QR (mobile generates its own)")
 	cmd.Flags().StringVar(&expires, "expires", "", "key expiry date (RFC3339, e.g. 2027-01-01T00:00:00Z)")
 	cmd.Flags().StringVar(&portsCSV, "ports", "", "comma-separated port groups and specs, e.g. default,443/tcp,2000-2010/tcp (default: \"default\")")
 	cmd.Flags().StringVar(&profileName, "profile", "", "profile name in the generated client config (default: server.default_profile or \"default\")")
@@ -1072,7 +1070,7 @@ func newAddCmd() *cobra.Command {
 	return cmd
 }
 
-func runAdd(name string, showQR bool, qrOut string, omitPriv bool, expires, portsCSV, profileName string) error {
+func runAdd(name string, showQR bool, qrOut string, expires, portsCSV, profileName string) error {
 	cfg, err := config.LoadServerConfig(serverConfigPath)
 	if err != nil {
 		return fmt.Errorf("loading server config: %w", err)
@@ -1169,15 +1167,9 @@ func runAdd(name string, showQR bool, qrOut string, omitPriv bool, expires, port
 			ClientPrivKey: internlcrypto.EncodeKey(kp.PrivateKey),
 			ClientPubKey:  internlcrypto.EncodeKey(kp.PublicKey),
 		}
-		if omitPriv {
-			fmt.Println("\n⚠ QR does not include private key. The mobile app must generate its own keypair")
-			fmt.Printf("  and you must run: openme add %s-mobile (with the mobile's public key)\n\n", name)
-		} else {
-			fmt.Println("\n⚠ WARNING: QR contains the client private key. Treat it as a secret!")
-		}
+		fmt.Println("\n⚠ WARNING: QR contains the client private key. Treat it as a secret!")
 		if err := qr.Generate(payload, &qr.GenerateOptions{
-			OmitPrivateKey: omitPriv,
-			OutputPath:     qrOut,
+			OutputPath: qrOut,
 		}); err != nil {
 			return fmt.Errorf("generating QR: %w", err)
 		}
